@@ -1,0 +1,100 @@
+/* General Sidebar Container */
+.sidebar-container {
+  height: 100vh;
+  background-color: var(--background-color);
+}
+
+/* Sidebar Panel */
+.sidebar {
+  height: 100vh;
+  border-right: 1px solid #ddd;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Sidebar Header (Logo & Toggle Button) */
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px;
+  font-weight: bold;
+  font-size: 14px;
+  background-color: var(--background-color-red);
+  color: var(--white);
+}
+
+/* Sidebar Menu Items */
+.sidebar .pro-menu-item {
+  display: flex;
+  align-items: center;
+  /* padding: 12px 16px; */
+  border-radius: 6px;
+  transition: all 0.3s ease-in-out;
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+/* Menu Items Hover Effect */
+.sidebar .pro-menu-item:hover {
+  background: rgba(218, 77, 77, 0.1);
+  transform: scale(1.02);
+  color: var(--primary-color);
+}
+
+/* Active Menu Item Styling */
+.sidebar .pro-menu-item.active {
+  background: linear-gradient(60deg, rgba(255, 3, 3, 0.2), rgba(248, 1, 1, 0.05));
+  border-right: 5px solid var(--background-color-red);
+  font-weight: bold;
+  color: var(--primary-color) !important;
+  box-shadow: inset 2px 0 5px rgba(218, 77, 77, 0.2);
+}
+
+/* Active Menu Icon Highlight */
+.sidebar .pro-menu-item.active .menu-icon {
+  color: var(--secondary-color) !important;
+  filter: drop-shadow(0px 0px 5px var(--secondary-color));
+}
+
+/* Active Menu Text */
+.sidebar .pro-menu-item.active .menu-text {
+  color: var(--primary-color) !important;
+}
+
+/* Sidebar Menu Item Text & Icons */
+.sidebar .pro-menu-item a {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.sidebar .pro-menu-item span {
+font-size: 14px;
+}
+
+.sidebar .pro-menu-item a:hover {
+  color: var(--secondary-color);
+}
+
+/* Sidebar Icon Styling */
+.menu-icon {
+  margin-right: 10px;
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+}
+
+/* Sidebar Toggle Button */
+.toggle-btn {
+  background: none;
+  border: none;
+  color: var(--white);
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+
+.toggle-btn:hover {
+  transform: scale(1.1);
+}

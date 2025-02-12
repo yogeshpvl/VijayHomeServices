@@ -2,29 +2,28 @@ import axios from "axios";
 import { config } from "./config";
 
 const api = axios.create({
-  baseURL: config.BASEURL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  baseURL: config.API_BASE_URL,
+  headers: { "Content-Type": "application/json" },
 });
 
-//  auth token to requests
+// ✅ Attach Token to Every Request
 api.interceptors.request.use(
-  (config) => {
+  (requestConfig) => {
     const token = localStorage.getItem("authToken");
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      requestConfig.headers.Authorization = `Bearer ${token}`;
     }
-    return config;
+    return requestConfig;
   },
   (error) => Promise.reject(error)
 );
 
+// ✅ Global Error Handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error("API error:", error.response?.data || error.message);
-    return Promise.reject(error);
+    console.error("API Error:", error.response?.data || error.message);
+    return Promise.reject(error.response?.data || error.message);
   }
 );
 

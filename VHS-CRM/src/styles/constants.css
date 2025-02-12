@@ -1,0 +1,16 @@
+/* styles/constants.css */
+:root {
+    --primary-color: #2479ce;
+    --secondary-color: darkred;
+    --text-color: #202020;
+    --background-color: #f8f9fa;
+    --background-color-red: darkred;
+    --active-color: darkred;
+    --white: #ffffff;
+  }
+  
+  /* body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+  }
+   */

@@ -1,12 +1,11 @@
 import React from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { logout } from "../../store/authSlice";
 import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { isAuthenticated } = useSelector((state) => state.auth);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -14,9 +13,37 @@ const Navbar = () => {
   };
 
   return (
-    <nav>
-      <h2>Vijay Home Services CRM</h2>
-      {isAuthenticated && <button onClick={handleLogout}>Logout</button>}
+    <nav className="fixed top-0 left-64 right-0 bg-[#9b0f2d] text-white py-3 px-6 flex items-center justify-between shadow-md z-50">
+      {/* Left Section - Date & Time */}
+      <div className="text-sm font-light">
+        {new Date().toLocaleString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </div>
+
+      {/* Center Section - Title */}
+      <h2 className="text-lg font-bold tracking-wide uppercase">
+        VIJAY HOME SERVICES
+      </h2>
+
+      {/* Right Section - User Info & Logout */}
+      <div className="flex items-center gap-6 text-sm font-medium">
+        <span>Pankaj</span>
+        <a href="/change-password" className="hover:underline">
+          Change Password
+        </a>
+        <button
+          onClick={handleLogout}
+          className="bg-white text-red-700 px-4 py-1 rounded-md hover:bg-red-600 hover:text-white transition"
+        >
+          Logout
+        </button>
+      </div>
     </nav>
   );
 };

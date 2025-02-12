@@ -1,4 +1,7 @@
 export const config = {
-  BASEURL: "http://localhost:8000/api",
-  IMAGEURL: "http://localhost:8000/",
+  API_BASE_URL: "http://localhost:8888/api",
+  IMAGE_URL: "http://localhost:8888/uploads",
+  ADMIN_LOGIN: "/adminAuth/login",
+  ADMIN_REGISTER: "/admin/register",
+  ADMIN_PROFILE: "/admin/profile",
 };
