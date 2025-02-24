@@ -36,6 +36,7 @@ import QuotationFormat from "../pages/Master/QuotationFormat";
 import CustomerLayout from "../pages/Customer/CustomerLayout";
 import Add from "../pages/Customer/Add";
 import Search from "../pages/Customer/Search";
+import EnquiryDetails from "../pages/Enquiry/EnquiryDetails";
 
 const AppContent = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
@@ -86,6 +87,7 @@ const AppContent = () => {
               <Route path="new-records" element={<New />} />
               <Route path="today" element={<Today />} />
               <Route path="search" element={<EnquirySearch />} />
+              <Route path="enquiry-details/:id" element={<EnquiryDetails />} />
             </Route>
 
             {/* Master Section with Nested Routes */}

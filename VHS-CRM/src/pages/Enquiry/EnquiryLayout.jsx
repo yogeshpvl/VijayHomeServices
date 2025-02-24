@@ -8,7 +8,10 @@ const EnquiryLayout = () => {
       <Navbar />
 
       {/* This is where the selected enquiry page will be displayed */}
-      <div className="mt-5 bg-white shadow-md p-4 rounded-md">
+      <div
+        className="mt-5 bg-white shadow-md p-4 rounded-md"
+        style={{ background: "#f5eceab8" }}
+      >
         <Outlet />
       </div>
     </div>

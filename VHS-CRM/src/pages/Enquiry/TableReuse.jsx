@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const TableReuse = ({ data, columns, itemsPerPage = 5 }) => {
+  const navigate = useNavigate();
   const [searchFilters, setSearchFilters] = useState({});
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
@@ -17,6 +19,11 @@ const TableReuse = ({ data, columns, itemsPerPage = 5 }) => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedData = data.slice(startIndex, endIndex);
+
+  // Redirect to Enquiry Details
+  const handleRowClick = (id) => {
+    navigate(`/enquiry/enquiry-details/${id}`); // Dynamic URL
+  };
 
   return (
     <div className="">
@@ -99,7 +106,8 @@ const TableReuse = ({ data, columns, itemsPerPage = 5 }) => {
               .map((row, index) => (
                 <tr
                   key={row.id}
-                  className="border-b border-gray-300 even:bg-gray-50 hover:bg-red-50 transition text-xs"
+                  onClick={() => handleRowClick(row.id)} // Redirect on click
+                  className="border-b border-gray-300 even:bg-gray-50 hover:bg-red-50 cursor-pointer transition text-xs"
                 >
                   {columns.map((col, colIndex) => (
                     <td key={colIndex} className="px-4 py-3">

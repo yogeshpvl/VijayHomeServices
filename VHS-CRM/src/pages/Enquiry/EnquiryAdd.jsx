@@ -16,7 +16,7 @@ const EnquiryForm = () => {
             type="text"
             value="99624"
             disabled
-            className="w-full px-3 py-1 bg-gray-200 rounded-md"
+            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
           />
         </div>
 
@@ -29,7 +29,7 @@ const EnquiryForm = () => {
             type="text"
             value="02-12-2025"
             disabled
-            className="w-full px-3 py-1 bg-gray-200 rounded-md"
+            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
           />
         </div>
 
@@ -42,7 +42,7 @@ const EnquiryForm = () => {
             type="text"
             value="Pankaj"
             disabled
-            className="w-full px-3 py-1 bg-gray-200 rounded-md"
+            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
           />
         </div>
 
@@ -53,7 +53,7 @@ const EnquiryForm = () => {
           </label>
           <input
             type="text"
-            className="w-full border border-gray-300 px-3 py-1 rounded-md focus:ring-red-600 focus:border-red-600"
+            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
           />
         </div>
 
@@ -64,7 +64,7 @@ const EnquiryForm = () => {
           </label>
           <input
             type="email"
-            className="w-full border border-gray-300 px-3 py-1 rounded-md focus:ring-red-600 focus:border-red-600"
+            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
           />
         </div>
 
@@ -75,7 +75,7 @@ const EnquiryForm = () => {
           </label>
           <input
             type="text"
-            className="w-full border border-gray-300 px-3 py-1 rounded-md focus:ring-red-600 focus:border-red-600"
+            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
           />
         </div>
 
@@ -86,7 +86,7 @@ const EnquiryForm = () => {
           </label>
           <input
             type="text"
-            className="w-full border border-gray-300 px-3 py-1 rounded-md focus:ring-red-600 focus:border-red-600"
+            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
           />
         </div>
 
@@ -97,7 +97,7 @@ const EnquiryForm = () => {
           </label>
           <input
             type="text"
-            className="w-full border border-gray-300 px-3 py-1 rounded-md focus:ring-red-600 focus:border-red-600"
+            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
           />
         </div>
 
@@ -106,7 +106,7 @@ const EnquiryForm = () => {
           <label className="block text-gray-700 text-sm font-medium mb-1">
             City *
           </label>
-          <select className="w-full border border-gray-300 px-3 py-1 rounded-md focus:ring-red-600 focus:border-red-600">
+          <select className="w-full border bg-white  border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500">
             <option>--Select--</option>
             <option>Bangalore</option>
             <option>Mumbai</option>
@@ -119,7 +119,7 @@ const EnquiryForm = () => {
           <label className="block text-gray-700 text-sm font-medium mb-1">
             Category *
           </label>
-          <select className="w-full border border-gray-300 px-3 py-1 rounded-md focus:ring-red-600 focus:border-red-600">
+          <select className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500">
             <option>--Select--</option>
             <option>Pest Control</option>
             <option>Cleaning</option>
@@ -131,7 +131,7 @@ const EnquiryForm = () => {
           <label className="block text-gray-700 text-sm font-medium mb-1">
             Reference *
           </label>
-          <select className="w-full border border-gray-300 px-3 py-2 rounded-md focus:ring-red-600 focus:border-red-600">
+          <select className="w-full bg-white border border-gray-300 px-2 py-1.5 rounded-md focus:ring-red-600 focus:border-red-600">
             <option>--Select--</option>
             <option>Customer Care</option>
             <option>Website</option>
@@ -145,7 +145,7 @@ const EnquiryForm = () => {
           </label>
           <input
             type="text"
-            className="w-full border border-gray-300 px-3 py-1.5 mt-1 rounded-md focus:ring-red-600 focus:border-red-600"
+            className="w-full bg-white border border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
           />
         </div>
 
@@ -156,7 +156,7 @@ const EnquiryForm = () => {
           </label>
           <input
             type="text"
-            className="w-full border border-gray-300 px-3 py-1 rounded-md focus:ring-red-600 focus:border-red-600"
+            className="w-full bg-white border border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
           />
         </div>
 
@@ -165,7 +165,7 @@ const EnquiryForm = () => {
           <label className="block text-gray-700 text-sm font-medium mb-1">
             Interested For *
           </label>
-          <select className="w-full border border-gray-300 px-3 py-1 rounded-md focus:ring-red-600 focus:border-red-600">
+          <select className="w-full bg-white border border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500">
             <option>--SELECT--</option>
             <option>Product 1</option>
             <option>Product 2</option>
@@ -178,7 +178,7 @@ const EnquiryForm = () => {
             Comment
           </label>
           <textarea
-            className="w-full border border-gray-300 px-3 py-1 rounded-md focus:ring-red-600 focus:border-red-600"
+            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
             rows="2"
           ></textarea>
         </div>
@@ -186,10 +186,10 @@ const EnquiryForm = () => {
 
       {/* Save & Cancel Buttons */}
       <div className="mt-6 flex justify-center gap-4">
-        <button className="bg-red-800 text-white px-6 py-2 rounded-md shadow-md hover:bg-red-900 transition">
+        <button className="bg-red-800 text-white px-6 py-1.5 rounded-md shadow-md hover:bg-red-900 transition">
           Save
         </button>
-        <button className="bg-gray-500 text-white px-6 py-2 rounded-md shadow-md hover:bg-gray-600 transition">
+        <button className="bg-gray-500 text-white px-6 py-1.5 rounded-md shadow-md hover:bg-gray-600 transition">
           Cancel
         </button>
       </div>
