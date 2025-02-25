@@ -27,10 +27,10 @@ const User = () => {
   };
 
   return (
-    <div className=" bg-white p-6 rounded-lg shadow-lg">
-      <div className="flex justify-end space-x-4 mb-4">
+    <div className="  p-6 ">
+      <div className="flex justify-end space-x-4 mb-4 gap-3">
         <button
-          className={`px-4 py-2 rounded-md ${
+          className={`px-2 py-1.5 rounded-md ${
             selected === 1
               ? "bg-red-700 text-white"
               : "bg-gray-200 text-gray-700"
@@ -40,7 +40,7 @@ const User = () => {
           User Add
         </button>
         <button
-          className={`px-4 py-2 rounded-md ${
+          className={`px-2 py-1.5 rounded-md ${
             selected === 0
               ? "bg-red-700 text-white"
               : "bg-gray-200 text-gray-700"
@@ -55,7 +55,7 @@ const User = () => {
           <input
             type="text"
             placeholder="Search here.."
-            className="w-1/4 border bg-white border-gray-300 px-3 py-2 rounded-md focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+            className="w-1/4 border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -105,7 +105,7 @@ const User = () => {
           </div>
         </div>
       ) : (
-        <div className="mt-4 bg-gray-100 p-6 rounded-lg shadow-md">
+        <div className="mt-4  ">
           <form className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-gray-700 text-sm font-medium">
@@ -113,7 +113,7 @@ const User = () => {
               </label>
               <input
                 type="text"
-                className="w-full border bg-white border-gray-300 px-3 py-2 rounded-md focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+                className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
                 onChange={(e) => setDisplayName(e.target.value)}
               />
             </div>
@@ -123,7 +123,7 @@ const User = () => {
               </label>
               <input
                 type="text"
-                className="w-full border bg-white border-gray-300 px-3 py-2 rounded-md focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+                className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
                 onChange={(e) => setContactNo(e.target.value)}
               />
             </div>
@@ -133,7 +133,7 @@ const User = () => {
               </label>
               <input
                 type="text"
-                className="w-full border bg-white border-gray-300 px-3 py-2 rounded-md focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+                className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
                 onChange={(e) => setNameOrEmail(e.target.value)}
               />
             </div>
@@ -143,7 +143,7 @@ const User = () => {
               </label>
               <input
                 type="password"
-                className="w-full border bg-white border-gray-300 px-3 py-2 rounded-md focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+                className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
@@ -153,7 +153,7 @@ const User = () => {
               </label>
               <input
                 type="password"
-                className="w-full border bg-white border-gray-300 px-3 py-2 rounded-md focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+                className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
                 onChange={(e) => setCPassword(e.target.value)}
               />
             </div>

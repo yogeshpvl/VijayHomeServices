@@ -37,6 +37,10 @@ import CustomerLayout from "../pages/Customer/CustomerLayout";
 import Add from "../pages/Customer/Add";
 import Search from "../pages/Customer/Search";
 import EnquiryDetails from "../pages/Enquiry/EnquiryDetails";
+import DSRLayout from "../pages/DSR/DSRLayout";
+import DSRCalendar from "../pages/DSR/DSRCalendar";
+import DSRDetails from "../pages/DSR/DSRDetails";
+import DSRList from "../pages/DSR/DSRList";
 
 const AppContent = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
@@ -111,6 +115,14 @@ const AppContent = () => {
               <Route index element={<Search />} /> {/* Default to User */}
               <Route path="add" element={<Add />} />
               <Route path="search" element={<Search />} />
+            </Route>
+
+            {/* DSR Section with Nested Routes */}
+            <Route path="DSR" element={<DSRLayout />}>
+              <Route index element={<DSRCalendar />} />
+              <Route path="DSRCalendar" element={<DSRCalendar />} />
+              <Route path="DSRDetails/:id" element={<DSRDetails />} />
+              <Route path="DSRList/:date/:category" element={<DSRList />} />
             </Route>
           </Route>
         )}

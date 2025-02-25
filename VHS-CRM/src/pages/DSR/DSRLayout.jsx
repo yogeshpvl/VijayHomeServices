@@ -2,7 +2,7 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 import Navbar from "./Navbar";
 
-const MasterLayout = () => {
+const DSRLayout = () => {
   return (
     <div className="p-6">
       <Navbar />
@@ -17,4 +17,4 @@ const MasterLayout = () => {
   );
 };
 
-export default MasterLayout;
+export default DSRLayout;
