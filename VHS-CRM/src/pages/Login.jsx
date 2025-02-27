@@ -30,6 +30,7 @@ const Login = () => {
 
     try {
       const response = await apiService.login(credentials);
+      console.log("response", response);
       dispatch(login(response));
       navigate("/home");
     } catch (error) {

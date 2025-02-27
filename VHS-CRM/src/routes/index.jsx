@@ -41,6 +41,35 @@ import DSRLayout from "../pages/DSR/DSRLayout";
 import DSRCalendar from "../pages/DSR/DSRCalendar";
 import DSRDetails from "../pages/DSR/DSRDetails";
 import DSRList from "../pages/DSR/DSRList";
+import EFollwupLayout from "../pages/Enquiry_Followup/EFollwupLayout";
+import FollowupCalendar from "../pages/Enquiry_Followup/FollowupCalendar";
+import FollowupTable from "../pages/Enquiry_Followup/FollowupTable";
+import SurveyLayout from "../pages/Survey/SurveyLayout";
+import SurveyCalendar from "../pages/Survey/SurveyCalendar";
+import SurveyList from "../pages/Survey/SurveyList";
+import SurveyCancelled from "../pages/Survey/SurveyCancelled";
+import QuoteLayout from "../pages/Quote/QuoteLayout";
+import QuoteList from "../pages/Quote/QuoteList";
+import QuoteConfirmed from "../pages/Quote/QuoteConfirmed";
+import QuoteDetails from "../pages/Quote/QuoteDetails";
+import QuoteFLayout from "../pages/Quote_Followup/QuoteFLayout";
+import QuoteCalendar from "../pages/Quote_Followup/QuoteCalendar";
+import QuoteTable from "../pages/Quote_Followup/QuoteTable";
+import PRLayout from "../pages/Payment_Report/PRLayout";
+import PRCalendar from "../pages/Payment_Report/PRCalendar";
+import PRList from "../pages/Payment_Report/PRList";
+import PaymentCollect from "../pages/Payment_Report/PaymentCollect";
+import PRInvoice from "../pages/Payment_Report/PRInvoice";
+import B2BLayout from "../pages/B2B/B2BLayout";
+import B2BAdd from "../pages/B2B/B2BAdd";
+import B2BImport from "../pages/B2B/B2BImport";
+import B2BSearch from "../pages/B2B/B2BSearch";
+import B2BSendTemp from "../pages/B2B/B2BSendTemp";
+import B2BTodaySch from "../pages/B2B/B2BTodaySch";
+import EnquiryCreate from "../pages/Enquiry/EnquiryCreate";
+import TryToBook from "../pages/TryToBook/TryToBook";
+import ClosedProject from "../pages/Projects/CloseProject";
+import RunningProjects from "../pages/Projects/RunningProjects";
 
 const AppContent = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
@@ -80,6 +109,10 @@ const AppContent = () => {
         ) : (
           <Route path="/" element={<MainLayout />}>
             <Route path="home" element={<Home />} />
+            <Route path="EnquiryCreate" element={<EnquiryCreate />} />
+            <Route path="TryToBook" element={<TryToBook />} />
+            <Route path="CloseProject" element={<ClosedProject />} />
+            <Route path="runningproject" element={<RunningProjects />} />
 
             <Route path="*" element={<NotFound />} />
 
@@ -92,6 +125,14 @@ const AppContent = () => {
               <Route path="today" element={<Today />} />
               <Route path="search" element={<EnquirySearch />} />
               <Route path="enquiry-details/:id" element={<EnquiryDetails />} />
+            </Route>
+
+            {/* Suvey Section with Nested Routes */}
+            <Route path="Survey" element={<SurveyLayout />}>
+              <Route index element={<SurveyCalendar />} /> {/* Default route */}
+              <Route path="SurveyCalendar" element={<SurveyCalendar />} />
+              <Route path="SurveyList" element={<SurveyList />} />
+              <Route path="SurveyCancelled" element={<SurveyCancelled />} />
             </Route>
 
             {/* Master Section with Nested Routes */}
@@ -123,6 +164,49 @@ const AppContent = () => {
               <Route path="DSRCalendar" element={<DSRCalendar />} />
               <Route path="DSRDetails/:id" element={<DSRDetails />} />
               <Route path="DSRList/:date/:category" element={<DSRList />} />
+            </Route>
+
+            {/* Payment reports Section with Nested Routes */}
+            <Route path="payment-reports" element={<PRLayout />}>
+              <Route index element={<PRCalendar />} />
+              <Route path="PRCalendar" element={<PRCalendar />} />
+              <Route path="PaymentCollect" element={<PaymentCollect />} />
+              <Route path="PRInvoice" element={<PRInvoice />} />
+
+              <Route path="PRList" element={<PRList />} />
+            </Route>
+
+            {/* EnquiryFollowup Section with Nested Routes */}
+            <Route path="EnquiryFollowup" element={<EFollwupLayout />}>
+              <Route index element={<FollowupCalendar />} />
+              <Route path="FollowupCalendar" element={<FollowupCalendar />} />
+              <Route path="FollowupTable/:date" element={<FollowupTable />} />
+              <Route path="Today" element={<Today />} />
+            </Route>
+
+            {/* Quote Section with Nested Routes */}
+            <Route path="Quote" element={<QuoteLayout />}>
+              <Route index element={<QuoteList />} />
+              <Route path="QuoteList" element={<QuoteList />} />
+              <Route path="QuoteConfirmed" element={<QuoteConfirmed />} />
+              <Route path="QuoteDetails" element={<QuoteDetails />} />
+            </Route>
+
+            {/* Quote Section with Nested Routes */}
+            <Route path="QuoteFollowup" element={<QuoteFLayout />}>
+              <Route index element={<QuoteCalendar />} />
+              <Route path="QuoteCalendar" element={<QuoteCalendar />} />
+              <Route path="QuoteTable" element={<QuoteTable />} />
+            </Route>
+
+            {/* B2B Section with Nested Routes */}
+            <Route path="B2B" element={<B2BLayout />}>
+              <Route index element={<B2BAdd />} />
+              <Route path="B2BAdd" element={<B2BAdd />} />
+              <Route path="B2BImport" element={<B2BImport />} />
+              <Route path="B2BSearch" element={<B2BSearch />} />
+              <Route path="B2BSendTemp" element={<B2BSendTemp />} />
+              <Route path="B2BTodaySch" element={<B2BTodaySch />} />
             </Route>
           </Route>
         )}

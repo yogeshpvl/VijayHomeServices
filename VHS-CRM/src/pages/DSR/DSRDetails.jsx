@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/Input";
 import Dropdown from "@/components/ui/Dropdown";
 import { Button } from "@/components/ui/Button";
-import { CalendarIcon, WhatsappIcon } from "lucide-react";
+// import { CalendarIcon, WhatsappIcon } from "lucide-react";
 
 const DSRDetails = () => {
   const [appointmentDate, setAppointmentDate] = useState("2025-02-27");
@@ -72,7 +72,7 @@ const DSRDetails = () => {
             <Input
               label="Contact 1"
               value="9500919034"
-              icon={<WhatsappIcon />}
+              // icon={<WhatsappIcon />}
               disabled
             />
             <Input label="Contact 2" placeholder="Contact 2" />

@@ -15,18 +15,18 @@ const sampleCategories = [
 
 const sampleEvents = [
   {
-    title: "DSR",
+    title: "Payments",
     start: new Date(2025, 1, 20, 10, 0),
     end: new Date(2025, 1, 20, 12, 0),
   },
   {
-    title: "DSR",
+    title: "Payments",
     start: new Date(2025, 1, 22, 14, 0),
     end: new Date(2025, 1, 22, 15, 0),
   },
 ];
 
-function DSRCalendar() {
+function PRCalendar() {
   const [category, setCategory] = useState("");
   const [totalCount, setTotalCount] = useState(sampleEvents.length);
   const navigate = useNavigate();
@@ -62,27 +62,6 @@ function DSRCalendar() {
   return (
     <div className="">
       <div className="">
-        <div className="bg-white shadow-lg rounded-2xl p-6 mb-4">
-          {/* <h2 className="text-2xl font-semibold mb-4">DSR Calendar</h2> */}
-          <form>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">Category</label>
-              <select
-                className="w-100 border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
-                onChange={(e) => setCategory(e.target.value)}
-                value={category}
-              >
-                <option value="">-select-</option>
-                {sampleCategories.map((cat, index) => (
-                  <option key={index} value={cat.name}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </form>
-        </div>
-
         <div className="bg-white shadow-lg rounded-2xl p-6">
           <Calendar
             localizer={localizer}
@@ -98,12 +77,12 @@ function DSRCalendar() {
           />
         </div>
 
-        <div className="bg-red-600 text-white text-center py-4 mt-6 rounded-lg">
-          <p className="text-xl font-bold">DSR - {totalCount}</p>
+        <div className="bg-red-800 text-white text-center py-4 mt-6 rounded-lg">
+          <p className="text-xl font-bold">Payment Reports - {totalCount}</p>
         </div>
       </div>
     </div>
   );
 }
 
-export default DSRCalendar;
+export default PRCalendar;

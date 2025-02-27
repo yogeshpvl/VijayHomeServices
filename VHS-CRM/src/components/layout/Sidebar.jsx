@@ -100,10 +100,10 @@ const Sidebar = () => {
 
         <MenuItem
           className={`pro-menu-item ${
-            activeTab === "/enquiryadd" ? "active" : ""
+            activeTab === "/EnquiryCreate" ? "active" : ""
           }`}
-          component={<NavLink to="/enquiryadd" />}
-          onClick={() => dispatch(setActiveTab("/enquiryadd"))}
+          component={<NavLink to="/EnquiryCreate" />}
+          onClick={() => dispatch(setActiveTab("/EnquiryCreate"))}
         >
           <FontAwesomeIcon icon={faUserPlus} className="menu-icon" />
           {!isSidebarCollapsed && (

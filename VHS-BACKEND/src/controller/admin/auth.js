@@ -43,11 +43,9 @@ class MasterAdmin {
         else if (existingUser.loginnameOrEmail === loginnameOrEmail)
           duplicateField = "Email/Login Name";
 
-        return res
-          .status(400)
-          .json({
-            error: `${duplicateField} already exists. Please use a different one.`,
-          });
+        return res.status(400).json({
+          error: `${duplicateField} already exists. Please use a different one.`,
+        });
       }
 
       // Hash password
@@ -69,11 +67,9 @@ class MasterAdmin {
       // Handle MongoDB unique constraint errors
       if (error.code === 11000) {
         let field = Object.keys(error.keyPattern)[0];
-        return res
-          .status(400)
-          .json({
-            error: `${field} already exists. Please use a different one.`,
-          });
+        return res.status(400).json({
+          error: `${field} already exists. Please use a different one.`,
+        });
       }
 
       return res.status(500).json({ error: "Internal server error" });
@@ -108,6 +104,7 @@ class MasterAdmin {
         process.env.JWT_SECRET,
         { expiresIn: "1h" } // Token expires in1 hr
       );
+      console.log("token--", token);
 
       return res.status(200).json({ success: "Login successful", token });
     } catch (error) {

@@ -15,18 +15,18 @@ const sampleCategories = [
 
 const sampleEvents = [
   {
-    title: "DSR",
+    title: "Survey",
     start: new Date(2025, 1, 20, 10, 0),
     end: new Date(2025, 1, 20, 12, 0),
   },
   {
-    title: "DSR",
+    title: "Survey",
     start: new Date(2025, 1, 22, 14, 0),
     end: new Date(2025, 1, 22, 15, 0),
   },
 ];
 
-function DSRCalendar() {
+function SurveyCalendar() {
   const [category, setCategory] = useState("");
   const [totalCount, setTotalCount] = useState(sampleEvents.length);
   const navigate = useNavigate();
@@ -43,7 +43,7 @@ function DSRCalendar() {
       return;
     }
 
-    const url = `/DSR/DSRList/${selectedDate}/${category}`;
+    const url = `/Survey/SurveyList/${selectedDate}/${category}`;
     window.open(url, "_blank");
   };
 
@@ -55,7 +55,7 @@ function DSRCalendar() {
       return;
     }
 
-    const url = `/DSR/DSRList/${selectedDate}/${category}`;
+    const url = `/Survey/SurveyList/${selectedDate}/${category}`;
     window.open(url, "_blank");
   };
 
@@ -99,11 +99,11 @@ function DSRCalendar() {
         </div>
 
         <div className="bg-red-600 text-white text-center py-4 mt-6 rounded-lg">
-          <p className="text-xl font-bold">DSR - {totalCount}</p>
+          <p className="text-xl font-bold">Survey - {totalCount}</p>
         </div>
       </div>
     </div>
   );
 }
 
-export default DSRCalendar;
+export default SurveyCalendar;

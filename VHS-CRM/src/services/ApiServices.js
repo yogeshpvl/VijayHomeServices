@@ -6,6 +6,7 @@ const apiService = {
   login: async (credentials) => {
     try {
       const { data } = await api.post(config.ADMIN_LOGIN, credentials);
+      console.log("datadata", data);
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       return data;
