@@ -76,7 +76,7 @@ const User = () => {
                     <td className="p-2 text-center">{index + 1}</td>
                     <td className="p-2">{row.displayname}</td>
                     <td className="p-2">{row.contactno}</td>
-                    <td className="p-2">{row.loginnameOrEmail}</td>
+                    <td className="p-2">{row.email}</td>
                     <td className="p-2 flex space-x-2 justify-center">
                       <button
                         className="text-yellow-500"

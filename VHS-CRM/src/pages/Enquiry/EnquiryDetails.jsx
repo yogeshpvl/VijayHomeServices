@@ -1,8 +1,45 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom"; // ✅ Extracts `enquiryId` from the URL
+import axios from "axios";
 
 const EnquiryDetail = () => {
+  const { id } = useParams(); // ✅ Extract Enquiry ID from URL
+  const [enquiry, setEnquiry] = useState(null);
+  const [followUps, setFollowUps] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // ✅ Fetch Enquiry Details & Follow-Up Data
+  useEffect(() => {
+    const fetchEnquiryDetails = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(
+          `http://localhost:5000/api/enquiries/${id}`
+        );
+        setEnquiry(response.data.data); // ✅ Set enquiry details
+
+        // ✅ Fetch follow-up details if they exist
+        // const followUpResponse = await axios.get(
+        //   `http://localhost:5000/api/enquiries/${id}/follow-ups`
+        // );
+        setFollowUps([]);
+      } catch (err) {
+        setError("Failed to fetch enquiry details.");
+        console.error("Error fetching enquiry:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEnquiryDetails();
+  }, [id]);
+
+  if (loading) return <p className="text-center text-gray-700">Loading...</p>;
+  if (error) return <p className="text-center text-red-500">{error}</p>;
+
   return (
-    <div className=" min-h-screen  grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
       {/* Left Section - Enquiry Details */}
       <div>
         <h2 className="text-lg font-semibold text-gray-800 mb-2">
@@ -14,25 +51,25 @@ const EnquiryDetail = () => {
           </div>
           <table className="w-full border-collapse border border-gray-300 text-sm">
             <tbody>
-              <DetailRow label="Enquiry ID" value="100501" />
-              <DetailRow label="Category" value="Pest Control" />
-              <DetailRow label="Enquiry Date" value="02-16-2025" />
-              <DetailRow label="Executive" value="Navya" />
-              <DetailRow label="Name" value="Sid" />
-              <DetailRow label="Contact 1" value="8618380332" isWhatsApp />
-              <DetailRow label="Contact 2" value="-" />
-              <DetailRow label="Email Id" value="-" />
+              <DetailRow label="Enquiry ID" value={enquiry.enquiryId} />
+              <DetailRow label="Category" value={enquiry.category} />
+              <DetailRow label="Enquiry Date" value={enquiry.date} />
+              <DetailRow label="Executive" value={enquiry.executive} />
+              <DetailRow label="Name" value={enquiry.name} />
+              <DetailRow label="Contact 1" value={enquiry.mobile} isWhatsApp />
+              <DetailRow label="Contact 2" value={enquiry.contact2 || "-"} />
+              <DetailRow label="Email Id" value={enquiry.email || "-"} />
+              <DetailRow label="Address" value={enquiry.address} />
+              <DetailRow label="Reference" value={enquiry.reference1 || "-"} />
               <DetailRow
-                label="Address"
-                value="22, Annasandrapalya Extension, Vinayaka Nagar, Vimanapura, Bengaluru, Karnataka 560017"
+                label="Reference 2"
+                value={enquiry.reference2 || "-"}
               />
-              <DetailRow label="Reference" value="Customer Care" />
-              <DetailRow label="Reference 2" value="-" />
               <DetailRow
                 label="Interested For"
-                value="Cockroach Pest Control"
+                value={enquiry.interested_for}
               />
-              <DetailRow label="Comment" value="-" />
+              <DetailRow label="Comment" value={enquiry.comment || "-"} />
             </tbody>
           </table>
         </div>
@@ -56,30 +93,40 @@ const EnquiryDetail = () => {
             </tr>
           </thead>
           <tbody>
-            <tr className="border border-gray-300  text-center">
-              <td className="p-2">1</td>
-              <td className="p-2">Sun, Feb 16, 2025 10:18 AM</td>
-              <td className="p-2">Navya</td>
-              <td className="p-2 text-green-600">Confirmed</td>
-              <td className="p-2">Cockroach Pest Control</td>
-              <td className="p-2 font-semibold">₹999</td>
-              <td className="p-2 text-red-500">00/00/0000</td>
-            </tr>
+            {followUps.length > 0 ? (
+              followUps.map((followUp, index) => (
+                <tr
+                  key={followUp.id}
+                  className="border border-gray-300 text-center"
+                >
+                  <td className="p-2">{index + 1}</td>
+                  <td className="p-2">{followUp.date}</td>
+                  <td className="p-2">{followUp.staff}</td>
+                  <td
+                    className={`p-2 ${
+                      followUp.response === "Confirmed"
+                        ? "text-green-600"
+                        : "text-red-500"
+                    }`}
+                  >
+                    {followUp.response}
+                  </td>
+                  <td className="p-2">{followUp.description}</td>
+                  <td className="p-2 font-semibold">₹{followUp.value}</td>
+                  <td className="p-2 text-red-500">
+                    {followUp.nextFollowUpDate || "-"}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="7" className="p-4 text-center text-gray-600">
+                  No follow-up records found
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
-
-        <div className="mt-4 bg-gray-100 p-4 rounded-lg shadow-md">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InputField label="Staff Name" value="Pankaj" disabled />
-            <InputField
-              label="Follow-Up Date"
-              value="Sun, Feb 16, 2025 10:26 AM"
-              disabled
-            />
-            <TextArea label="Description" required />
-            <SelectField label="Response" required />
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -92,43 +139,6 @@ const DetailRow = ({ label, value, isWhatsApp }) => (
       {value} {isWhatsApp && <span className="ml-2">📱</span>}
     </td>
   </tr>
-);
-
-const InputField = ({ label, value, disabled }) => (
-  <div>
-    <label className="block text-gray-700 text-sm font-medium mb-1">
-      {label}
-    </label>
-    <input
-      type="text"
-      value={value}
-      disabled={disabled}
-      className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
-    />
-  </div>
-);
-
-const TextArea = ({ label, required }) => (
-  <div>
-    <label className="block text-gray-700 text-sm font-medium mb-1">
-      {label} {required && <span className="text-red-500">*</span>}
-    </label>
-    <textarea className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"></textarea>
-  </div>
-);
-
-const SelectField = ({ label, required }) => (
-  <div>
-    <label className="block text-gray-700 text-sm font-medium mb-1">
-      {label} {required && <span className="text-red-500">*</span>}
-    </label>
-    <select className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500">
-      <option value="">-- Select --</option>
-      <option value="Confirmed">Confirmed</option>
-      <option value="Pending">Pending</option>
-      <option value="Cancelled">Cancelled</option>
-    </select>
-  </div>
 );
 
 export default EnquiryDetail;

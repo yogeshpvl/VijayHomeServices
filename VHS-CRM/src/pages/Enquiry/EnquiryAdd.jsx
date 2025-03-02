@@ -1,23 +1,92 @@
-import React from "react";
-
+import React, { useState } from "react";
+import EnquiryService from "../../services/enquiryService";
+import moment from "moment";
+import { Input } from "../../components/ui/Input";
+import { toast } from "react-toastify";
 const EnquiryForm = () => {
+  const users = JSON.parse(localStorage.getItem("user"));
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    mobile: "",
+    contact2: "",
+    address: "",
+    city: "",
+    category: "",
+    reference1: "",
+    reference2: "",
+    reference3: "",
+    interested_for: "",
+    comment: "",
+    date: moment().format("YYYY-MM-DD"),
+    time: moment().format("LT"),
+    executive: users?.displayname,
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const handleChange = (e) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const response = await EnquiryService.createEnquiry(formData);
+      console.log("response", response);
+
+      if (response && response.success) {
+        // Assuming 201 means success
+        toast.success("✅ Enquiry saved successfully!");
+        setFormData({
+          name: "",
+          email: "",
+          mobile: "",
+          date: moment().format("YYYY-MM-DD"),
+          time: moment().format("LT"),
+          contact2: "",
+          address: "",
+          city: "",
+          category: "",
+          reference1: "",
+          reference2: "",
+          reference3: "",
+          interested_for: "",
+          comment: "",
+          executive: users?.displayname,
+        });
+      } else {
+        toast.error("❌ Failed to save enquiry. Please try again.");
+      }
+    } catch (error) {
+      toast.error(
+        "❌ Error saving enquiry. " + (error.response?.data?.message || "")
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className=" mx-auto ">
+    <div className="mx-auto p-6 bg-white shadow-md rounded-md">
       <h2 className="text-lg font-semibold text-gray-800 mb-6">New Enquiry</h2>
 
-      {/* Form Grid */}
-      <div className="grid grid-cols-3 gap-6">
-        {/* Enquiry ID */}
+      {message && <p className="text-center text-lg mb-4">{message}</p>}
+
+      <form onSubmit={handleSubmit} className="grid grid-cols-3 gap-6">
         <div>
           <label className="block text-gray-700 text-sm font-medium mb-1">
             Enquiry ID:
           </label>
-          <input
-            type="text"
-            value="99624"
-            disabled
-            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
-          />
+          <Input type="text" value="1" disabled className="bg-gray-200" />
         </div>
 
         {/* Enquiry Date */}
@@ -25,11 +94,11 @@ const EnquiryForm = () => {
           <label className="block text-gray-700 text-sm font-medium mb-1">
             Enquiry Date:
           </label>
-          <input
+          <Input
             type="text"
-            value="02-12-2025"
+            value={moment().format("YYYY-MM-DD")}
             disabled
-            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+            className="bg-gray-200"
           />
         </div>
 
@@ -38,44 +107,53 @@ const EnquiryForm = () => {
           <label className="block text-gray-700 text-sm font-medium mb-1">
             Executive *
           </label>
-          <input
+          <Input
             type="text"
-            value="Pankaj"
+            value={users?.displayname}
             disabled
-            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+            className="bg-gray-200"
           />
         </div>
-
         {/* Name */}
         <div>
           <label className="block text-gray-700 text-sm font-medium mb-1">
             Name *
           </label>
-          <input
+          <Input
             type="text"
-            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
           />
         </div>
 
-        {/* Email ID */}
+        {/* Email */}
         <div>
           <label className="block text-gray-700 text-sm font-medium mb-1">
-            Email ID *
+            Email *
           </label>
-          <input
+          <Input
             type="email"
-            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
           />
         </div>
 
-        {/* Contact 1 */}
+        {/* Mobile */}
         <div>
           <label className="block text-gray-700 text-sm font-medium mb-1">
-            Contact 1 *
+            Mobile *
           </label>
-          <input
+          <Input
             type="text"
-            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+            name="mobile"
+            value={formData.mobile}
+            onChange={handleChange}
+            required
+            maxLength={10}
           />
         </div>
 
@@ -84,9 +162,11 @@ const EnquiryForm = () => {
           <label className="block text-gray-700 text-sm font-medium mb-1">
             Contact 2
           </label>
-          <input
+          <Input
             type="text"
-            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+            name="contact2"
+            value={formData.contact2}
+            onChange={handleChange}
           />
         </div>
 
@@ -95,9 +175,11 @@ const EnquiryForm = () => {
           <label className="block text-gray-700 text-sm font-medium mb-1">
             Address
           </label>
-          <input
+          <Input
             type="text"
-            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+            name="address"
+            value={formData.address}
+            onChange={handleChange}
           />
         </div>
 
@@ -106,11 +188,17 @@ const EnquiryForm = () => {
           <label className="block text-gray-700 text-sm font-medium mb-1">
             City *
           </label>
-          <select className="w-full border bg-white  border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500">
-            <option>--Select--</option>
-            <option>Bangalore</option>
-            <option>Mumbai</option>
-            <option>Delhi</option>
+          <select
+            name="city"
+            value={formData.city}
+            onChange={handleChange}
+            required
+            className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
+          >
+            <option value="">--Select--</option>
+            <option value="Bangalore">Bangalore</option>
+            <option value="Mumbai">Mumbai</option>
+            <option value="Delhi">Delhi</option>
           </select>
         </div>
 
@@ -119,45 +207,17 @@ const EnquiryForm = () => {
           <label className="block text-gray-700 text-sm font-medium mb-1">
             Category *
           </label>
-          <select className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500">
-            <option>--Select--</option>
-            <option>Pest Control</option>
-            <option>Cleaning</option>
+          <select
+            name="category"
+            value={formData.category}
+            onChange={handleChange}
+            required
+            className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
+          >
+            <option value="">--Select--</option>
+            <option value="Pest Control">Pest Control</option>
+            <option value="Cleaning">Cleaning</option>
           </select>
-        </div>
-
-        {/* Reference */}
-        <div>
-          <label className="block text-gray-700 text-sm font-medium mb-1">
-            Reference *
-          </label>
-          <select className="w-full bg-white border border-gray-300 px-2 py-1.5 rounded-md focus:ring-red-600 focus:border-red-600">
-            <option>--Select--</option>
-            <option>Customer Care</option>
-            <option>Website</option>
-          </select>
-        </div>
-
-        {/* Reference 2 */}
-        <div>
-          <label className="block text-gray-700 text-sm font-medium mb-1">
-            Reference 2
-          </label>
-          <input
-            type="text"
-            className="w-full bg-white border border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
-          />
-        </div>
-
-        {/* Reference 3 */}
-        <div>
-          <label className="block text-gray-700 text-sm font-medium mb-1">
-            Reference 3
-          </label>
-          <input
-            type="text"
-            className="w-full bg-white border border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
-          />
         </div>
 
         {/* Interested For */}
@@ -165,34 +225,48 @@ const EnquiryForm = () => {
           <label className="block text-gray-700 text-sm font-medium mb-1">
             Interested For *
           </label>
-          <select className="w-full bg-white border border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500">
-            <option>--SELECT--</option>
-            <option>Product 1</option>
-            <option>Product 2</option>
-          </select>
+          <Input
+            type="text"
+            name="interested_for"
+            value={formData.interested_for}
+            onChange={handleChange}
+            required
+            className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
+          />
         </div>
 
         {/* Comment */}
-        <div className="col-span-3">
+        <div>
           <label className="block text-gray-700 text-sm font-medium mb-1">
             Comment
           </label>
           <textarea
-            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+            name="comment"
+            value={formData.comment}
+            onChange={handleChange}
             rows="2"
+            className="w-full border bg-white border-gray-300 px-3 py-1 focus:ring-blue-400 rounded-md"
           ></textarea>
         </div>
-      </div>
 
-      {/* Save & Cancel Buttons */}
-      <div className="mt-6 flex justify-center gap-4">
-        <button className="bg-red-800 text-white px-6 py-1.5 rounded-md shadow-md hover:bg-red-900 transition">
-          Save
-        </button>
-        <button className="bg-gray-500 text-white px-6 py-1.5 rounded-md shadow-md hover:bg-gray-600 transition">
-          Cancel
-        </button>
-      </div>
+        {/* Save & Cancel Buttons */}
+        <div className="col-span-3 flex justify-center gap-4">
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-red-800 text-white px-6 py-1.5 rounded-md shadow-md hover:bg-red-900 transition"
+          >
+            {loading ? "Saving..." : "Save"}
+          </button>
+          <button
+            type="button"
+            className="bg-gray-500 text-white px-6 py-1.5 rounded-md shadow-md hover:bg-gray-600 transition"
+            onClick={() => setFormData({})}
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

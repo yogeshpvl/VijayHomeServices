@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import axios from "axios";
+import EnquiryService from "../../services/enquiryService";
 
 const EnquirySearch = () => {
   const [filters, setFilters] = useState({
@@ -10,17 +12,52 @@ const EnquirySearch = () => {
     executive: "",
   });
 
+  const [enquiries, setEnquiries] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // ✅ Handle Input Changes
   const handleChange = (e) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
   };
 
-  const handleSearch = () => {
-    console.log("Searching with filters:", filters);
+  const handleSearch = async () => {
+    setLoading(true);
+    try {
+      const response = await EnquiryService.searchEnquiry(filters);
+
+      if (response && response.success && response.enquiries) {
+        setEnquiries(response.enquiries);
+      } else {
+        console.error(
+          "Error: Unexpected response format",
+          JSON.stringify(response, null, 2)
+        );
+        setEnquiries([]);
+      }
+    } catch (error) {
+      console.error("Error fetching enquiries:", error);
+      setEnquiries([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Handle Reset
+  const handleReset = () => {
+    setFilters({
+      name: "",
+      contact: "",
+      fromDate: "",
+      toDate: "",
+      city: "",
+      executive: "",
+    });
+    setEnquiries([]);
   };
 
   return (
-    <div className=" mx-auto">
-      <h2 className="text-lg font-semibold text-gray-300mb-6">
+    <div className="mx-auto">
+      <h2 className="text-lg font-semibold text-gray-700 mb-6">
         Enquiry Search :
       </h2>
 
@@ -36,7 +73,7 @@ const EnquirySearch = () => {
             name="name"
             value={filters.name}
             onChange={handleChange}
-            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:ring-2 focus:ring-blue-400"
           />
         </div>
 
@@ -50,7 +87,7 @@ const EnquirySearch = () => {
             name="fromDate"
             value={filters.fromDate}
             onChange={handleChange}
-            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:ring-2 focus:ring-blue-400"
           />
         </div>
 
@@ -64,7 +101,7 @@ const EnquirySearch = () => {
             name="toDate"
             value={filters.toDate}
             onChange={handleChange}
-            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:ring-2 focus:ring-blue-400"
           />
         </div>
 
@@ -78,7 +115,7 @@ const EnquirySearch = () => {
             name="contact"
             value={filters.contact}
             onChange={handleChange}
-            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:ring-2 focus:ring-blue-400"
           />
         </div>
 
@@ -91,7 +128,7 @@ const EnquirySearch = () => {
             name="city"
             value={filters.city}
             onChange={handleChange}
-            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:ring-2 focus:ring-blue-400"
           >
             <option value="">--select--</option>
             <option value="Bangalore">Bangalore</option>
@@ -109,7 +146,7 @@ const EnquirySearch = () => {
             name="executive"
             value={filters.executive}
             onChange={handleChange}
-            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+            className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:ring-2 focus:ring-blue-400"
           >
             <option value="">--select--</option>
             <option value="Pankaj">Pankaj</option>
@@ -123,30 +160,52 @@ const EnquirySearch = () => {
       <div className="mt-6 flex justify-center gap-4">
         <button
           onClick={handleSearch}
-          className="bg-red-800 text-white px-6 py-2 rounded-md shadow-md hover:bg-gray-300transition"
+          className="bg-red-800 text-white px-6 py-2 rounded-md shadow-md hover:bg-gray-600"
         >
           Search
         </button>
         <button
-          onClick={() =>
-            setFilters({
-              name: "",
-              contact: "",
-              fromDate: "",
-              toDate: "",
-              city: "",
-              executive: "",
-            })
-          }
-          className="bg-gray-500 text-white px-6 py-2 rounded-md shadow-md hover:bg-gray-600 transition"
+          onClick={handleReset}
+          className="bg-gray-500 text-white px-6 py-2 rounded-md shadow-md hover:bg-gray-600"
         >
           Cancel
         </button>
       </div>
 
-      {/* Placeholder for Results */}
-      <div className="mt-6 text-center text-gray-700 text-sm">
-        There are no records to display
+      {/* Results Table */}
+      <div className="mt-6">
+        {loading ? (
+          <p className="text-center text-gray-700">Loading...</p>
+        ) : enquiries.length > 0 ? (
+          <table className="min-w-full bg-white border border-gray-300 mt-4">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="border px-4 py-2">Enquiry ID</th>
+                <th className="border px-4 py-2">Date</th>
+                <th className="border px-4 py-2">Time</th>
+                <th className="border px-4 py-2">Executive</th>
+                <th className="border px-4 py-2">Name</th>
+                <th className="border px-4 py-2">Mobile</th>
+                <th className="border px-4 py-2">City</th>
+              </tr>
+            </thead>
+            <tbody>
+              {enquiries.map((enquiry) => (
+                <tr key={enquiry.enquiryId} className="text-center">
+                  <td className="border px-4 py-2">{enquiry.enquiryId}</td>
+                  <td className="border px-4 py-2">{enquiry.date}</td>
+                  <td className="border px-4 py-2">{enquiry.time}</td>
+                  <td className="border px-4 py-2">{enquiry.executive}</td>
+                  <td className="border px-4 py-2">{enquiry.name}</td>
+                  <td className="border px-4 py-2">{enquiry.mobile}</td>
+                  <td className="border px-4 py-2">{enquiry.city}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="text-center text-gray-700 mt-4">No records found</p>
+        )}
       </div>
     </div>
   );

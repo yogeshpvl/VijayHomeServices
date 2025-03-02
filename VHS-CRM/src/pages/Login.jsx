@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { login } from "../store/authSlice";
 import { useNavigate } from "react-router-dom";
-import apiService from "../services/ApiServices";
+import authService from "../services/authService";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -10,7 +10,7 @@ const Login = () => {
 
   // State for inputs
   const [credentials, setCredentials] = useState({
-    loginnameOrEmail: "",
+    email: "",
     password: "",
   });
 
@@ -23,13 +23,13 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault(); // Prevents page reload
 
-    if (!credentials.loginnameOrEmail || !credentials.password) {
+    if (!credentials.email || !credentials.password) {
       alert("All fields are required!");
       return;
     }
 
     try {
-      const response = await apiService.login(credentials);
+      const response = await authService.login(credentials);
       console.log("response", response);
       dispatch(login(response));
       navigate("/home");
@@ -64,8 +64,8 @@ const Login = () => {
               <label className="block text-gray-700">Email/Username</label>
               <input
                 type="text"
-                name="loginnameOrEmail"
-                value={credentials.loginnameOrEmail}
+                name="email"
+                value={credentials.email}
                 onChange={handleChange}
                 placeholder="Enter your email or username"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"

@@ -1,25 +1,26 @@
 const jwt = require("jsonwebtoken");
-const dotenv = require("dotenv");
 
-dotenv.config();
+const protect = (req, res, next) => {
+  const token = req.header("Authorization")?.split(" ")[1];
 
-const authMiddleware = (req, res, next) => {
-  const token = req.header("Authorization");
-
-  if (!token) {
-    return res.status(403).json({ error: "Access denied. No token provided." });
-  }
+  if (!token)
+    return res.status(401).json({ message: "Not authorized, no token" });
 
   try {
-    const decoded = jwt.verify(
-      token.replace("Bearer ", ""),
-      process.env.JWT_SECRET
-    );
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
   } catch (error) {
-    return res.status(401).json({ error: "Invalid or expired token" });
+    res.status(401).json({ message: "Token is invalid" });
   }
 };
 
-module.exports = authMiddleware;
+// Role-Based Authorization Middleware
+const authorize = (role) => (req, res, next) => {
+  if (!req.user || !req.user.roles[role]) {
+    return res.status(403).json({ message: "Access denied" });
+  }
+  next();
+};
+
+module.exports = { protect, authorize };

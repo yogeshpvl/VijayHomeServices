@@ -1,12 +1,24 @@
 const express = require("express");
-const router = express.Router();
-const enquiryController = require("../../controller/Enquiry/enquiry");
+const {
+  EnquirySearch,
+  getTodaysEnquiries,
+  getExecutiveEnquiries,
+  getEnquiryCounts,
+  getEnquiryById,
+  createEnquiry,
+  updateEnquiry,
+  deleteEnquiry,
+} = require("../../controllers/enquiry/enquiry");
+const { protect, authorize } = require("../../middlewares/authMiddleware");
 
-// Define Enquiry Routes
-router.post("/add", enquiryController.addEnquiry);
-router.get("/getAll", enquiryController.getEnquiries);
-router.get("/get/:id", enquiryController.getEnquiryById);
-router.put("/edit/:id", enquiryController.editEnquiry);
-router.delete("/delete/:id", enquiryController.deleteEnquiry);
+const router = express.Router();
+
+router.get("/search", EnquirySearch);
+router.get("/today", protect, getTodaysEnquiries);
+router.get("/:enquiryId", getEnquiryById);
+
+router.post("/create", createEnquiry);
+router.put("/:id", updateEnquiry);
+router.delete("/:id", protect, deleteEnquiry);
 
 module.exports = router;

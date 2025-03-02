@@ -1,73 +1,84 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import TableReuse from "./TableReuse";
+import EnquiryService from "../../services/enquiryService";
 
 const EnquiryNew = () => {
-  const data = [
-    {
-      id: 1,
-      category: "Pest Control",
-      date: "02-08-2025 1:38:34 PM",
-      name: "Vedant",
-      contact: "9425746962",
-      address:
-        "Purva Heights Block A, Munivenkatppa Layout, Bilekahalli, Bengaluru, Karnataka 560076",
-      city: "Bangalore",
-      reference: "Customer Care",
-      interested: "Cockroach Pest Control",
-      executive: "Pooja",
-      response: "Confirmed",
-      description: "Kitchen PC",
-    },
-    {
-      id: 2,
-      category: "Cleaning",
-      date: "02-08-2025 1:30:39 PM",
-      name: "Ritu Maheshwari",
-      contact: "9741944403",
-      address: "0, Kudlu Gate, Bangalore",
-      city: "Bangalore",
-      reference: "Customer Care",
-      interested: "Vacant Flat Cleaning - Premium",
-      executive: "Siva N",
-      response: "Confirmed",
-      description: "Vacant Flat Cleaning - Premium",
-    },
-    {
-      id: 3,
-      category: "Cleaning",
-      date: "02-08-2025",
-      name: "Niks",
-      contact: "8511776300",
-      address: "T504 Ajmera Avenue, Neeladari Road, Electronic City Phase 1",
-      city: "Bangalore",
-      reference: "Customer",
-      interested: "Fabric Sofa",
-      executive: "Jayashree",
-      response: "Confirmed",
-      description: "Fabric Sofa",
-    },
-  ];
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [searchFilters, setSearchFilters] = useState({});
 
+  console.log("searchFilters", searchFilters);
+  useEffect(() => {
+    const fetchData = async () => {
+      // setLoading(true);
+      try {
+        const response = await EnquiryService.getAllEnquiries({
+          page,
+          limit,
+          search: JSON.stringify(searchFilters),
+        });
+        setData(response.enquiries || []);
+      } catch (err) {
+        //   setError("Failed to load enquiries");
+        // } finally {
+        //   setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [page, limit, searchFilters]);
+
+  // if (loading) return <p>Loading enquiries...</p>;
+  // if (error) return <p>Error: {error}</p>;
+
+  // ✅ Table column definitions
   const columns = [
-    { label: "#", accessor: "id" },
-    { label: "Category", accessor: "category", filter: "category" },
+    { label: "#", accessor: "enquiryId" },
+    {
+      label: "Category",
+      accessor: "category",
+      type: "dropdown",
+      options: ["Pest Control", "Clothing", "Furniture"],
+    },
     { label: "Date & Time", accessor: "date" },
-    { label: "Name", accessor: "name", filter: "name" },
-    { label: "Contact", accessor: "contact", filter: "contact" },
-    { label: "Address", accessor: "address", filter: "address" },
-    { label: "City", accessor: "city", filter: "city" },
-    { label: "Reference", accessor: "reference", filter: "reference" },
-    { label: "Interested", accessor: "interested", filter: "interested" },
-    { label: "Executive", accessor: "executive", filter: "executive" },
+    { label: "Name", accessor: "name" },
+    { label: "Contact", accessor: "mobile" },
+    { label: "Address", accessor: "address" },
+    {
+      label: "City",
+      accessor: "city",
+      type: "dropdown",
+      options: ["Bangalore", "Clothing", "Furniture"],
+    },
+    { label: "Reference", accessor: "reference" },
+    { label: "Interested", accessor: "interested" },
+    { label: "Executive", accessor: "executive" },
     { label: "Response", accessor: "response" },
-    { label: "Description", accessor: "description", filter: "description" },
+    { label: "Description", accessor: "description" },
   ];
 
   return (
-    <div className=" min-h-screen">
+    <div className="min-h-screen p-4">
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">Enquiry List</h2>
+
+      {/* {loading ? (
+        <p className="text-center text-gray-600">Loading enquiries...</p>
+      ) : error ? (
+        <p className="text-center text-red-500">{error}</p>
+      ) : ( */}
       <div className="overflow-x-auto bg-white shadow-lg rounded-lg">
-        <TableReuse data={data} columns={columns} itemsPerPage={5} />
+        <TableReuse
+          data={data}
+          columns={columns}
+          itemsPerPage={limit}
+          onFilterChange={setSearchFilters}
+          onPageChange={setPage}
+        />
       </div>
+      {/* )} */}
     </div>
   );
 };
