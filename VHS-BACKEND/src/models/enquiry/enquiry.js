@@ -71,7 +71,7 @@ const Enquiry = sequelize.define(
     },
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt
+    timestamps: true,
     tableName: "enquiries",
   }
 );

@@ -1,29 +1,27 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../../config/database");
 
-const Category = sequelize.define(
-  "Category",
+const Response = sequelize.define(
+  "Response",
   {
-    category_id: {
+    response_id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
-    category_name: {
+    response_name: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
     },
-    category_order: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
+    template: {
+      type: DataTypes.TEXT,
     },
   },
   {
-    timestamps: false,
-    tableName: "categories",
+    timestamps: false, // ✅ Disables createdAt and updatedAt
+    tableName: "responses", // ✅ Ensures correct table name
   }
 );
 
-module.exports = Category;
+module.exports = Response;
