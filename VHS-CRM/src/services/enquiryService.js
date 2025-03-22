@@ -5,7 +5,7 @@ import { showLoader, hideLoader } from "../store/loaderSlice";
 // ✅ Helper function to handle API requests
 const handleRequest = async (requestFn) => {
   try {
-    store.dispatch(showLoader()); // Show Loader before request
+    store.dispatch(showLoader());
     const response = await requestFn();
     return response.data;
   } catch (error) {
@@ -15,7 +15,7 @@ const handleRequest = async (requestFn) => {
       message: error?.response?.data?.message || "Something went wrong",
     };
   } finally {
-    store.dispatch(hideLoader()); // Hide Loader after request
+    store.dispatch(hideLoader());
   }
 };
 
@@ -51,6 +51,12 @@ const EnquiryService = {
   // ✅ Search Enquiries with Filters (Fixed)
   searchEnquiry: (filters) =>
     handleRequest(() => api.get(`/enquiries/search`, { params: filters })),
+
+  //enquiry follwups
+
+  // ✅ Fetch a single enquiry by ID
+  getEnquiryFollowupsById: (id) =>
+    handleRequest(() => api.get(`/followups/enquiry/${id}`)),
 };
 
 export default EnquiryService;

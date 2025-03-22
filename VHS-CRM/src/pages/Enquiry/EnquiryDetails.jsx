@@ -1,45 +1,143 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom"; // ✅ Extracts `enquiryId` from the URL
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { Input } from "../../components/ui/Input";
+import moment from "moment";
+import apiService from "../../services/ApiServices";
+import EnquiryService from "../../services/enquiryService";
+import { Select } from "../../components/ui/Select";
+import { Button } from "../../components/ui/Button";
+import { toast } from "react-toastify";
 
 const EnquiryDetail = () => {
-  const { id } = useParams(); // ✅ Extract Enquiry ID from URL
+  const users = JSON.parse(localStorage.getItem("user"));
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [enquiry, setEnquiry] = useState(null);
   const [followUps, setFollowUps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [responses, setResponses] = useState([]);
 
-  // ✅ Fetch Enquiry Details & Follow-Up Data
   useEffect(() => {
-    const fetchEnquiryDetails = async () => {
+    if (enquiry) {
+      setFormData((prevData) => ({
+        ...prevData,
+        category: enquiry.category || "",
+        city: enquiry.city || "",
+      }));
+    }
+  }, [enquiry]);
+  console.log("enquiry?.category", enquiry?.category);
+
+  const [formData, setFormData] = useState({
+    enquiryId: id,
+    staff: users.displayname,
+    response: "",
+    description: "",
+    colorCode: "",
+    date: "",
+    category: "", // Default empty string
+    city: "", // Default empty string
+  });
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  console.log("formData", formData);
+
+  useEffect(() => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(
-          `http://localhost:5000/api/enquiries/${id}`
-        );
-        setEnquiry(response.data.data); // ✅ Set enquiry details
+        const enquiryResponse = await EnquiryService.getEnquiryById(id);
+        setEnquiry(enquiryResponse.data); // enquiry gets updated here
 
-        // ✅ Fetch follow-up details if they exist
-        // const followUpResponse = await axios.get(
-        //   `http://localhost:5000/api/enquiries/${id}/follow-ups`
-        // );
-        setFollowUps([]);
+        const responseData = await apiService.fetchResponseData();
+        setResponses(responseData);
       } catch (err) {
-        setError("Failed to fetch enquiry details.");
-        console.error("Error fetching enquiry:", err);
+        setError("Failed to fetch data.");
+        console.error("Error fetching data:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEnquiryDetails();
+    fetchData();
   }, [id]);
+
+  const fetchfollowupsData = async () => {
+    setLoading(true);
+    try {
+      // Fetch enquiry details
+      const enquiryResponse = await EnquiryService.getEnquiryFollowupsById(id);
+
+      setFollowUps(enquiryResponse.followups);
+    } catch (err) {
+      setError("Failed to fetch data.");
+      console.error("Error fetching data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchfollowupsData();
+  }, [id]);
+
+  const handleDelete = async () => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this enquiry?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await EnquiryService.deleteEnquiry(id);
+
+      alert("Enquiry deleted successfully!");
+      navigate("/enquiries");
+    } catch (error) {
+      console.error("Error deleting enquiry:", error);
+      alert("Failed to delete enquiry.");
+    }
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!enquiry.category || !enquiry.city) {
+      toast.error("Please add category and city ");
+      return;
+    }
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/api/followups",
+        formData
+      );
+      if (res.status === 201) {
+        fetchfollowupsData();
+        setFormData({
+          response: "",
+          description: "",
+          value: "",
+          color: "",
+          next_followup_date: "",
+        });
+      }
+    } catch (err) {
+      setError("Failed to create follow-up. Please try again.");
+      console.error(err);
+    }
+  };
 
   if (loading) return <p className="text-center text-gray-700">Loading...</p>;
   if (error) return <p className="text-center text-red-500">{error}</p>;
 
   return (
-    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+    <div className="min-h-screen bg-white grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
       {/* Left Section - Enquiry Details */}
       <div>
         <h2 className="text-lg font-semibold text-gray-800 mb-2">
@@ -47,7 +145,15 @@ const EnquiryDetail = () => {
         </h2>
         <div className="border border-gray-300 rounded-lg overflow-hidden">
           <div className="bg-gray-200 text-gray-700 text-sm px-4 py-2 font-semibold flex justify-between">
-            <span>Modify | Delete</span>
+            <span>
+              Modify |{" "}
+              <button
+                className="text-red-500 hover:underline"
+                onClick={handleDelete}
+              >
+                Delete
+              </button>
+            </span>
           </div>
           <table className="w-full border-collapse border border-gray-300 text-sm">
             <tbody>
@@ -76,10 +182,12 @@ const EnquiryDetail = () => {
       </div>
 
       {/* Right Section - Follow-Up Details */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-800 mb-2">
+      <div className="bg-white   p-6">
+        <h2 className="text-lg font-semibold text-gray-800 mb-3">
           Follow-Up Detail
         </h2>
+
+        {/* Follow-Up Table */}
         <table className="w-full mt-2 border border-gray-50 text-sm">
           <thead className="bg-gray-200">
             <tr className="border-b">
@@ -93,29 +201,29 @@ const EnquiryDetail = () => {
             </tr>
           </thead>
           <tbody>
-            {followUps.length > 0 ? (
+            {followUps?.length > 0 ? (
               followUps.map((followUp, index) => (
                 <tr
                   key={followUp.id}
                   className="border border-gray-300 text-center"
                 >
                   <td className="p-2">{index + 1}</td>
-                  <td className="p-2">{followUp.date}</td>
+                  <td className="p-2">
+                    {moment(followUp.date).format("YYYY-MM-DD")}
+                  </td>
                   <td className="p-2">{followUp.staff}</td>
                   <td
                     className={`p-2 ${
                       followUp.response === "Confirmed"
                         ? "text-green-600"
-                        : "text-red-500"
+                        : "text-black-500"
                     }`}
                   >
                     {followUp.response}
                   </td>
                   <td className="p-2">{followUp.description}</td>
                   <td className="p-2 font-semibold">₹{followUp.value}</td>
-                  <td className="p-2 text-red-500">
-                    {followUp.nextFollowUpDate || "-"}
-                  </td>
+                  <td className="p-2 ">{followUp.next_followup_date || "-"}</td>
                 </tr>
               ))
             ) : (
@@ -127,6 +235,122 @@ const EnquiryDetail = () => {
             )}
           </tbody>
         </table>
+
+        <div className="grid grid-cols-3 gap-3 mt-4">
+          {/* Staff Name */}
+          <div className="mt-4">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Staff Name
+            </label>
+            <Input
+              type="text"
+              value={users.displayname}
+              disabled
+              className="bg-gray-200 w-full p-2 rounded-md"
+            />
+          </div>
+
+          {/* Follow-up Date */}
+          <div className="mt-4">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Follow-up Date
+            </label>
+            <Input
+              type="text"
+              value={moment().format("YYYY-MM-DD")}
+              disabled
+              className="bg-gray-200 w-full p-2 rounded-md"
+            />
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Response *
+            </label>
+            <select
+              name="response"
+              value={formData.response}
+              onChange={handleChange}
+              required
+              className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
+            >
+              <option value="">--Select--</option>
+              {responses?.map((item, index) => (
+                <option value={item.response_name}>{item.response_name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {formData.response && (
+          <div className="w-50 mt-4">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Description *
+            </label>
+            <input
+              type="text"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              required
+              className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
+            />
+          </div>
+        )}
+
+        {(formData.response === "Survey" ||
+          formData.response === "Call Later" ||
+          formData.response === "Quote") && (
+          <div className=" w-50 mt-4">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Next Follow-up Date *
+            </label>
+            <input
+              type="date"
+              name="date"
+              value={formData.date}
+              onChange={handleChange}
+              className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
+            />
+          </div>
+        )}
+
+        {(formData.response === "Call Later" ||
+          formData.response === "Quote") && (
+          <div className="w-50 mt-4">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Color Code *
+            </label>
+            <select
+              name="colorCode"
+              value={formData.colorCode}
+              onChange={handleChange}
+              className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
+            >
+              <option value="">--Select--</option>
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Difficult">Difficult</option>
+            </select>
+          </div>
+        )}
+
+        {formData.response === "Confirmed" && (
+          <div className="w-50 mt-4">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Value *
+            </label>
+            <input
+              type="text"
+              name="value"
+              value={formData.value}
+              onChange={handleChange}
+              className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
+            />
+          </div>
+        )}
+
+        <Button children={"Save"} onClick={handleSubmit} />
       </div>
     </div>
   );

@@ -14,11 +14,6 @@ const Category = sequelize.define(
       allowNull: false,
       unique: true,
     },
-    category_order: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
-    },
   },
   {
     timestamps: false,

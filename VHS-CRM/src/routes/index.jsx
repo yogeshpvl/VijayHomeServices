@@ -5,6 +5,7 @@ import {
   Route,
   useLocation,
   useNavigate,
+  Navigate,
 } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { setLoading } from "../store/uiSlice";
@@ -70,6 +71,15 @@ import EnquiryCreate from "../pages/Enquiry/EnquiryCreate";
 import TryToBook from "../pages/TryToBook/TryToBook";
 import ClosedProject from "../pages/Projects/CloseProject";
 import RunningProjects from "../pages/Projects/RunningProjects";
+import ContentNav from "../pages/Master/ContentNav";
+import Region from "../pages/Master/Region";
+import Job from "../pages/Master/Job";
+import BankDetails from "../pages/Master/BankDetails";
+import QFooterImg from "../pages/Master/QFooterImg";
+import QHeaderImg from "../pages/Master/QHeaderImg";
+import TermsAndConditions from "../pages/Master/TermsAndConditions";
+import QuotationFormatContentLayout from "../pages/Master/QuotationFormatContentLayout";
+import TermsSection2 from "../pages/Master/TermsSection2";
 
 const AppContent = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
@@ -142,13 +152,29 @@ const AppContent = () => {
               <Route path="team" element={<Team />} />
               <Route path="category" element={<Category />} />
               <Route path="city" element={<City />} />
-              <Route path="material" element={<Material />} />
               <Route path="customer-type" element={<CustomerType />} />
               <Route path="response" element={<Response />} />
               <Route path="reference" element={<Reference />} />
               <Route path="whatsapp-template" element={<WhatsAppTemplate />} />
               <Route path="b2b-type" element={<B2BType />} />
               <Route path="quotation-format" element={<QuotationFormat />} />
+              <Route
+                path="quotation-format-content"
+                element={<QuotationFormatContentLayout />}
+              >
+                <Route index element={<Navigate to="region" />} />
+                <Route path="region" element={<Region />} />
+                <Route path="material" element={<Material />} />
+                <Route path="job" element={<Job />} />
+                <Route path="bank" element={<BankDetails />} />
+                <Route path="qFooterImg" element={<QFooterImg />} />
+                <Route path="qHeaderImg" element={<QHeaderImg />} />
+                <Route
+                  path="termsAndConditions"
+                  element={<TermsAndConditions />}
+                />
+                <Route path="termsAndConditions2" element={<TermsSection2 />} />
+              </Route>
             </Route>
 
             {/* Customer Section with Nested Routes */}

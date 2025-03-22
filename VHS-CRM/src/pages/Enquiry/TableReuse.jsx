@@ -40,8 +40,6 @@ const TableReuse = ({
     navigate(`/enquiry/enquiry-details/${id}`);
   };
 
-  console.log("datadatadatadata", data);
-
   return (
     <div className="overflow-x-auto bg-white shadow-lg rounded-lg">
       <table className="min-w-full border-collapse text-sm">

@@ -1,10 +1,16 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import EnquiryService from "../../services/enquiryService";
 import moment from "moment";
 import { Input } from "../../components/ui/Input";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+import apiService from "../../services/ApiServices";
+import axios from "axios";
+import { config } from "../../services/config";
+
 const EnquiryForm = () => {
   const users = JSON.parse(localStorage.getItem("user"));
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -23,10 +29,6 @@ const EnquiryForm = () => {
     time: moment().format("LT"),
     executive: users?.displayname,
   });
-
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -35,6 +37,9 @@ const EnquiryForm = () => {
     }));
   };
 
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -42,9 +47,9 @@ const EnquiryForm = () => {
 
     try {
       const response = await EnquiryService.createEnquiry(formData);
-      console.log("response", response);
 
       if (response && response.success) {
+        navigate(`/enquiry/enquiry-details/${response.data.enquiryId}`);
         // Assuming 201 means success
         toast.success("✅ Enquiry saved successfully!");
         setFormData({
@@ -75,6 +80,23 @@ const EnquiryForm = () => {
       setLoading(false);
     }
   };
+  const [EnquiryId, setEnquiryId] = useState();
+
+  useEffect(() => {
+    fetchLastEnquieyrId();
+  }, []);
+
+  const fetchLastEnquieyrId = async () => {
+    try {
+      const response = await axios.get(
+        `${config.API_BASE_URL}${config.LAST_ENQUIRY_ID}`
+      );
+      console.log("response", response.data.lastEnquiryId);
+      setEnquiryId(response.data.lastEnquiryId || 1);
+    } catch (error) {
+      console.error("Login Error:", error);
+    }
+  };
 
   return (
     <div className="mx-auto p-6 bg-white shadow-md rounded-md">
@@ -87,7 +109,12 @@ const EnquiryForm = () => {
           <label className="block text-gray-700 text-sm font-medium mb-1">
             Enquiry ID:
           </label>
-          <Input type="text" value="1" disabled className="bg-gray-200" />
+          <Input
+            type="text"
+            value={EnquiryId}
+            disabled
+            className="bg-gray-200"
+          />
         </div>
 
         {/* Enquiry Date */}
@@ -197,9 +224,9 @@ const EnquiryForm = () => {
             className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
           >
             <option value="">--Select--</option>
-            <option value="Bangalore">Bangalore</option>
-            <option value="Mumbai">Mumbai</option>
-            <option value="Delhi">Delhi</option>
+            {users?.city?.map((city, index) => (
+              <option value={city.name}>{city.name}</option>
+            ))}
           </select>
         </div>
 
@@ -216,8 +243,9 @@ const EnquiryForm = () => {
             className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
           >
             <option value="">--Select--</option>
-            <option value="Pest Control">Pest Control</option>
-            <option value="Cleaning">Cleaning</option>
+            {users?.category?.map((category, index) => (
+              <option value={category.name}>{category.name}</option>
+            ))}
           </select>
         </div>
 

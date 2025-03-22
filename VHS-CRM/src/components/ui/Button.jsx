@@ -1,5 +1,3 @@
-import React from "react";
-
 export const Button = ({
   variant = "default",
   children,
@@ -8,11 +6,11 @@ export const Button = ({
   ...props
 }) => {
   const baseStyles =
-    "px-4 py-2 rounded-md font-semibold transition duration-200 ";
+    "px-2 w-30 py-1 rounded-md font-semibold transition duration-200 cursor-pointer text-ms"; // Add cursor-pointer here
   const variants = {
-    default: "bg-blue-500 text-white hover:bg-blue-600",
+    default: "bg-red-800 text-white hover:bg-red-700 rounded-md shadow-md", // Reduced padding
     outline: "border border-gray-500 text-gray-700 hover:bg-gray-100",
-    cancel: "bg-red-500 text-white hover:bg-red-600",
+    cancel: "bg-grey-500 text-white hover:bg-red-600",
     success: "bg-green-500 text-white hover:bg-green-600",
     whatsapp:
       "bg-green-600 text-white flex items-center gap-2 hover:bg-green-700",

@@ -8,9 +8,9 @@ const User = sequelize.define("users", {
   email: { type: DataTypes.STRING, unique: true, allowNull: false },
   password: { type: DataTypes.STRING, allowNull: false },
   is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
-  roles: { type: DataTypes.JSONB, defaultValue: {} }, // Stores role-based permissions
-  category: { type: DataTypes.JSONB, defaultValue: [] }, // Stores category array
-  city: { type: DataTypes.JSONB, defaultValue: [] }, // Stores city array
+  roles: { type: DataTypes.JSONB, defaultValue: {} },
+  category: { type: DataTypes.JSONB, defaultValue: [] },
+  city: { type: DataTypes.JSONB, defaultValue: [] },
 });
 
 // Hash Password Before Saving

@@ -56,4 +56,82 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+// Get All Users
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.findAll();
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get User by ID
+const getUserById = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Delete User
+const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    await user.destroy();
+    res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Change Password
+const changePassword = async (req, res) => {
+  try {
+    const { userId, oldPassword, newPassword } = req.body;
+    const user = await User.findByPk(userId);
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const isMatch = await user.comparePassword(oldPassword);
+    if (!isMatch)
+      return res.status(401).json({ message: "Old password is incorrect" });
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: "Password updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Filter Users by Role, Category, or City
+const filterUsers = async (req, res) => {
+  try {
+    const { roles, category, city } = req.query;
+    const whereClause = {};
+    if (roles) whereClause.roles = roles;
+    if (category) whereClause.category = category;
+    if (city) whereClause.city = city;
+
+    const users = await User.findAll({ where: whereClause });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  getAllUsers,
+  getUserById,
+  deleteUser,
+  changePassword,
+  filterUsers,
+};

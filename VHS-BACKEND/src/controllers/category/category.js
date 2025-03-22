@@ -3,7 +3,7 @@ const { setCache, getCache, deleteCache } = require("../../config/redis");
 
 exports.createCategory = async (req, res) => {
   try {
-    const { category_name, category_order } = req.body;
+    const { category_name } = req.body;
 
     // ✅ Check if category name already exists
     const existingCategory = await Category.findOne({
@@ -13,16 +13,8 @@ exports.createCategory = async (req, res) => {
       return res.status(400).json({ error: "Category name already exists" });
     }
 
-    // ✅ Check if category order already exists
-    const existingOrder = await Category.findOne({
-      where: { category_order },
-    });
-    if (existingOrder) {
-      return res.status(400).json({ error: "Category order already exists" });
-    }
-
     // ✅ Create the category if no duplicates are found
-    const category = await Category.create({ category_name, category_order });
+    const category = await Category.create({ category_name });
 
     // ✅ Clear cache so new category is fetched in the next request
     await deleteCache("all_categories");
@@ -77,8 +69,9 @@ exports.getCategoryById = async (req, res) => {
 
 exports.updateCategory = async (req, res) => {
   try {
-    const { category_name, category_order } = req.body;
+    const { category_name } = req.body;
     const { id } = req.params;
+    console.log("category_name", category_name);
 
     // ✅ Check if category exists
     const category = await Category.findByPk(id);
@@ -86,13 +79,8 @@ exports.updateCategory = async (req, res) => {
       return res.status(404).json({ error: "Category not found" });
     }
 
-    // ✅ Ensure category_order is not null before updating
-    if (category_order === undefined || category_order === null) {
-      return res.status(400).json({ error: "category_order is required" });
-    }
-
     // ✅ Update category
-    await category.update({ category_name, category_order });
+    await category.update({ category_name });
 
     // ✅ Clear cache after updating
     await deleteCache("all_categories");

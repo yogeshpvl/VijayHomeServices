@@ -3,37 +3,67 @@ import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const localizer = momentLocalizer(moment);
 
-const sampleCategories = [
-  { name: "Business" },
-  { name: "Personal" },
-  { name: "Meetings" },
-  { name: "Events" },
-];
-
-const sampleEvents = [
-  {
-    title: "Survey",
-    start: new Date(2025, 1, 20, 10, 0),
-    end: new Date(2025, 1, 20, 12, 0),
-  },
-  {
-    title: "Survey",
-    start: new Date(2025, 1, 22, 14, 0),
-    end: new Date(2025, 1, 22, 15, 0),
-  },
-];
-
 function SurveyCalendar() {
+  const users = JSON.parse(localStorage.getItem("user"));
   const [category, setCategory] = useState("");
-  const [totalCount, setTotalCount] = useState(sampleEvents.length);
+  const [totalCount, setTotalCount] = useState(0); // Total follow-up count
+  const [events, setEvents] = useState([]);
   const navigate = useNavigate();
 
-  const handleViewChange = () => {};
+  // Handle category change and fetch follow-up data
+  const handleCategoryChange = async (e) => {
+    const selectedCategory = e.target.value;
+    setCategory(selectedCategory);
 
-  const handleRangeChange = () => {};
+    if (selectedCategory) {
+      // Get the first and last day of the current month
+      const from_date = moment().startOf("month").format("YYYY-MM-DD");
+      const end_date = moment().endOf("month").format("YYYY-MM-DD");
+
+      // Call API with category and date range
+      try {
+        const res = await axios.get(
+          "http://localhost:5000/api/followups/monthlyCounts",
+          {
+            params: {
+              category: selectedCategory,
+              from_date,
+              end_date,
+              response: "Survey",
+            },
+          }
+        );
+
+        console.log("API Response:", res.data);
+
+        // Extract follow-ups from API response
+        const followups = res.data.followups;
+
+        // If there are follow-ups, set the events and total count
+        if (followups && followups.length > 0) {
+          setTotalCount(followups[0].count); // Set the count of follow-ups
+
+          // Convert the follow-ups into events format for the calendar
+          const calendarEvents = followups.map((followup) => ({
+            title: `Survey: ${followup.count}`, // Title can include the count
+            start: moment(followup.next_followup_date).toDate(),
+            end: moment(followup.next_followup_date).add(1, "hour").toDate(), // You can adjust the end time as per your needs
+          }));
+
+          setEvents(calendarEvents); // Set the events for the calendar
+        } else {
+          setEvents([]); // No follow-ups found, clear events
+          setTotalCount(0); // Reset total count
+        }
+      } catch (error) {
+        console.error("Error fetching survey events", error);
+      }
+    }
+  };
 
   const handleSelectEvent = (event) => {
     const selectedDate = moment(event.start).format("YYYY-MM-DD");
@@ -60,22 +90,23 @@ function SurveyCalendar() {
   };
 
   return (
-    <div className="">
-      <div className="">
-        <div className="bg-white shadow-lg rounded-2xl p-6 mb-4">
-          {/* <h2 className="text-2xl font-semibold mb-4">DSR Calendar</h2> */}
+    <div>
+      <div>
+        <div className="bg-white shadow-lg rounded-2xl p-4 mb-2">
           <form>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">Category</label>
+            <div>
+              <label className="block text-gray-700 mb-2 text-base">
+                Category
+              </label>
               <select
-                className="w-100 border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
-                onChange={(e) => setCategory(e.target.value)}
+                className="w-100 text-sm border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+                onChange={handleCategoryChange}
                 value={category}
               >
-                <option value="">-select-</option>
-                {sampleCategories.map((cat, index) => (
-                  <option key={index} value={cat.name}>
-                    {cat.name}
+                <option value="">Select Category</option>
+                {users?.category?.map((category, index) => (
+                  <option key={index} value={category.name}>
+                    {category.name}
                   </option>
                 ))}
               </select>
@@ -86,20 +117,20 @@ function SurveyCalendar() {
         <div className="bg-white shadow-lg rounded-2xl p-6">
           <Calendar
             localizer={localizer}
-            events={sampleEvents}
-            onView={handleViewChange}
+            events={events} // Set events based on the API response
+            onView={() => {}}
             startAccessor="start"
             endAccessor="end"
             selectable
             onSelectEvent={handleSelectEvent}
-            onRangeChange={handleRangeChange}
             onSelectSlot={handleSelectSlot}
             style={{ height: 500 }}
           />
         </div>
 
         <div className="bg-red-600 text-white text-center py-4 mt-6 rounded-lg">
-          <p className="text-xl font-bold">Survey - {totalCount}</p>
+          <p className="text-xl font-bold">Survey - {totalCount}</p>{" "}
+          {/* Show the total count */}
         </div>
       </div>
     </div>

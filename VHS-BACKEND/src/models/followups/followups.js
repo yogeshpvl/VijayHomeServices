@@ -18,6 +18,17 @@ const Followup = sequelize.define(
         key: "enquiryId",
       },
     },
+    userid: {
+      type: DataTypes.INTEGER,
+    },
+    category: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    city: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     date: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
@@ -33,6 +44,9 @@ const Followup = sequelize.define(
     description: {
       type: DataTypes.TEXT,
     },
+    color: {
+      type: DataTypes.TEXT,
+    },
     value: {
       type: DataTypes.DECIMAL(10, 2),
       defaultValue: 0.0,
@@ -44,11 +58,14 @@ const Followup = sequelize.define(
   {
     timestamps: true,
     tableName: "followups",
+    indexes: [
+      { fields: ["enquiryId", "createdAt"], unique: false },
+      { fields: ["next_followup_date", "response"] },
+    ],
   }
 );
 
-// Define relationships
 Enquiry.hasMany(Followup, { foreignKey: "enquiryId", as: "followups" });
-Followup.belongsTo(Enquiry, { foreignKey: "enquiryId" });
+Followup.belongsTo(Enquiry, { foreignKey: "enquiryId", as: "Enquiry" });
 
 module.exports = Followup;

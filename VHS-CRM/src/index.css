@@ -23,3 +23,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 
+.ck-content ul,
+.ck-content ol {
+  padding-left: 1.5rem;
+  list-style: disc;
+}
+
+.ck-content ol {
+  list-style: decimal;
+}

@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ckeditor/ckeditor5-build-classic": "^36.0.1",
+    "@ckeditor/ckeditor5-react": "^5.1.0",
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-brands-svg-icons": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
@@ -25,9 +27,11 @@
     "react": "^19.0.0",
     "react-big-calendar": "^1.17.1",
     "react-dom": "^19.0.0",
+    "react-icons": "^5.5.0",
     "react-pro-sidebar": "^1.1.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.1.5",
+    "react-select": "^5.10.1",
     "react-toastify": "^11.0.5",
     "recharts": "^2.15.1",
     "redux-persist": "^6.0.0",

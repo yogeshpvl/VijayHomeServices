@@ -19,8 +19,8 @@ const Response = sequelize.define(
     },
   },
   {
-    timestamps: false, // ✅ Disables createdAt and updatedAt
-    tableName: "responses", // ✅ Ensures correct table name
+    timestamps: false,
+    tableName: "responses",
   }
 );
 

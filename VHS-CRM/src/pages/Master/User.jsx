@@ -19,15 +19,48 @@ const User = () => {
   }, []);
 
   const getuser = async () => {
-    let res = await axios.get("/master/getuser");
+    let res = await axios.get("http://localhost:5000/api/auth/users");
     if (res.status === 200) {
-      setUserdata(res.data?.masteruser);
-      setFilterData(res.data?.masteruser);
+      setUserdata(res.data);
+      setFilterData(res.data);
+    }
+  };
+
+  const registerUser = async () => {
+    if (password !== cpassword) {
+      alert("Passwords do not match");
+      return;
+    }
+    try {
+      const res = await axios.post("http://localhost:5000/api/auth/register", {
+        displayname,
+        contactno,
+        email: nameOrEmail,
+        password,
+      });
+      if (res.status === 201) {
+        alert("User registered successfully");
+        getuser();
+        setSelected(0);
+      }
+    } catch (error) {
+      console.error("Registration failed", error);
+      alert("Error registering user");
+    }
+  };
+
+  const deleteUser = async (id) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/auth/users/${id}`);
+      alert("User deleted successfully");
+      getuser();
+    } catch (error) {
+      console.error("Error deleting user", error);
     }
   };
 
   return (
-    <div className="  p-6 ">
+    <div className="p-6">
       <div className="flex justify-end space-x-4 mb-4 gap-3">
         <button
           className={`px-2 py-1.5 rounded-md ${
@@ -59,9 +92,9 @@ const User = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <div className="mt-4 border rounded-md overflow-hidden shadow-md">
-            <table className="w-full border-collapse text-sm">
-              <thead className="bg-gray-200 text-gray-700">
+          <div className="mt-4  rounded-md overflow-hidden shadow-md">
+            <table className="w-full border-collapse text-sm bg-white shadow-lg">
+              <thead className="bg-red-200 text-gray-700">
                 <tr>
                   <th className="p-2">Sl No</th>
                   <th className="p-2">Display Name</th>
@@ -72,11 +105,11 @@ const User = () => {
               </thead>
               <tbody>
                 {filterdata?.map((row, index) => (
-                  <tr key={row._id} className="border-b hover:bg-gray-100">
+                  <tr key={row._id} className="hover:bg-gray-00">
                     <td className="p-2 text-center">{index + 1}</td>
-                    <td className="p-2">{row.displayname}</td>
-                    <td className="p-2">{row.contactno}</td>
-                    <td className="p-2">{row.email}</td>
+                    <td className="p-2 text-center">{row.displayname}</td>
+                    <td className="p-2 text-center">{row.contactno}</td>
+                    <td className="p-2 text-center">{row.email}</td>
                     <td className="p-2 flex space-x-2 justify-center">
                       <button
                         className="text-yellow-500"
@@ -93,10 +126,11 @@ const User = () => {
                       </Link>
                       <button
                         className="text-red-500"
-                        onClick={() => deleteuser(row._id)}
+                        onClick={() => deleteUser(row._id)}
                       >
                         🗑
                       </button>
+                      <button className="text-green-500">👁️</button>
                     </td>
                   </tr>
                 ))}
@@ -105,7 +139,7 @@ const User = () => {
           </div>
         </div>
       ) : (
-        <div className="mt-4  ">
+        <div className="mt-4">
           <form className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-gray-700 text-sm font-medium">
@@ -113,7 +147,7 @@ const User = () => {
               </label>
               <input
                 type="text"
-                className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+                className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md"
                 onChange={(e) => setDisplayName(e.target.value)}
               />
             </div>
@@ -123,7 +157,7 @@ const User = () => {
               </label>
               <input
                 type="text"
-                className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+                className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md"
                 onChange={(e) => setContactNo(e.target.value)}
               />
             </div>
@@ -133,37 +167,9 @@ const User = () => {
               </label>
               <input
                 type="text"
-                className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
+                className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md"
                 onChange={(e) => setNameOrEmail(e.target.value)}
               />
-            </div>
-            <div>
-              <label className="block text-gray-700 text-sm font-medium">
-                Password
-              </label>
-              <input
-                type="password"
-                className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700 text-sm font-medium">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition placeholder-gray-500"
-                onChange={(e) => setCPassword(e.target.value)}
-              />
-            </div>
-            <div className="col-span-2 flex justify-center mt-4">
-              <button className="px-4 py-2 bg-red-700 text-white rounded-md shadow-md">
-                Save
-              </button>
-              <button className="ml-4 px-4 py-2 bg-gray-400 text-white rounded-md shadow-md">
-                Cancel
-              </button>
             </div>
           </form>
         </div>

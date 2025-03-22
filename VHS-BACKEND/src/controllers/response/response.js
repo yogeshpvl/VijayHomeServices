@@ -10,6 +10,18 @@ exports.getAllResponses = async (req, res) => {
   }
 };
 
+// // ✅ Fetch all response names only
+// exports.getAllResponses = async (req, res) => {
+//   try {
+//     const responses = await Response.findAll({
+//       attributes: ["response_name"], // Only fetch this column
+//     });
+//     res.json(responses);
+//   } catch (error) {
+//     res.status(500).json({ error: "Failed to fetch response names" });
+//   }
+// };
+
 // ✅ Get a single response by ID
 exports.getResponseById = async (req, res) => {
   try {
@@ -25,7 +37,6 @@ exports.getResponseById = async (req, res) => {
 exports.createResponse = async (req, res) => {
   try {
     const { response_name, template } = req.body;
-    console.log("Received Data:", req.body); // ✅ Debugging
 
     const newResponse = await Response.create({ response_name, template });
     res.status(201).json(newResponse);
@@ -41,7 +52,6 @@ exports.updateResponse = async (req, res) => {
     const { id } = req.params; // Get response ID from URL
     const { response_name, template } = req.body; // Get update fields
 
-    // Check if response exists
     const response = await Response.findByPk(id);
     if (!response) {
       return res.status(404).json({ error: "Response not found" });

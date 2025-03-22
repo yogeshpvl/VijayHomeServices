@@ -82,22 +82,19 @@ const getTodaysEnquiries = async (req, res) => {
 
     const offset = (page - 1) * limit;
 
-    // ✅ Ensure `search` is parsed correctly
     let searchFilters = {};
     if (search && typeof search === "string") {
       try {
-        searchFilters = JSON.parse(search); // Convert JSON string to an object
+        searchFilters = JSON.parse(search);
       } catch (err) {
         console.error("Invalid search query:", search);
       }
     }
 
-    // ✅ Adjusted Where Clause to match date stored as string
     const whereClause = {
-      date: today, // Now matching against a string
+      date: today,
     };
 
-    // ✅ Apply Search Filters if Available
     if (Object.keys(searchFilters).length > 0) {
       whereClause[Op.and] = [];
 
@@ -110,9 +107,6 @@ const getTodaysEnquiries = async (req, res) => {
       });
     }
 
-    console.log("Final Where Clause:", JSON.stringify(whereClause, null, 2));
-
-    // ✅ Fetch Enquiries with Pagination
     const { rows, count } = await Enquiry.findAndCountAll({
       where: whereClause,
       limit,
@@ -120,7 +114,6 @@ const getTodaysEnquiries = async (req, res) => {
       order: [[sortBy, sortOrder]],
     });
 
-    // ✅ Return Response
     res.status(200).json({
       enquiries: rows,
       totalRecords: count,
@@ -129,6 +122,31 @@ const getTodaysEnquiries = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+const getLastEnquiryId = async (req, res) => {
+  try {
+    // Fetch the latest enquiry ID
+    const latestEnquiry = await Enquiry.findOne({
+      order: [["enquiryId", "DESC"]], // ✅ Ensure ordering by integer column
+      attributes: ["enquiryId"], // ✅ Only fetch the enquiryId
+    });
+
+    // Ensure a valid response
+    const lastEnquiryId = latestEnquiry ? latestEnquiry.enquiryId : 1; // ✅ Return 1 if no data
+
+    res.status(200).json({
+      success: true,
+      lastEnquiryId,
+    });
+  } catch (error) {
+    console.error("Error fetching last enquiry ID:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
 
@@ -282,4 +300,5 @@ module.exports = {
   createEnquiry,
   updateEnquiry,
   deleteEnquiry,
+  getLastEnquiryId,
 };

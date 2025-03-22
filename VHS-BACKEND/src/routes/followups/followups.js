@@ -4,6 +4,12 @@ const followupController = require("../../controllers/followups/followups");
 
 // ✅ 1️⃣ Get Next Follow-up Date and Response-wise Follow-ups
 router.get("/next-followups", followupController.getNextFollowups);
+router.get("/last", followupController.getLatestFollowupsByDateAndResponse);
+router.get("/monthly", followupController.getMonthlyFollowupsByDateAndResponse);
+router.get(
+  "/monthlyCounts",
+  followupController.getMonthlyFollowupCountsByDateAndResponse
+);
 
 // ✅ 2️⃣ Get Follow-ups Response-wise
 router.get("/response/:response", followupController.getFollowupsByResponse);
