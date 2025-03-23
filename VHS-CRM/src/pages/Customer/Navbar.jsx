@@ -1,13 +1,20 @@
-import React from "react";
-import { NavLink } from "react-router-dom";
+import React, { useEffect } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 
 const Navbar = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (location.pathname === "/customer") {
+      navigate("/customer/search");
+    }
+  }, [location.pathname, navigate]);
   return (
     <div className="bg-white shadow-md rounded-sm p-4">
       <div className="flex  gap-3">
         {[
           { name: "Customer Add", path: "/customer/add" },
           { name: "Customer Search", path: "/customer/search" },
+          { name: "Customer list", path: "/customer/customerList" },
         ].map((item) => (
           <NavLink
             key={item.path}

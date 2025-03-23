@@ -34,6 +34,61 @@ const EnquiryService = {
       })
     ),
 
+  getNewEnquiries: ({
+    page = 1,
+    limit = 25,
+    search = "",
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  }) =>
+    handleRequest(() =>
+      api.get(`/enquiries/new-enquiry`, {
+        params: { page, limit, search, sortBy, sortOrder },
+      })
+    ),
+  //only reposne new
+  getNewResponseEnquiries: ({
+    page = 1,
+    limit = 25,
+    search = "",
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  }) =>
+    handleRequest(() =>
+      api.get(`/enquiries/new-response-enquiry`, {
+        params: { page, limit, search, sortBy, sortOrder },
+      })
+    ),
+  getCallLaterDateWiseFollowups: ({ page, limit, search, date, category }) =>
+    handleRequest(() =>
+      api.get(`/followups/datewise`, {
+        params: { page, limit, search, date, category },
+      })
+    ),
+
+  getCallLaterFollowups: ({
+    page = 1,
+    limit = 25,
+    search = "",
+    dateRange = "",
+    responseType,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  }) =>
+    handleRequest(() =>
+      api.get(`/followups/call-later`, {
+        params: {
+          page,
+          limit,
+          search,
+          dateRange,
+          responseType,
+          sortBy,
+          sortOrder,
+        },
+      })
+    ),
+
   // ✅ Fetch a single enquiry by ID
   getEnquiryById: (id) => handleRequest(() => api.get(`/enquiries/${id}`)),
 

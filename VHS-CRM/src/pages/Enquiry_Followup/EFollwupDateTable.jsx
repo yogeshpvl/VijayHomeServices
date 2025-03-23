@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import TableReuse from "./TableReuse";
 import EnquiryService from "../../services/enquiryService";
 
-const SurveyList = () => {
+const EFollwupDateTable = () => {
   const { date, category } = useParams();
   const [data, setData] = useState([]);
   const [page, setPage] = useState(1);
@@ -62,15 +62,12 @@ const SurveyList = () => {
       options: cityOptions,
     },
     { label: "Reference1", accessor: "reference1" },
-    { label: "Backofficer", accessor: "executive" },
-    { label: "Interested For", accessor: "interested_for" },
-    { label: "Executive", accessor: "Executive" },
-    { label: "Time", accessor: "appo_time" },
+    { label: "Reference2", accessor: "reference2" },
+    { label: "Foll Date", accessor: "followup_date" },
+    { label: "Staff", accessor: "followup_staff" },
+    { label: "Response", accessor: "followup_response" },
     { label: "Description", accessor: "followup_description" },
-    { label: "Comment ", accessor: "Comment" },
-    { label: "Type ", accessor: "Type" },
-    { label: "Reason for cancel ", accessor: "reason_for_cancel" },
-    { label: "Action", accessor: "Comment" },
+    { label: "Nxt Date", accessor: "next_followup_date" },
   ];
 
   return (
@@ -94,4 +91,4 @@ const SurveyList = () => {
   );
 };
 
-export default SurveyList;
+export default EFollwupDateTable;

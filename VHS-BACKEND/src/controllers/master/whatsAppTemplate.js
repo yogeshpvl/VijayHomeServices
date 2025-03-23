@@ -12,6 +12,42 @@ exports.getAll = async (req, res) => {
   }
 };
 
+// Get template by template name
+exports.findwithtemplatename = async (req, res) => {
+  try {
+    // Extract templateName from URL parameters
+    const { templateName } = req.params;
+    console.log("templateName", templateName);
+
+    // Fetch the template based on templateName
+    const template = await WhatsappTemplate.findOne({
+      where: { template_name: templateName },
+    });
+
+    // Handle case where template is not found
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        message: "Template not found",
+      });
+    }
+
+    // Return the template content
+    res.json({
+      success: true,
+      message: "Template fetched successfully",
+      content: template.content,
+    });
+  } catch (error) {
+    console.error("Error fetching template:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+
 // Create template
 exports.create = async (req, res) => {
   const { template_name, content } = req.body;

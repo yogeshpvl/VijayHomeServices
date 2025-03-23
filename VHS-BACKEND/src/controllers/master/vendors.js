@@ -1,3 +1,4 @@
+const { Op } = require("sequelize");
 const Vendor = require("../../models/master/vendors");
 
 exports.getAll = async (req, res) => {

@@ -4,36 +4,91 @@ import { config } from "../../services/config";
 import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
 import { toast } from "react-toastify";
-import { useLocation } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
-function Add() {
-  const { state } = useLocation();
-
-  // Example: state.name, state.mobile, etc.
-  console.log("Pre-filled enquiry data:", state);
+function CustomerEdit() {
+  const { id } = useParams(); // Fetching ID from URL
   const users = JSON.parse(localStorage.getItem("user"));
 
   const [customertypedata, setcustomertypedata] = useState([]);
   const [referecetypedata, setreferecetypedata] = useState([]);
 
   const [form, setForm] = useState({
-    customerName: state?.name || "",
-    contactPerson: state?.name || "", // Assuming contact person = name
-    mainContact: state?.mobile || "",
+    customerName: "",
+    contactPerson: "",
+    mainContact: "",
     alternateContact: "",
-    email: state?.email || "",
+    email: "",
     gst: "",
     rbhf: "",
     cnap: "",
-    lnf: state?.address || "",
+    lnf: "",
     mainArea: "",
-    city: state?.city || "",
+    city: "",
     pinCode: "",
     customerType: "",
     approach: "",
   });
 
   const [latestCardNo, setLatestCardNo] = useState(1);
+
+  // Fetch last card number
+  const fetchLastCardNo = async () => {
+    try {
+      const res = await axios.get(
+        `${config.API_BASE_URL}/customers/last-cardno`
+      );
+      setLatestCardNo((res.data.cardNo || 0) + 1);
+    } catch (err) {
+      console.error("CardNo fetch error", err);
+    }
+  };
+
+  // Get customer type and reference data
+  const getcustomertype = async () => {
+    const response = await fetch(`${config.API_BASE_URL}/customertype`);
+    const data = await response.json();
+    setcustomertypedata(data);
+  };
+
+  const getreferencetype = async () => {
+    const response = await fetch(`${config.API_BASE_URL}/reference`);
+    const data = await response.json();
+    setreferecetypedata(data);
+  };
+
+  // Fetch customer details by ID
+  const fetchCustomerDetails = async () => {
+    try {
+      const res = await axios.get(`${config.API_BASE_URL}/customers/${id}`);
+      const customer = res.data;
+      setForm({
+        customerName: customer.customerName || "",
+        contactPerson: customer.contactPerson || "",
+        mainContact: customer.mainContact || "",
+        alternateContact: customer.alternateContact || "",
+        email: customer.email || "",
+        gst: customer.gst || "",
+        rbhf: customer.rbhf || "",
+        cnap: customer.cnap || "",
+        lnf: customer.lnf || "",
+        mainArea: customer.mainArea || "",
+        city: customer.city || "",
+        pinCode: customer.pinCode || "",
+        customerType: customer.customerType || "",
+        approach: customer.approach || "",
+      });
+    } catch (err) {
+      console.error("Error fetching customer details:", err);
+    }
+  };
+
+  useEffect(() => {
+    getcustomertype();
+    getreferencetype();
+    fetchLastCardNo();
+    fetchCustomerDetails();
+  }, [id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -48,36 +103,8 @@ function Add() {
     setForm((prev) => ({ ...prev, [name]: formattedValue }));
   };
 
-  const fetchLastCardNo = async () => {
-    try {
-      const res = await axios.get(
-        `${config.API_BASE_URL}/customers/last-cardno`
-      );
-      setLatestCardNo((res.data.cardNo || 0) + 1);
-    } catch (err) {
-      console.error("CardNo fetch error", err);
-    }
-  };
-
-  const getcustomertype = async () => {
-    const response = await fetch(`${config.API_BASE_URL}/customertype`);
-    const data = await response.json();
-    setcustomertypedata(data);
-  };
-
-  const getreferencetype = async () => {
-    const response = await fetch(`${config.API_BASE_URL}/reference`);
-    const data = await response.json();
-    setreferecetypedata(data);
-  };
-
-  useEffect(() => {
-    getcustomertype();
-    getreferencetype();
-    fetchLastCardNo();
-  }, []);
-
-  const addCustomer = async () => {
+  // Update customer details
+  const updateCustomer = async () => {
     const required = [
       "customerName",
       "contactPerson",
@@ -111,33 +138,36 @@ function Add() {
     };
 
     try {
-      const res = await axios.post(
-        `${config.API_BASE_URL}/customers/create`,
+      const res = await axios.put(
+        `${config.API_BASE_URL}/customers/update/${id}`,
         cleanForm
       );
 
-      const customer = res.data?.user || res.data?.customer;
+      if (res.status === 200) {
+        const customer = res.data?.customer;
 
-      if (customer?.id) {
-        toast.success("Customer created ✅");
+        if (customer?.id) {
+          toast.success("Customer updated ✅");
 
-        const queryString = new URLSearchParams({
-          rowData: JSON.stringify(customer),
-        }).toString();
+          // Convert the customer object to a query string format
+          const queryString = new URLSearchParams({
+            rowData: JSON.stringify(customer),
+          }).toString();
 
-        window.open(
-          `/customer/customerDetails/${customer.id}?${queryString}`,
-          "_blank"
-        );
-
-        setForm({});
-        fetchLastCardNo();
+          // Open the customer details page with the customer data as a query string
+          window.open(
+            `/customer/customerDetails/${customer.id}?${queryString}`,
+            "_blank"
+          );
+        } else {
+          toast.error("Customer updated but no customer data found");
+        }
       } else {
-        toast.error("Customer created but no response data");
+        toast.error("Customer update failed or no response dataasas2112");
       }
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.error || "Error creating customer");
+      toast.error(err.response?.data?.error || "Error updating customer");
     }
   };
 
@@ -314,8 +344,8 @@ function Add() {
           <Button type="button" variant="outline">
             Cancel
           </Button>
-          <Button type="button" onClick={addCustomer}>
-            Save
+          <Button type="button" onClick={updateCustomer}>
+            Update
           </Button>
         </div>
       </form>
@@ -343,4 +373,4 @@ const TextAreaField = ({ label, name, value, onChange }) => (
   </div>
 );
 
-export default Add;
+export default CustomerEdit;

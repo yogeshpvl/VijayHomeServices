@@ -26,9 +26,6 @@ const Enquiry = sequelize.define(
     email: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        isEmail: true,
-      },
     },
     mobile: {
       type: DataTypes.STRING,

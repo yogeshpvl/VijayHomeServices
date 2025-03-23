@@ -9,6 +9,8 @@ const {
   updateEnquiry,
   deleteEnquiry,
   getLastEnquiryId,
+  getNewEnquiries,
+  getOnlyResponseNewEnquiries,
 } = require("../../controllers/enquiry/enquiry");
 const { protect, authorize } = require("../../middlewares/authMiddleware");
 
@@ -18,6 +20,8 @@ const router = express.Router();
 router.get("/search", EnquirySearch);
 router.get("/today", protect, getTodaysEnquiries);
 router.get("/last-enquiry", getLastEnquiryId);
+router.get("/new-enquiry", getNewEnquiries);
+router.get("/new-response-enquiry", getOnlyResponseNewEnquiries);
 
 router.get("/:enquiryId", getEnquiryById);
 

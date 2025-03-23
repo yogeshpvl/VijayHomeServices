@@ -1,7 +1,8 @@
 const Enquiry = require("../../models/enquiry/enquiry");
 const Followup = require("../../models/followups/followups");
-const { Op, Sequelize } = require("sequelize");
-const db = require("../../config/database"); // Import your Sequelize instance
+const { Op, Sequelize, QueryTypes } = require("sequelize");
+const sequelize = require("../../config/database");
+const moment = require("moment");
 
 exports.getLatestFollowupsByDateAndResponse = async (req, res) => {
   try {
@@ -83,13 +84,26 @@ exports.getMonthlyFollowupsByDateAndResponse = async (req, res) => {
 
 exports.getMonthlyFollowupCountsByDateAndResponse = async (req, res) => {
   try {
-    const { from_date, end_date, response } = req.query;
+    const { from_date, end_date, response, category } = req.query;
+
+    console.log(
+      "from_date, end_date, response, category",
+      from_date,
+      end_date,
+      response,
+      category
+    );
 
     if (!from_date || !end_date || !response) {
-      return res
-        .status(400)
-        .json({ message: "from_date, end_date, and response are required" });
+      return res.status(400).json({
+        message: "from_date, end_date, and response are required",
+      });
     }
+
+    // Add category filter conditionally
+    const categoryFilter = category
+      ? `AND LOWER(e."category") = LOWER(:category)`
+      : "";
 
     const query = `
       SELECT f."next_followup_date", COUNT(*) as count
@@ -102,20 +116,33 @@ exports.getMonthlyFollowupCountsByDateAndResponse = async (req, res) => {
       ) latest 
       ON f."enquiryId" = latest."enquiryId" 
       AND f."createdAt" = latest.max_createdAt
-      WHERE f."response" = :response 
+      INNER JOIN "enquiries" e ON f."enquiryId" = e."enquiryId"
+      WHERE f."response" = :response
+      ${categoryFilter}
       GROUP BY f."next_followup_date"
       ORDER BY f."next_followup_date" ASC;
     `;
 
+    const replacements = {
+      from_date,
+      end_date,
+      response,
+    };
+
+    if (category) {
+      replacements.category = category;
+    }
+
     const followupCounts = await Followup.sequelize.query(query, {
-      replacements: { from_date, end_date, response },
+      replacements,
       type: Sequelize.QueryTypes.SELECT,
     });
 
     if (!followupCounts.length) {
-      return res
-        .status(404)
-        .json({ message: "No follow-ups found for the given period" });
+      return res.json({
+        followups: [],
+        message: "No follow-ups found for the given period and filters",
+      });
     }
 
     return res.json({ followups: followupCounts });
@@ -125,6 +152,81 @@ exports.getMonthlyFollowupCountsByDateAndResponse = async (req, res) => {
   }
 };
 
+exports.getCallLaterDateWiseFollowups = async (req, res) => {
+  try {
+    const { page = 1, limit = 25, search = "{}", date, category } = req.query;
+
+    const offset = (page - 1) * limit;
+    const filters = JSON.parse(search);
+
+    if (!date) {
+      return res
+        .status(400)
+        .json({ message: "❌ 'date' parameter is required" });
+    }
+
+    let filterConditions = ``;
+    if (category) {
+      filterConditions += ` AND LOWER(e."category") = LOWER(:category)`;
+    }
+
+    // Search filters
+    let searchQuery = "";
+    if (filters.name) {
+      searchQuery += ` AND LOWER(e."name") LIKE LOWER('%${filters.name}%')`;
+    }
+    if (filters.mobile) {
+      searchQuery += ` AND e."mobile" LIKE '%${filters.mobile}%'`;
+    }
+    if (filters.city) {
+      searchQuery += ` AND LOWER(e."city") LIKE LOWER('%${filters.city}%')`;
+    }
+
+    const result = await sequelize.query(
+      `
+      SELECT 
+        e.*,
+        f.response AS followup_response,
+        f.description AS followup_description,
+        f.date AS followup_date,
+        f.next_followup_date,
+        f.staff AS followup_staff,
+        f."createdAt" AS followup_createdAt
+      FROM enquiries e
+      JOIN (
+        SELECT f1.*
+        FROM followups f1
+        INNER JOIN (
+          SELECT "enquiryId", MAX("createdAt") AS max_created
+          FROM followups
+          WHERE response = 'Call Later'
+          GROUP BY "enquiryId"
+        ) f2 ON f1."enquiryId" = f2."enquiryId" AND f1."createdAt" = f2.max_created
+        WHERE f1."next_followup_date" = :date
+      ) f ON f."enquiryId" = e."enquiryId"
+      WHERE 1=1
+      ${filterConditions}
+      ${searchQuery}
+      ORDER BY f."createdAt" DESC
+      LIMIT :limit OFFSET :offset
+      `,
+      {
+        replacements: {
+          limit,
+          offset,
+          date,
+          category,
+        },
+        type: QueryTypes.SELECT,
+      }
+    );
+
+    res.status(200).json({ data: result });
+  } catch (error) {
+    console.error("❌ Error in getCallLaterDateWiseFollowups:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 exports.createFollowup = async (req, res) => {
   try {
     const {
@@ -258,5 +360,220 @@ exports.getFollowupsByenquiryId = async (req, res) => {
   } catch (error) {
     console.error("❌ Error fetching follow-ups by enquiry ID:", error);
     return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// exports.getCallLaterFollowups = async (req, res) => {
+//   try {
+//     const { page = 1, limit = 20, search = "{}", dateRange = "" } = req.query;
+
+//     const offset = (page - 1) * limit;
+//     const filters = JSON.parse(search);
+
+//     // Dynamic Date Logic
+//     const today = moment().format("YYYY-MM-DD");
+//     const tomorrow = moment().add(1, "days").format("YYYY-MM-DD");
+//     const yesterday = moment().subtract(1, "days").format("YYYY-MM-DD");
+
+//     const thisWeek = [
+//       moment().startOf("week").format("YYYY-MM-DD"),
+//       moment().endOf("week").format("YYYY-MM-DD"),
+//     ];
+
+//     const lastWeek = [
+//       moment().subtract(1, "weeks").startOf("week").format("YYYY-MM-DD"),
+//       moment().subtract(1, "weeks").endOf("week").format("YYYY-MM-DD"),
+//     ];
+
+//     const thisMonth = [
+//       moment().startOf("month").format("YYYY-MM-DD"),
+//       moment().endOf("month").format("YYYY-MM-DD"),
+//     ];
+
+//     let dateFilter = "";
+
+//     switch (dateRange) {
+//       case "today":
+//         dateFilter = `AND f."next_followup_date" = '${today}'`;
+//         break;
+//       case "tomorrow":
+//         dateFilter = `AND f."next_followup_date" = '${tomorrow}'`;
+//         break;
+//       case "yesterday":
+//         dateFilter = `AND f."next_followup_date" = '${yesterday}'`;
+//         break;
+//       case "this_week":
+//         dateFilter = `AND f."next_followup_date" BETWEEN '${thisWeek[0]}' AND '${thisWeek[1]}'`;
+//         break;
+//       case "last_week":
+//         dateFilter = `AND f."next_followup_date" BETWEEN '${lastWeek[0]}' AND '${lastWeek[1]}'`;
+//         break;
+//       case "this_month":
+//         dateFilter = `AND f."next_followup_date" BETWEEN '${thisMonth[0]}' AND '${thisMonth[1]}'`;
+//         break;
+//     }
+
+//     // Dynamic search filters
+//     let searchQuery = "";
+//     if (filters.name) {
+//       searchQuery += ` AND LOWER(e.name) LIKE LOWER('%${filters.name}%')`;
+//     }
+//     if (filters.mobile) {
+//       searchQuery += ` AND e.mobile LIKE '%${filters.mobile}%'`;
+//     }
+//     if (filters.city) {
+//       searchQuery += ` AND LOWER(e.city) LIKE LOWER('%${filters.city}%')`;
+//     }
+//     if (filters.response) {
+//       searchQuery += ` AND LOWER(f.response) = LOWER('${filters.response}')`;
+//     }
+
+//     const results = await sequelize.query(
+//       `
+//       SELECT
+//         e.*,
+//         f.response AS followup_response,
+//         f.description AS followup_description,
+//         f.date AS followup_date,
+//         f.next_followup_date,
+//         f.staff,
+//         f."createdAt" AS followup_createdAt
+//       FROM enquiries e
+//       JOIN (
+//         SELECT f1.*
+//         FROM followups f1
+//         INNER JOIN (
+//           SELECT "enquiryId", MAX("createdAt") AS max_created
+//           FROM followups
+//           GROUP BY "enquiryId"
+//         ) f2 ON f1."enquiryId" = f2."enquiryId" AND f1."createdAt" = f2.max_created
+//         WHERE f1.response = 'Call Later'
+//       ) f ON f."enquiryId" = e."enquiryId"
+//       WHERE 1=1
+//       ${searchQuery}
+//       ${dateFilter}
+//       ORDER BY f."createdAt" DESC
+//       LIMIT :limit OFFSET :offset
+//       `,
+//       {
+//         replacements: { limit, offset },
+//         type: QueryTypes.SELECT,
+//       }
+//     );
+
+//     res.status(200).json({ data: results });
+//   } catch (error) {
+//     console.error("Error fetching Call Later followups:", error);
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
+exports.getFollowupsByResponse = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      search = "{}",
+      dateRange = "",
+      responseType = "Call Later", // ✅ Default
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+    const filters = JSON.parse(search);
+
+    // Date Ranges
+    const today = moment().format("YYYY-MM-DD");
+    const tomorrow = moment().add(1, "days").format("YYYY-MM-DD");
+    const yesterday = moment().subtract(1, "days").format("YYYY-MM-DD");
+
+    const thisWeek = [
+      moment().startOf("week").format("YYYY-MM-DD"),
+      moment().endOf("week").format("YYYY-MM-DD"),
+    ];
+
+    const lastWeek = [
+      moment().subtract(1, "weeks").startOf("week").format("YYYY-MM-DD"),
+      moment().subtract(1, "weeks").endOf("week").format("YYYY-MM-DD"),
+    ];
+
+    const thisMonth = [
+      moment().startOf("month").format("YYYY-MM-DD"),
+      moment().endOf("month").format("YYYY-MM-DD"),
+    ];
+
+    let dateFilter = "";
+    switch (dateRange) {
+      case "today":
+        dateFilter = `AND f."next_followup_date" = '${today}'`;
+        break;
+      case "tomorrow":
+        dateFilter = `AND f."next_followup_date" = '${tomorrow}'`;
+        break;
+      case "yesterday":
+        dateFilter = `AND f."next_followup_date" = '${yesterday}'`;
+        break;
+      case "this_week":
+        dateFilter = `AND f."next_followup_date" BETWEEN '${thisWeek[0]}' AND '${thisWeek[1]}'`;
+        break;
+      case "last_week":
+        dateFilter = `AND f."next_followup_date" BETWEEN '${lastWeek[0]}' AND '${lastWeek[1]}'`;
+        break;
+      case "this_month":
+        dateFilter = `AND f."next_followup_date" BETWEEN '${thisMonth[0]}' AND '${thisMonth[1]}'`;
+        break;
+    }
+
+    // Search filters
+    let searchQuery = "";
+    if (filters.name) {
+      searchQuery += ` AND LOWER(e.name) LIKE LOWER('%${filters.name}%')`;
+    }
+    if (filters.mobile) {
+      searchQuery += ` AND e.mobile LIKE '%${filters.mobile}%'`;
+    }
+    if (filters.city) {
+      searchQuery += ` AND LOWER(e.city) LIKE LOWER('%${filters.city}%')`;
+    }
+    if (filters.response) {
+      searchQuery += ` AND LOWER(f.response) = LOWER('${filters.response}')`;
+    }
+
+    const results = await sequelize.query(
+      `
+      SELECT 
+        e.*,
+        f.response AS followup_response,
+        f.description AS followup_description,
+        f.date AS followup_date,
+        f.next_followup_date,
+        f.staff,
+        f."createdAt" AS followup_createdAt
+      FROM enquiries e
+      JOIN (
+        SELECT f1.*
+        FROM followups f1
+        INNER JOIN (
+          SELECT "enquiryId", MAX("createdAt") AS max_created
+          FROM followups
+          GROUP BY "enquiryId"
+        ) f2 ON f1."enquiryId" = f2."enquiryId" AND f1."createdAt" = f2.max_created
+        WHERE f1.response = :responseType
+      ) f ON f."enquiryId" = e."enquiryId"
+      WHERE 1=1
+      ${searchQuery}
+      ${dateFilter}
+      ORDER BY f."createdAt" DESC
+      LIMIT :limit OFFSET :offset
+      `,
+      {
+        replacements: { limit, offset, responseType },
+        type: QueryTypes.SELECT,
+      }
+    );
+
+    res.status(200).json({ data: results });
+  } catch (error) {
+    console.error("Error fetching followups:", error);
+    res.status(500).json({ error: error.message });
   }
 };

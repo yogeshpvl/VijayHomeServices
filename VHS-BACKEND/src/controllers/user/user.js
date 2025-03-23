@@ -1,6 +1,6 @@
 const User = require("../../models/user/user");
 const jwt = require("jsonwebtoken");
-
+const bcrypt = require("bcryptjs");
 // Generate JWT Token
 const generateToken = (user) => {
   return jwt.sign({ id: user.id, roles: user.roles }, process.env.JWT_SECRET, {
@@ -8,6 +8,43 @@ const generateToken = (user) => {
   });
 };
 
+const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email, displayname, contactno, password } = req.body;
+
+    const user = await User.findByPk(id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check for duplicate email if email is being changed
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ where: { email } });
+      if (emailExists) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+    }
+
+    // Update fields
+    user.displayname = displayname || user.displayname;
+    user.contactno = contactno || user.contactno;
+    user.email = email || user.email;
+
+    // Hash and update password if provided
+    if (password && password.trim() !== "") {
+      user.password = await bcrypt.hash(password, 10);
+    }
+
+    await user.save();
+
+    return res.status(200).json({ message: "User updated successfully" });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
 // Register User
 const register = async (req, res) => {
   try {
@@ -126,6 +163,30 @@ const filterUsers = async (req, res) => {
   }
 };
 
+const updateUserRights = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { roles, category, city } = req.body;
+
+    const user = await User.findByPk(id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.roles = roles || {};
+    user.category = category || [];
+    user.city = city || [];
+
+    await user.save();
+
+    res.status(200).json({ message: "User rights updated successfully" });
+  } catch (error) {
+    console.error("Error updating user rights:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -134,4 +195,6 @@ module.exports = {
   deleteUser,
   changePassword,
   filterUsers,
+  updateUser,
+  updateUserRights,
 };

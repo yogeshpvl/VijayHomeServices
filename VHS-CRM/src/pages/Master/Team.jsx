@@ -41,11 +41,12 @@ function Team() {
     users?.category?.map((cat) => ({ label: cat.name, value: cat.name })) || [];
   const cityOptions =
     users?.city?.map((cat) => ({ label: cat.name, value: cat.name })) || [];
+
   const typeOptions = [
     { label: "Executive", value: "Executive" },
     { label: "Technician", value: "Technician" },
-    { label: "Project Manager", value: "Project Manager" },
-    { label: "Outside Vendor", value: "Outside Vendor" },
+    { label: "Project Manager", value: "PM" },
+    { label: "Outside Vendor", value: "outVendor" },
   ];
 
   useEffect(() => {

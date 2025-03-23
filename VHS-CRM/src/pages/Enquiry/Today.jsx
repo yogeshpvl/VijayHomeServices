@@ -9,6 +9,9 @@ const Today = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [searchFilters, setSearchFilters] = useState({});
+  const users = JSON.parse(localStorage.getItem("user"));
+
+  console.log("data", data);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -25,6 +28,21 @@ const Today = () => {
     fetchData();
   }, [page, limit, searchFilters]);
 
+  // ✅ Prepare dropdown options safely
+  const categoryOptions = Array.isArray(users?.category)
+    ? users.category.map((cat) => ({
+        label: cat.name,
+        value: cat.name,
+      }))
+    : [];
+
+  const cityOptions = Array.isArray(users?.city)
+    ? users.city.map((city) => ({
+        label: city.name,
+        value: city.name,
+      }))
+    : [];
+
   // ✅ Table column definitions
   const columns = [
     { label: "#", accessor: "enquiryId" },
@@ -32,7 +50,7 @@ const Today = () => {
       label: "Category",
       accessor: "category",
       type: "dropdown",
-      options: ["Pest Control", "Cleaning", "Furniture"],
+      options: categoryOptions,
     },
     { label: "Date & Time", accessor: "date" },
     { label: "Name", accessor: "name" },
@@ -42,13 +60,14 @@ const Today = () => {
       label: "City",
       accessor: "city",
       type: "dropdown",
-      options: ["Bangalore", "Delhi", "Furniture"],
+      options: cityOptions,
     },
     { label: "Reference", accessor: "reference1" },
     { label: "Interested", accessor: "interested_for" },
     { label: "Executive", accessor: "executive" },
-    { label: "Response", accessor: "response" },
-    { label: "Description", accessor: "comment" },
+    { label: "Response", accessor: "followup_response" },
+    { label: "Description", accessor: "followup_description" },
+    { label: "Nxt Date", accessor: "followup_next_date" },
   ];
 
   return (

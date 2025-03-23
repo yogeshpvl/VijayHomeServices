@@ -5,9 +5,10 @@ import { Input } from "../../components/ui/Input";
 import moment from "moment";
 import apiService from "../../services/ApiServices";
 import EnquiryService from "../../services/enquiryService";
-import { Select } from "../../components/ui/Select";
+import { FaWhatsapp } from "react-icons/fa";
 import { Button } from "../../components/ui/Button";
 import { toast } from "react-toastify";
+import { config } from "../../services/config";
 
 const EnquiryDetail = () => {
   const users = JSON.parse(localStorage.getItem("user"));
@@ -15,19 +16,10 @@ const EnquiryDetail = () => {
   const navigate = useNavigate();
   const [enquiry, setEnquiry] = useState(null);
   const [followUps, setFollowUps] = useState([]);
-  const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState(null);
   const [responses, setResponses] = useState([]);
 
-  useEffect(() => {
-    if (enquiry) {
-      setFormData((prevData) => ({
-        ...prevData,
-        category: enquiry.category || "",
-        city: enquiry.city || "",
-      }));
-    }
-  }, [enquiry]);
   console.log("enquiry?.category", enquiry?.category);
 
   const [formData, setFormData] = useState({
@@ -36,7 +28,7 @@ const EnquiryDetail = () => {
     response: "",
     description: "",
     colorCode: "",
-    date: "",
+    next_followup_date: "",
     category: "", // Default empty string
     city: "", // Default empty string
   });
@@ -49,18 +41,24 @@ const EnquiryDetail = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
       try {
         const enquiryResponse = await EnquiryService.getEnquiryById(id);
-        setEnquiry(enquiryResponse.data); // enquiry gets updated here
+        const enquiryData = enquiryResponse.data;
+
+        setEnquiry(enquiryData); // Set raw enquiry data
+
+        // Now update formData immediately with category & city
+        setFormData((prevData) => ({
+          ...prevData,
+          category: enquiryData.category || "",
+          city: enquiryData.city || "",
+        }));
 
         const responseData = await apiService.fetchResponseData();
         setResponses(responseData);
       } catch (err) {
         setError("Failed to fetch data.");
         console.error("Error fetching data:", err);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -68,7 +66,6 @@ const EnquiryDetail = () => {
   }, [id]);
 
   const fetchfollowupsData = async () => {
-    setLoading(true);
     try {
       // Fetch enquiry details
       const enquiryResponse = await EnquiryService.getEnquiryFollowupsById(id);
@@ -77,8 +74,6 @@ const EnquiryDetail = () => {
     } catch (err) {
       setError("Failed to fetch data.");
       console.error("Error fetching data:", err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -109,32 +104,114 @@ const EnquiryDetail = () => {
     setError("");
 
     if (!enquiry.category || !enquiry.city) {
-      toast.error("Please add category and city ");
+      toast.error("Please add category and city");
       return;
     }
+
     try {
       const res = await axios.post(
         "http://localhost:5000/api/followups",
         formData
       );
+
       if (res.status === 201) {
-        fetchfollowupsData();
-        setFormData({
+        const data = res.data.followup;
+        const template = responses.find(
+          (item) => item.response_name === data.response
+        );
+        console.log("data.response", data.response);
+        makeApiCall(template, enquiry.mobile);
+
+        // await fetchfollowupsData();
+        // await fetchEnquiryData();
+        if (data.response === "Confirmed") {
+          navigate("/customer/add", {
+            state: {
+              enquiryId: enquiry.enquiryId,
+              name: enquiry.name,
+              mobile: enquiry.mobile,
+              city: enquiry.city,
+              email: enquiry.email,
+              address: enquiry.address,
+            },
+          });
+        }
+
+        toast.success("✅ Follow-up added successfully");
+
+        // Optionally reset form
+        setFormData((prev) => ({
+          ...prev,
           response: "",
           description: "",
-          value: "",
-          color: "",
+          colorCode: "",
           next_followup_date: "",
-        });
+        }));
       }
     } catch (err) {
+      toast.error(err.response?.data?.error || "Error creating customer");
       setError("Failed to create follow-up. Please try again.");
       console.error(err);
     }
   };
 
-  if (loading) return <p className="text-center text-gray-700">Loading...</p>;
-  if (error) return <p className="text-center text-red-500">{error}</p>;
+  const handleModify = () => {
+    navigate(`/enquiry/edit/${id}`);
+  };
+
+  const makeApiCall = async (selectedResponse, contactNumber) => {
+    const contentTemplate = selectedResponse?.template || "";
+
+    if (!contentTemplate) {
+      console.error("Content template is empty. Cannot proceed.");
+      return;
+    }
+
+    const content = contentTemplate.replace(
+      /\{Customer_name\}/g,
+      enquiry?.name
+    );
+
+    const contentWithNames = content.replace(
+      /\{Executive_name\}/g,
+      users?.displayname
+    );
+
+    const contentWithMobile = contentWithNames.replace(
+      /Executive_contact/gi,
+      users?.contactno
+    );
+
+    // Replace <p> with line breaks and remove HTML tags
+    const convertedText = contentWithMobile
+      .replace(/<p>/g, "\n")
+      .replace(/<\/p>/g, "")
+      .replace(/<br>/g, "\n")
+      .replace(/&nbsp;/g, "")
+      .replace(/<strong>(.*?)<\/strong>/g, "<b>$1</b>")
+      .replace(/<[^>]*>/g, "");
+
+    console.log("convertedText===", convertedText);
+
+    try {
+      const response = await axios.post(
+        `${config.API_BASE_URL}/whats-msg/send-message`,
+        {
+          mobile: contactNumber,
+          msg: convertedText,
+        }
+      );
+
+      if (response.status === 200) {
+        window.location.reload(``);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  if (!enquiry) {
+    return <div className="p-4">Loading enquiry details...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-white grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
@@ -146,7 +223,13 @@ const EnquiryDetail = () => {
         <div className="border border-gray-300 rounded-lg overflow-hidden">
           <div className="bg-gray-200 text-gray-700 text-sm px-4 py-2 font-semibold flex justify-between">
             <span>
-              Modify |{" "}
+              <button
+                className="text-blue-600 hover:underline"
+                onClick={handleModify}
+              >
+                Modify
+              </button>{" "}
+              |{" "}
               <button
                 className="text-red-500 hover:underline"
                 onClick={handleDelete}
@@ -157,12 +240,26 @@ const EnquiryDetail = () => {
           </div>
           <table className="w-full border-collapse border border-gray-300 text-sm">
             <tbody>
-              <DetailRow label="Enquiry ID" value={enquiry.enquiryId} />
+              <DetailRow label="Enquiry ID" value={id} />
               <DetailRow label="Category" value={enquiry.category} />
               <DetailRow label="Enquiry Date" value={enquiry.date} />
               <DetailRow label="Executive" value={enquiry.executive} />
               <DetailRow label="Name" value={enquiry.name} />
-              <DetailRow label="Contact 1" value={enquiry.mobile} isWhatsApp />
+
+              <DetailRow label="Contact 1" value={enquiry.mobile}>
+                {enquiry.mobile && (
+                  <a
+                    href={`https://wa.me/91${enquiry.mobile}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-green-600 hover:text-green-800"
+                    title="Chat on WhatsApp"
+                  >
+                    <FaWhatsapp size={18} />
+                  </a>
+                )}
+              </DetailRow>
+
               <DetailRow label="Contact 2" value={enquiry.contact2 || "-"} />
               <DetailRow label="Email Id" value={enquiry.email || "-"} />
               <DetailRow label="Address" value={enquiry.address} />
@@ -307,8 +404,8 @@ const EnquiryDetail = () => {
             </label>
             <input
               type="date"
-              name="date"
-              value={formData.date}
+              name="next_followup_date"
+              value={formData.next_followup_date}
               onChange={handleChange}
               className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
             />
@@ -350,19 +447,22 @@ const EnquiryDetail = () => {
           </div>
         )}
 
-        <Button children={"Save"} onClick={handleSubmit} />
+        <Button children={"Save"} onClick={handleSubmit} className="mt-4" />
       </div>
     </div>
   );
 };
 
-const DetailRow = ({ label, value, isWhatsApp }) => (
-  <tr className="border-b border-gray-300">
-    <td className="w-1/3 bg-gray-100 px-4 py-2 font-medium">{label}</td>
-    <td className="w-2/3 px-4 py-2 flex items-center">
-      {value} {isWhatsApp && <span className="ml-2">📱</span>}
-    </td>
-  </tr>
-);
+const DetailRow = ({ label, value, children }) => {
+  return (
+    <tr className="border-b border-gray-300">
+      <td className="w-1/4 bg-gray-100 px-4 py-2 font-medium">{label}</td>
+      <td className="w-2/3 px-4 py-2 flex items-center">
+        {value}
+        {children}
+      </td>
+    </tr>
+  );
+};
 
 export default EnquiryDetail;

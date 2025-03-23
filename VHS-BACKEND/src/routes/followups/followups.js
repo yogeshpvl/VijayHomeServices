@@ -10,6 +10,9 @@ router.get(
   "/monthlyCounts",
   followupController.getMonthlyFollowupCountsByDateAndResponse
 );
+router.get("/datewise", followupController.getCallLaterDateWiseFollowups);
+
+router.get("/call-later", followupController.getFollowupsByResponse);
 
 // ✅ 2️⃣ Get Follow-ups Response-wise
 router.get("/response/:response", followupController.getFollowupsByResponse);

@@ -9,13 +9,13 @@ const EnquiryNew = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [searchFilters, setSearchFilters] = useState({});
+  const users = JSON.parse(localStorage.getItem("user"));
 
-  console.log("searchFilters", searchFilters);
   useEffect(() => {
     const fetchData = async () => {
       // setLoading(true);
       try {
-        const response = await EnquiryService.getAllEnquiries({
+        const response = await EnquiryService.getNewResponseEnquiries({
           page,
           limit,
           search: JSON.stringify(searchFilters),
@@ -31,9 +31,20 @@ const EnquiryNew = () => {
     fetchData();
   }, [page, limit, searchFilters]);
 
-  // if (loading) return <p>Loading enquiries...</p>;
-  // if (error) return <p>Error: {error}</p>;
+  // ✅ Prepare dropdown options safely
+  const categoryOptions = Array.isArray(users?.category)
+    ? users.category.map((cat) => ({
+        label: cat.name,
+        value: cat.name,
+      }))
+    : [];
 
+  const cityOptions = Array.isArray(users?.city)
+    ? users.city.map((city) => ({
+        label: city.name,
+        value: city.name,
+      }))
+    : [];
   // ✅ Table column definitions
   const columns = [
     { label: "#", accessor: "enquiryId" },
@@ -41,7 +52,7 @@ const EnquiryNew = () => {
       label: "Category",
       accessor: "category",
       type: "dropdown",
-      options: ["Pest Control", "Clothing", "Furniture"],
+      options: categoryOptions,
     },
     { label: "Date & Time", accessor: "date" },
     { label: "Name", accessor: "name" },
@@ -51,13 +62,13 @@ const EnquiryNew = () => {
       label: "City",
       accessor: "city",
       type: "dropdown",
-      options: ["Bangalore", "Clothing", "Furniture"],
+      options: cityOptions,
     },
     { label: "Reference", accessor: "reference" },
     { label: "Interested", accessor: "interested" },
     { label: "Executive", accessor: "executive" },
-    { label: "Response", accessor: "response" },
-    { label: "Description", accessor: "description" },
+    { label: "Response", accessor: "followup_response" },
+    { label: "Description", accessor: "followup_description" },
   ];
 
   return (

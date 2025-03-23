@@ -4,6 +4,7 @@ import { logout } from "../../store/authSlice";
 import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
+  const users = JSON.parse(localStorage.getItem("user"));
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -33,7 +34,7 @@ const Navbar = () => {
 
       {/* Right Section - User Info & Logout */}
       <div className="flex items-center gap-6 text-sm font-medium">
-        <span>Pankaj</span>
+        <span>{users.displayname}</span>
         <a href="/change-password" className="hover:underline">
           Change Password
         </a>

@@ -12,6 +12,7 @@ import { setLoading } from "../store/uiSlice";
 import MainLayout from "../components/layout/MainLayout";
 import Login from "../pages/Login";
 import Home from "../pages/Home/Home";
+import ProtectedRoute from "./ProtectedRoute";
 
 import Loader from "../components/common/Loader";
 import NotFound from "../pages/404 page/NotFound";
@@ -80,6 +81,13 @@ import QHeaderImg from "../pages/Master/QHeaderImg";
 import TermsAndConditions from "../pages/Master/TermsAndConditions";
 import QuotationFormatContentLayout from "../pages/Master/QuotationFormatContentLayout";
 import TermsSection2 from "../pages/Master/TermsSection2";
+import UserDetails from "../pages/Master/UserDetails";
+import CustomerDetails from "../pages/Customer/CustomerDetails";
+import CustomerEdit from "../pages/Customer/CustomerEdit";
+import CustomerList from "../pages/Customer/CustomerList";
+import EnquiryEdit from "../pages/Enquiry/EnquiryEdit";
+import EFollwupDateTable from "../pages/Enquiry_Followup/EFollwupDateTable";
+import SurveyDetails from "../pages/Survey/SurveyDetails";
 
 const AppContent = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
@@ -130,6 +138,7 @@ const AppContent = () => {
             <Route path="enquiry" element={<EnquiryLayout />}>
               <Route index element={<EnquiryAdd />} /> {/* Default route */}
               <Route path="add" element={<EnquiryAdd />} />
+              <Route path="edit/:id" element={<EnquiryEdit />} />
               <Route path="new" element={<EnquiryNew />} />
               <Route path="new-records" element={<New />} />
               <Route path="today" element={<Today />} />
@@ -141,20 +150,81 @@ const AppContent = () => {
             <Route path="Survey" element={<SurveyLayout />}>
               <Route index element={<SurveyCalendar />} /> {/* Default route */}
               <Route path="SurveyCalendar" element={<SurveyCalendar />} />
-              <Route path="SurveyList" element={<SurveyList />} />
+              <Route path="surveyDetails" element={<SurveyDetails />} />
+              <Route
+                path="SurveyList/:date/:category"
+                element={<SurveyList />}
+              />
               <Route path="SurveyCancelled" element={<SurveyCancelled />} />
             </Route>
 
             {/* Master Section with Nested Routes */}
             <Route path="master" element={<MasterLayout />}>
               <Route index element={<User />} /> {/* Default to User */}
-              <Route path="user" element={<User />} />
-              <Route path="team" element={<Team />} />
-              <Route path="category" element={<Category />} />
-              <Route path="city" element={<City />} />
-              <Route path="customer-type" element={<CustomerType />} />
-              <Route path="response" element={<Response />} />
-              <Route path="reference" element={<Reference />} />
+              <Route
+                path="user"
+                element={
+                  <ProtectedRoute allowedRoles={["Master"]}>
+                    <User />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="userdetails/:id"
+                element={
+                  <ProtectedRoute allowedRoles={["Master"]}>
+                    <UserDetails />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="team"
+                element={
+                  <ProtectedRoute allowedRoles={["Master"]}>
+                    <Team />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="category"
+                element={
+                  <ProtectedRoute allowedRoles={["Master"]}>
+                    <Category />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="city"
+                element={
+                  <ProtectedRoute allowedRoles={["Master"]}>
+                    <City />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="customer-type"
+                element={
+                  <ProtectedRoute allowedRoles={["Master"]}>
+                    <CustomerType />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="response"
+                element={
+                  <ProtectedRoute allowedRoles={["Master"]}>
+                    <Response />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="reference"
+                element={
+                  <ProtectedRoute allowedRoles={["Master"]}>
+                    <Reference />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="whatsapp-template" element={<WhatsAppTemplate />} />
               <Route path="b2b-type" element={<B2BType />} />
               <Route path="quotation-format" element={<QuotationFormat />} />
@@ -181,7 +251,10 @@ const AppContent = () => {
             <Route path="customer" element={<CustomerLayout />}>
               <Route index element={<Search />} /> {/* Default to User */}
               <Route path="add" element={<Add />} />
+              <Route path="edit/:id" element={<CustomerEdit />} />
               <Route path="search" element={<Search />} />
+              <Route path="customerList" element={<CustomerList />} />
+              <Route path="customerDetails/:id" element={<CustomerDetails />} />
             </Route>
 
             {/* DSR Section with Nested Routes */}
@@ -206,7 +279,15 @@ const AppContent = () => {
             <Route path="EnquiryFollowup" element={<EFollwupLayout />}>
               <Route index element={<FollowupCalendar />} />
               <Route path="FollowupCalendar" element={<FollowupCalendar />} />
-              <Route path="FollowupTable/:date" element={<FollowupTable />} />
+              <Route
+                path="FollowupDateTable/:date/:category"
+                element={<EFollwupDateTable />}
+              />
+
+              <Route
+                path="FollowupTable/:dateType"
+                element={<FollowupTable />}
+              />
               <Route path="Today" element={<Today />} />
             </Route>
 

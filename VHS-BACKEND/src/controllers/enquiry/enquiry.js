@@ -1,7 +1,9 @@
 const Enquiry = require("../../models/enquiry/enquiry");
+const Followup = require("../../models/followups/followups");
 const redisClient = require("../../config/redis"); // Redis setup
-const { Op, Sequelize } = require("sequelize");
+const { Op, QueryTypes } = require("sequelize");
 const moment = require("moment");
+const sequelize = require("../../config/database");
 
 // ✅ Get all enquiries with pagination & search
 
@@ -73,6 +75,7 @@ const EnquirySearch = async (req, res) => {
 const getTodaysEnquiries = async (req, res) => {
   try {
     const today = moment().format("YYYY-MM-DD");
+
     let { page, limit, search, sortBy, sortOrder } = req.query;
 
     page = parseInt(page) || 1;
@@ -91,36 +94,287 @@ const getTodaysEnquiries = async (req, res) => {
       }
     }
 
-    const whereClause = {
-      date: today,
-    };
+    // 🔍 Start building filter conditions
+    let filterClause = `WHERE e.date = :today`;
+    const replacements = { limit, offset, today };
 
-    if (Object.keys(searchFilters).length > 0) {
-      whereClause[Op.and] = [];
-
-      Object.entries(searchFilters).forEach(([key, value]) => {
-        if (value && typeof value === "string") {
-          whereClause[Op.and].push({
-            [key]: { [Op.iLike]: `%${value}%` },
-          });
-        }
-      });
+    if (searchFilters.name) {
+      filterClause += ` AND LOWER(e.name) LIKE LOWER(:name)`;
+      replacements.name = `%${searchFilters.name}%`;
+    }
+    if (searchFilters.mobile) {
+      filterClause += ` AND e.mobile LIKE :mobile`;
+      replacements.mobile = `%${searchFilters.mobile}%`;
+    }
+    if (searchFilters.response) {
+      filterClause += ` AND LOWER(f.response) = LOWER(:response)`;
+      replacements.response = searchFilters.response;
+    }
+    if (searchFilters.description) {
+      filterClause += ` AND LOWER(f."description") LIKE LOWER(:description)`;
+      replacements.description = `%${searchFilters.description}%`;
+    }
+    if (searchFilters.next_followup_date) {
+      filterClause += ` AND f."next_followup_date" = :next_followup_date`;
+      replacements.next_followup_date = searchFilters.next_followup_date;
     }
 
-    const { rows, count } = await Enquiry.findAndCountAll({
-      where: whereClause,
-      limit,
-      offset,
-      order: [[sortBy, sortOrder]],
-    });
+    // 🧠 Step 1: Fetch paginated data
+    const enquiries = await sequelize.query(
+      `
+      SELECT 
+        e.*,
+        f.response AS followup_response,
+        f."description" AS followup_description,
+        f."next_followup_date" AS followup_next_date,
+        f."createdAt" AS followup_createdAt
+      FROM enquiries e
+      LEFT JOIN LATERAL (
+        SELECT *
+        FROM followups f
+        WHERE f."enquiryId" = e."enquiryId"
+        ORDER BY f."createdAt" DESC
+        LIMIT 1
+      ) f ON true
+      ${filterClause}
+      ORDER BY e."${sortBy}" ${sortOrder}
+      LIMIT :limit OFFSET :offset
+      `,
+      {
+        replacements,
+        type: QueryTypes.SELECT,
+      }
+    );
+
+    // 🧠 Step 2: Count total
+    const countResult = await sequelize.query(
+      `
+      SELECT COUNT(*) as count
+      FROM enquiries e
+      LEFT JOIN LATERAL (
+        SELECT *
+        FROM followups f
+        WHERE f."enquiryId" = e."enquiryId"
+        ORDER BY f."createdAt" DESC
+        LIMIT 1
+      ) f ON true
+      ${filterClause}
+      `,
+      {
+        replacements,
+        type: QueryTypes.SELECT,
+      }
+    );
+
+    const totalCount = parseInt(countResult[0].count);
+    const totalPages = Math.ceil(totalCount / limit);
 
     res.status(200).json({
-      enquiries: rows,
-      totalRecords: count,
-      totalPages: Math.ceil(count / limit),
-      currentPage: page,
+      enquiries,
+      pagination: {
+        totalCount,
+        totalPages,
+        page,
+        limit,
+      },
     });
   } catch (error) {
+    console.error("Error in getTodaysEnquiries:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+//New
+const getNewEnquiries = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = "createdAt",
+      sortOrder = "DESC",
+      search = "{}",
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+    const filters = JSON.parse(search);
+
+    let filterQuery = `WHERE NOT EXISTS (
+      SELECT 1 FROM followups f WHERE f."enquiryId" = e."enquiryId"
+    )`;
+
+    // Dynamic filters
+    if (filters.name) {
+      filterQuery += ` AND LOWER(e.name) LIKE LOWER('%${filters.name}%')`;
+    }
+    if (filters.mobile) {
+      filterQuery += ` AND e.mobile LIKE '%${filters.mobile}%'`;
+    }
+    if (filters.email) {
+      filterQuery += ` AND LOWER(e.email) LIKE LOWER('%${filters.email}%')`;
+    }
+    if (filters.city) {
+      filterQuery += ` AND LOWER(e.city) LIKE LOWER('%${filters.city}%')`;
+    }
+    if (filters.category) {
+      filterQuery += ` AND LOWER(e.category) LIKE LOWER('%${filters.category}%')`;
+    }
+    if (filters.address) {
+      filterQuery += ` AND LOWER(e.address) LIKE LOWER('%${filters.address}%')`;
+    }
+    if (filters.executive) {
+      filterQuery += ` AND LOWER(e.executive) LIKE LOWER('%${filters.executive}%')`;
+    }
+    if (filters.interested_for) {
+      filterQuery += ` AND LOWER(e.interested_for) LIKE LOWER('%${filters.interested_for}%')`;
+    }
+
+    // Step 1: Get paginated full enquiry data directly
+    const enquiries = await sequelize.query(
+      `
+      SELECT * FROM enquiries e
+      ${filterQuery}
+      ORDER BY e."${sortBy}" ${sortOrder}
+      LIMIT :limit OFFSET :offset
+      `,
+      {
+        replacements: { limit, offset },
+        type: QueryTypes.SELECT,
+      }
+    );
+
+    // Step 2: Count total matching entries
+    const countResult = await sequelize.query(
+      `SELECT COUNT(*) FROM enquiries e ${filterQuery}`,
+      { type: QueryTypes.SELECT }
+    );
+    const totalCount = parseInt(countResult[0].count);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    res.status(200).json({
+      enquiries,
+      pagination: {
+        totalCount,
+        totalPages,
+        page: parseInt(page),
+        limit: parseInt(limit),
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching new enquiries with filters:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getOnlyResponseNewEnquiries = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = "createdAt",
+      sortOrder = "DESC",
+      search = "{}",
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+    const filters = JSON.parse(search);
+
+    // Start with filtering response = 'New' from latest followup
+    let filterConditions = `
+      WHERE lf.response = 'New'
+    `;
+
+    // Dynamic filters on enquiry fields
+    if (filters.name) {
+      filterConditions += ` AND LOWER(e.name) LIKE LOWER('%${filters.name}%')`;
+    }
+    if (filters.mobile) {
+      filterConditions += ` AND e.mobile LIKE '%${filters.mobile}%'`;
+    }
+    if (filters.email) {
+      filterConditions += ` AND LOWER(e.email) LIKE LOWER('%${filters.email}%')`;
+    }
+    if (filters.city) {
+      filterConditions += ` AND LOWER(e.city) LIKE LOWER('%${filters.city}%')`;
+    }
+    if (filters.category) {
+      filterConditions += ` AND LOWER(e.category) LIKE LOWER('%${filters.category}%')`;
+    }
+    if (filters.address) {
+      filterConditions += ` AND LOWER(e.address) LIKE LOWER('%${filters.address}%')`;
+    }
+    if (filters.executive) {
+      filterConditions += ` AND LOWER(e.executive) LIKE LOWER('%${filters.executive}%')`;
+    }
+    if (filters.interested_for) {
+      filterConditions += ` AND LOWER(e.interested_for) LIKE LOWER('%${filters.interested_for}%')`;
+    }
+
+    // Get paginated enquiry + followup data
+    const enquiries = await sequelize.query(
+      `
+      SELECT 
+        e.*,
+        lf.response AS followup_response,
+        lf."description" AS followup_description,
+        lf."date" AS followup_date,
+        lf."staff" AS followup_staff,
+        lf."createdAt" AS followup_createdAt
+      FROM enquiries e
+      JOIN (
+        SELECT f.*
+        FROM followups f
+        INNER JOIN (
+          SELECT "enquiryId", MAX("createdAt") AS max_created
+          FROM followups
+          GROUP BY "enquiryId"
+        ) latest ON latest."enquiryId" = f."enquiryId" AND latest.max_created = f."createdAt"
+      ) lf ON lf."enquiryId" = e."enquiryId"
+      ${filterConditions}
+      ORDER BY e."${sortBy}" ${sortOrder}
+      LIMIT :limit OFFSET :offset
+      `,
+      {
+        replacements: { limit, offset },
+        type: QueryTypes.SELECT,
+      }
+    );
+
+    // Get total count
+    const countResult = await sequelize.query(
+      `
+      SELECT COUNT(*) AS count
+      FROM enquiries e
+      JOIN (
+        SELECT f.*
+        FROM followups f
+        INNER JOIN (
+          SELECT "enquiryId", MAX("createdAt") AS max_created
+          FROM followups
+          GROUP BY "enquiryId"
+        ) latest ON latest."enquiryId" = f."enquiryId" AND latest.max_created = f."createdAt"
+      ) lf ON lf."enquiryId" = e."enquiryId"
+      ${filterConditions}
+      `,
+      { type: QueryTypes.SELECT }
+    );
+
+    const totalCount = parseInt(countResult[0].count);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    res.status(200).json({
+      enquiries,
+      pagination: {
+        totalCount,
+        totalPages,
+        page: parseInt(page),
+        limit: parseInt(limit),
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Error fetching enquiries with latest followup as 'New':",
+      error
+    );
     res.status(500).json({ error: error.message });
   }
 };
@@ -129,12 +383,12 @@ const getLastEnquiryId = async (req, res) => {
   try {
     // Fetch the latest enquiry ID
     const latestEnquiry = await Enquiry.findOne({
-      order: [["enquiryId", "DESC"]], // ✅ Ensure ordering by integer column
-      attributes: ["enquiryId"], // ✅ Only fetch the enquiryId
+      order: [["enquiryId", "DESC"]],
+      attributes: ["enquiryId"],
     });
 
     // Ensure a valid response
-    const lastEnquiryId = latestEnquiry ? latestEnquiry.enquiryId : 1; // ✅ Return 1 if no data
+    const lastEnquiryId = latestEnquiry ? latestEnquiry.enquiryId : 1;
 
     res.status(200).json({
       success: true,
@@ -263,7 +517,7 @@ const createEnquiry = async (req, res) => {
 const updateEnquiry = async (req, res) => {
   try {
     const updatedEnquiry = await Enquiry.update(req.body, {
-      where: { id: req.params.id },
+      where: { enquiryId: req.params.id },
       returning: true,
     });
 
@@ -271,8 +525,8 @@ const updateEnquiry = async (req, res) => {
       return res.status(404).json({ message: "Enquiry not found" });
 
     res.status(200).json(updatedEnquiry[1][0]);
-    await redisClient.del("enquiries:*"); // Clear cache after update
   } catch (error) {
+    console.log("error.message ", error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -301,4 +555,6 @@ module.exports = {
   updateEnquiry,
   deleteEnquiry,
   getLastEnquiryId,
+  getNewEnquiries,
+  getOnlyResponseNewEnquiries,
 };

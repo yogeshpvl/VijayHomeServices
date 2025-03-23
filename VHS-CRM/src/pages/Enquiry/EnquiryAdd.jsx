@@ -49,6 +49,7 @@ const EnquiryForm = () => {
       const response = await EnquiryService.createEnquiry(formData);
 
       if (response && response.success) {
+        makeApiCall(response.data.mobile, response.data.name);
         navigate(`/enquiry/enquiry-details/${response.data.enquiryId}`);
         // Assuming 201 means success
         toast.success("✅ Enquiry saved successfully!");
@@ -95,6 +96,74 @@ const EnquiryForm = () => {
       setEnquiryId(response.data.lastEnquiryId || 1);
     } catch (error) {
       console.error("Login Error:", error);
+    }
+  };
+
+  const [whatsappdata, setWhatsappData] = useState(null);
+  const [templateName, setTemplateName] = useState("Enquiry Add");
+
+  useEffect(() => {
+    getWhatsappTemplate();
+  }, [templateName]);
+
+  const getWhatsappTemplate = async () => {
+    try {
+      const res = await axios.get(
+        `${config.API_BASE_URL}/whatsapp-templates/get-template/${templateName}`
+      );
+
+      if (res.status === 200) {
+        setWhatsappData(res.data?.content);
+      }
+    } catch (error) {
+      console.error("Error fetching WhatsApp template:", error);
+    }
+  };
+
+  const makeApiCall = async (contactNumber, customer_name) => {
+    const contentTemplate = whatsappdata || "";
+
+    if (!contentTemplate) {
+      console.error("Content template is empty. Cannot proceed.");
+      return;
+    }
+
+    const content = contentTemplate.replace(
+      /\{Customer_name\}/g,
+      customer_name
+    );
+    const contentWithNames = content.replace(
+      /\{Executive_name\}/g,
+      users?.displayname
+    );
+    const contentWithMobile = contentWithNames.replace(
+      /\{Executive_contact\}/g,
+      users?.contactno
+    );
+
+    // Replace <p> with line breaks and remove HTML tags
+    const convertedText = contentWithMobile
+      .replace(/<p>/g, "\n")
+      .replace(/<\/p>/g, "")
+      .replace(/<br>/g, "\n")
+      .replace(/&nbsp;/g, "")
+      .replace(/<strong>(.*?)<\/strong>/g, "<b>$1</b>")
+      .replace(/<[^>]*>/g, "");
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/whats-msg/send-message",
+        {
+          mobile: contactNumber,
+          msg: convertedText,
+        }
+      );
+
+      if (response.status === 200) {
+        // alert("Whats app message sent successfully");
+      }
+    } catch (error) {
+      console.error(error);
     }
   };
 

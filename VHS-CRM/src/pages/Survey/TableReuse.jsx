@@ -36,9 +36,9 @@ const TableReuse = ({
     onPageChange(newPage); // Send updated page to the parent
   };
 
-  // Redirect to Enquiry Details
+  // Redirect to Survey Details
   const handleRowClick = (id) => {
-    navigate(`/enquiry/enquiry-details/${id}`);
+    navigate(`/Survey/surveyDetails`);
   };
 
   return (
