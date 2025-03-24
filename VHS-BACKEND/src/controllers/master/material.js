@@ -102,3 +102,29 @@ exports.getByCategory = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getByRegion = async (req, res) => {
+  const { region } = req.params;
+  const cacheKey = `materials_region_${region}`;
+
+  const cached = await getCache(cacheKey);
+  if (cached) return res.json(JSON.parse(cached));
+
+  try {
+    const data = await Material.findAll({
+      where: { region },
+      order: [["id", "ASC"]],
+    });
+
+    if (data.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No records found for this region" });
+    }
+
+    await setCache(cacheKey, JSON.stringify(data));
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

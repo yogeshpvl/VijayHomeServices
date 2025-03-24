@@ -92,8 +92,6 @@ const menuConfig = [
   { key: "Reports", path: "/reports", label: "Reports", icon: faChartLine },
 ];
 
-console.log("menuConfig", menuConfig);
-
 const Sidebar = () => {
   const users = JSON.parse(localStorage.getItem("user"));
   const userRoles = users?.roles || {};

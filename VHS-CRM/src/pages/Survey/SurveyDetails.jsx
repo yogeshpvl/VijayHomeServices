@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const SurveyDetails = () => {
+  const navigate = useNavigate();
   const [sendWhatsApp, setSendWhatsApp] = useState("yes");
   const [assignTo, setAssignTo] = useState("executive");
   const [formData, setFormData] = useState({
@@ -22,7 +24,10 @@ const SurveyDetails = () => {
         <button className="bg-gray-800 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-700 transition">
           Edit Details
         </button>
-        <button className="bg-gray-800 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-700 transition">
+        <button
+          className="bg-gray-800 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-700 transition"
+          onClick={() => navigate("/Quote/quoteDetails/1")}
+        >
           Quotation
         </button>
       </div>

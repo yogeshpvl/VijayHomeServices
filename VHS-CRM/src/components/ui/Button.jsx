@@ -10,7 +10,7 @@ export const Button = ({
   const variants = {
     default: "bg-red-800 text-white hover:bg-red-700 rounded-md shadow-md", // Reduced padding
     outline: "border border-gray-500 text-gray-700 hover:bg-gray-100",
-    cancel: "bg-grey-500 text-white hover:bg-red-600",
+    cancel: "bg-gray-500 text-white hover:bg-gray-600 text-sm",
     success: "bg-green-500 text-white hover:bg-green-600",
     whatsapp:
       "bg-green-600 text-white flex items-center gap-2 hover:bg-green-700",

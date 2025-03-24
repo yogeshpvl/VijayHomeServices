@@ -43,6 +43,9 @@ const customerRoutes = require("./routes/customer/customer");
 //try to booking
 const trytobookingRoutes = require("./routes/trytobooking");
 
+const quotationRoutes = require("./routes/quote/quote");
+const quotationItemRoutes = require("./routes/quote/quotationItem");
+
 app.use("/api/enquiries", enquiryRoutes);
 app.use("/api/auth", userRoutes);
 app.use("/api/responses", responseRoutes);
@@ -72,6 +75,8 @@ app.use("/api/trytobooking", trytobookingRoutes);
 
 //customer
 app.use("/api/customers", customerRoutes);
+app.use("/api/quotation", quotationRoutes);
+app.use("/api", quotationItemRoutes);
 
 const PORT = process.env.PORT || 5000;
 

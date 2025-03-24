@@ -7,5 +7,6 @@ router.post("/", controller.create);
 router.put("/:id", controller.update);
 router.delete("/:id", controller.remove);
 router.get("/category/:category", controller.getByCategory);
+router.get("/region/:region", controller.getByRegion);
 
 module.exports = router;

@@ -296,7 +296,7 @@ const AppContent = () => {
               <Route index element={<QuoteList />} />
               <Route path="QuoteList" element={<QuoteList />} />
               <Route path="QuoteConfirmed" element={<QuoteConfirmed />} />
-              <Route path="QuoteDetails" element={<QuoteDetails />} />
+              <Route path="quoteDetails/:id" element={<QuoteDetails />} />
             </Route>
 
             {/* Quote Section with Nested Routes */}
