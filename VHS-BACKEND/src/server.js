@@ -46,6 +46,11 @@ const trytobookingRoutes = require("./routes/trytobooking");
 const quotationRoutes = require("./routes/quote/quote");
 const quotationItemRoutes = require("./routes/quote/quotationItem");
 
+//servcice bookings data
+const bookingsRoutes = require("./routes/serviceBooking/bookings");
+const bookingServicesRoutes = require("./routes/serviceBooking/bookingServices");
+const vendorAssignmentsRoutes = require("./routes/serviceBooking/vendorAssignments");
+
 app.use("/api/enquiries", enquiryRoutes);
 app.use("/api/auth", userRoutes);
 app.use("/api/responses", responseRoutes);
@@ -77,6 +82,11 @@ app.use("/api/trytobooking", trytobookingRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/quotation", quotationRoutes);
 app.use("/api", quotationItemRoutes);
+
+//service booking
+app.use("/api/bookings", bookingsRoutes);
+app.use("/api", bookingServicesRoutes);
+app.use("/api", vendorAssignmentsRoutes);
 
 const PORT = process.env.PORT || 5000;
 

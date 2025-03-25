@@ -3,19 +3,46 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import { config } from "../../services/config";
 import { Input } from "../../components/ui/Input";
+import moment from "moment";
+import { toast } from "react-toastify";
 
 function CustomerDetailsPage() {
   const { id } = useParams();
+  const users = JSON.parse(localStorage.getItem("user"));
   const [customer, setCustomer] = useState({});
   const [treatments, setTreatments] = useState([]);
   const [pastServices, setPastServices] = useState([]);
   const [futureServices, setFutureServices] = useState([]);
+  const [allServices, setAllServices] = useState([]);
+  const [editIndex, setEditIndex] = useState(null);
 
+  console.log("treatments", treatments);
+
+  const [form, setForm] = useState({
+    category: "",
+    contract_type: "",
+    service: "",
+    service_frequency: "",
+    service_charge: "",
+    start_date: "",
+    expiry_date: "",
+    community: "",
+    amountFrequency: "",
+    amtexpiry_date: "",
+    amtPaidDate: "",
+    slots: "",
+    latitude: 0,
+    longitude: 0,
+    description: "",
+  });
+
+  console.log("form", form);
   useEffect(() => {
     fetchCustomer();
     fetchTreatments();
     fetchPastServices();
     fetchFutureServices();
+    fetchAllServicesByUser();
   }, [id]);
 
   const fetchCustomer = async () => {
@@ -25,7 +52,7 @@ function CustomerDetailsPage() {
 
   const fetchTreatments = async () => {
     const res = await axios.get(
-      `${config.API_BASE_URL}/treatments/by-customer/${id}`
+      `${config.API_BASE_URL}/bookings/by-customer/${id}`
     );
     setTreatments(res.data);
   };
@@ -40,57 +67,56 @@ function CustomerDetailsPage() {
     setFutureServices(res.data);
   };
 
-  const [form, setForm] = useState({
-    category: "",
-    contractType: "",
-    treatment: "",
-    serviceFrequency: "",
-    serviceCharge: "",
-    firstServiceDate: "",
-    expiryDate: "",
-    community: "",
-    amountFrequency: "",
-    amtExpiryDate: "",
-    amtPaidDate: "",
-    slots: "",
-    latitude: "",
-    longitude: "",
-    description: "",
-  });
-
-  const [editIndex, setEditIndex] = useState(null);
+  const fetchAllServicesByUser = async () => {
+    const res = await axios.get(
+      `${config.API_BASE_URL}/services/by-user/${id}`
+    );
+    setAllServices(res.data);
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleAddItem = () => {
-    if (editIndex !== null) {
-      const updated = [...treatments];
-      updated[editIndex] = form;
-      setTreatments(updated);
-      setEditIndex(null);
-    } else {
-      setTreatments([...treatments, form]);
+  const handleAddItem = async () => {
+    if (!customer.city) {
+      toast.error(
+        "Please add the city for this customer! please click the edit customer update the city then come back"
+      );
     }
+    try {
+      const payload = {
+        ...form,
+        user_id: id,
+        start_date: form.start_date,
+        expiry_date:
+          form.contract_type === "AMC" ? form.expiry_date : form.start_date, // 👈 this is the fix
+      };
 
-    setForm({
-      category: "",
-      contractType: "",
-      treatment: "",
-      serviceFrequency: "",
-      serviceCharge: "",
-      firstServiceDate: "",
-      expiryDate: "",
-      community: "",
-      amountFrequency: "",
-      amtExpiryDate: "",
-      amtPaidDate: "",
-      slots: "",
-      latitude: "",
-      longitude: "",
-      description: "",
-    });
+      await axios.post(`${config.API_BASE_URL}/bookings/create`, payload);
+
+      setForm({
+        category: "",
+        contract_type: "",
+        service: "",
+        service_frequency: "",
+        service_charge: "",
+        start_date: "",
+        expiry_date: "",
+        community: "",
+        amountFrequency: "",
+        amtexpiry_date: "",
+        amtPaidDate: "",
+        slots: "",
+        latitude: 0,
+        longitude: 0,
+        description: "",
+      });
+
+      fetchTreatments();
+    } catch (error) {
+      console.error("Error while adding booking", error);
+    }
   };
 
   const handleEdit = (index) => {
@@ -138,7 +164,6 @@ function CustomerDetailsPage() {
           </div>
         </div>
       </div>
-
       <div className="p-4 bg-white-500 rounded-md shadow-lg text-sm mt-4 border-2 border-gray-200">
         <h3 className="font-semibold mb-3">Treatment Details</h3>
 
@@ -155,7 +180,9 @@ function CustomerDetailsPage() {
               className="w-full border border-gray-300 p-1.5 rounded"
             >
               <option>--select--</option>
-              <option>Cleaning</option>
+              {users?.category?.map((category, index) => (
+                <option value={category.name}>{category.name}</option>
+              ))}
             </select>
           </div>
 
@@ -165,8 +192,8 @@ function CustomerDetailsPage() {
               Contract Type <span className="text-red-800">*</span>
             </label>
             <select
-              name="contractType"
-              value={form.contractType}
+              name="contract_type"
+              value={form.contract_type}
               onChange={handleChange}
               className="w-full border border-gray-300 p-1.5 rounded"
             >
@@ -182,8 +209,8 @@ function CustomerDetailsPage() {
               Treatment <span className="text-red-800">*</span>
             </label>
             <select
-              name="treatment"
-              value={form.treatment}
+              name="service"
+              value={form.service}
               onChange={handleChange}
               className="w-full border border-gray-300 p-1.5 rounded"
             >
@@ -193,43 +220,55 @@ function CustomerDetailsPage() {
           </div>
 
           {/* AMC Specific Fields */}
-          {form.contractType === "AMC" && (
+          {form.contract_type === "AMC" && (
             <>
               <div>
                 <label className="block font-medium mb-1">
                   Service Frequency <span className="text-red-800">*</span>
                 </label>
                 <Input
-                  name="serviceFrequency"
-                  value={form.serviceFrequency}
+                  name="service_frequency"
+                  value={form.service_frequency}
                   onChange={handleChange}
                   className="w-full border border-gray-300 p-1.5 rounded"
                 />
               </div>
-              <div>
-                <label className="block font-medium mb-1">
-                  1st Service Date
-                </label>
-                <Input
-                  type="date"
-                  name="firstServiceDate"
-                  value={form.firstServiceDate}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 p-1.5 rounded"
-                />
-              </div>
+
               <div>
                 <label className="block font-medium mb-1">Expiry Date</label>
                 <Input
                   type="date"
-                  name="expiryDate"
-                  value={form.expiryDate}
+                  name="expiry_date"
+                  value={form.expiry_date}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 p-1.5 rounded"
+                />
+              </div>
+              {/* Amount Paid Date */}
+              <div>
+                <label className="block font-medium mb-1">
+                  Amount Paid Date
+                </label>
+                <Input
+                  type="date"
+                  name="amtPaidDate"
+                  value={form.amtPaidDate}
                   onChange={handleChange}
                   className="w-full border border-gray-300 p-1.5 rounded"
                 />
               </div>
             </>
           )}
+          <div>
+            <label className="block font-medium mb-1">1st Service Date</label>
+            <Input
+              type="date"
+              name="start_date"
+              value={form.start_date}
+              onChange={handleChange}
+              className="w-full border border-gray-300 p-1.5 rounded"
+            />
+          </div>
 
           {/* Service Charge */}
           <div>
@@ -237,20 +276,8 @@ function CustomerDetailsPage() {
               Service Charge <span className="text-red-800">*</span>
             </label>
             <Input
-              name="serviceCharge"
-              value={form.serviceCharge}
-              onChange={handleChange}
-              className="w-full border border-gray-300 p-1.5 rounded"
-            />
-          </div>
-
-          {/* Amount Paid Date */}
-          <div>
-            <label className="block font-medium mb-1">Amount Paid Date</label>
-            <Input
-              type="date"
-              name="amtPaidDate"
-              value={form.amtPaidDate}
+              name="service_charge"
+              value={form.service_charge}
               onChange={handleChange}
               className="w-full border border-gray-300 p-1.5 rounded"
             />
@@ -270,13 +297,27 @@ function CustomerDetailsPage() {
 
           {/* Slots */}
           <div>
-            <label className="block font-medium mb-1">Slots</label>
-            <Input
+            <label className="block font-medium mb-1">
+              Slots <span className="text-red-800">*</span>
+            </label>
+
+            <select
               name="slots"
               value={form.slots}
               onChange={handleChange}
               className="w-full border border-gray-300 p-1.5 rounded"
-            />
+            >
+              <option value="">--select--</option>
+              <option value="9AM-10AM">9AM-10AM</option>
+              <option value="10AM-11AM">10AM-11AM</option>
+              <option value="11AM-12PM">11AM-12PM</option>
+              <option value="12PM-1PM">12PM-1PM</option>
+              <option value="1PM-2PM">1PM-2PM</option>
+              <option value="2PM-3PM">2PM-3PM</option>
+              <option value="3PM-4PM">3PM-4PM</option>
+              <option value="4PM-5PM">4PM-5PM</option>
+              <option value="5PM-6PM">5PM-6PM</option>
+            </select>
           </div>
 
           {/* Latitude */}
@@ -310,105 +351,103 @@ function CustomerDetailsPage() {
           {editIndex !== null ? "Update Item" : "Add Item"}
         </button>
       </div>
-
       {/* Treatment Details Table */}
-      <div className="bg-white shadow rounded-md p-4 text-sm mt-4 border-2 border-gray-100">
-        <h2 className="text-base font-semibold mb-3">Treatment Details</h2>
-        <table className="w-full border text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border px-2 py-1">#</th>
-              <th className="border px-2 py-1">Category</th>
-              <th className="border px-2 py-1">Contract</th>
-              <th className="border px-2 py-1">Treatment</th>
-              <th className="border px-2 py-1">Service Date</th>
-              <th className="border px-2 py-1">Paid Date</th>
-              <th className="border px-2 py-1">Charges</th>
-              <th className="border px-2 py-1">Description</th>
-              <th className="border px-2 py-1">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {treatments.map((treat, index) => (
-              <tr key={treat.id}>
-                <td className="border px-2 py-1 text-center">{index + 1}</td>
-                <td className="border px-2 py-1">{treat.category}</td>
-                <td className="border px-2 py-1">{treat.contractType}</td>
-                <td className="border px-2 py-1">{treat.treatment}</td>
-                <td className="border px-2 py-1">{treat.serviceDate}</td>
-                <td className="border px-2 py-1">{treat.amountPaidDate}</td>
-                <td className="border px-2 py-1">{treat.totalCharges}</td>
-                <td className="border px-2 py-1">{treat.description}</td>
-                <td className="border px-2 py-1 text-blue-700 cursor-pointer text-xs">
-                  <span>Edit</span> |{" "}
-                  <span
-                    onClick={() => window.open(`/bill/${treat.id}`, "_blank")}
-                  >
-                    BILL
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
 
-      {/* Past Services */}
-      <div className="bg-white shadow rounded-md p-4 text-sm mt-4 border-2 border-gray-100">
-        <h2 className="text-base font-semibold mb-3">
-          Previous / Past Services
+      <div className="bg-white shadow rounded-md p-4 text-sm mt-4 border border-gray-200">
+        <h2 className="text-lg font-semibold mb-4 text-gray-800">
+          Treatment Details
         </h2>
-        <table className="w-full border text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border px-2 py-1">Date</th>
-              <th className="border px-2 py-1">Category</th>
-              <th className="border px-2 py-1">Complaint</th>
-              <th className="border px-2 py-1">Technician</th>
-              <th className="border px-2 py-1">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pastServices.map((srv, idx) => (
-              <tr key={idx}>
-                <td className="border px-2 py-1">{srv.date}</td>
-                <td className="border px-2 py-1">{srv.jobCategory}</td>
-                <td className="border px-2 py-1">{srv.complaint}</td>
-                <td className="border px-2 py-1">{srv.technician}</td>
-                <td className="border px-2 py-1">{srv.status}</td>
+        <div className="overflow-auto rounded-md">
+          <table className="w-full text-sm border-collapse">
+            <thead className="bg-gray-300 text-gray-700">
+              <tr>
+                <th className="border px-3 py-2 font-medium text-left border-gray-200">
+                  #
+                </th>
+                <th className="border px-3 py-2 font-medium text-left border-gray-200">
+                  Category
+                </th>
+                <th className="border px-3 py-2 font-medium text-left border-gray-200">
+                  Contract
+                </th>
+                <th className="border px-3 py-2 font-medium text-left border-gray-200">
+                  Treatment
+                </th>
+                <th className="border px-3 py-2 font-medium text-left border-gray-200">
+                  Frequency
+                </th>
+                <th className="border px-3 py-2 font-medium text-left border-gray-200">
+                  Contract Period
+                </th>
+                <th className="border px-3 py-2 font-medium text-left border-gray-200">
+                  Paid Date
+                </th>
+                <th className="border px-3 py-2 font-medium text-left border-gray-200">
+                  Charges
+                </th>
+                <th className="border px-3 py-2 font-medium text-left border-gray-200">
+                  Description
+                </th>
+                <th className="border px-3 py-2 font-medium text-left border-gray-200">
+                  Action
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Future Services */}
-      <div className="bg-white shadow rounded-md p-4 text-sm mt-4 border-2 border-gray-100">
-        <h2 className="text-base font-semibold mb-3">
-          Next / Future Service Calls
-        </h2>
-        <table className="w-full border text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border px-2 py-1">Treatment</th>
-              <th className="border px-2 py-1">Service Date</th>
-              <th className="border px-2 py-1">Amount Paid Date</th>
-              <th className="border px-2 py-1">Service Charges</th>
-              <th className="border px-2 py-1">Technician</th>
-            </tr>
-          </thead>
-          <tbody>
-            {futureServices.map((item, idx) => (
-              <tr key={idx}>
-                <td className="border px-2 py-1">{item.treatment}</td>
-                <td className="border px-2 py-1">{item.serviceDate}</td>
-                <td className="border px-2 py-1">{item.amountPaidDate}</td>
-                <td className="border px-2 py-1">{item.serviceCharges}</td>
-                <td className="border px-2 py-1">{item.technician}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {treatments.map((treat, index) => (
+                <tr
+                  key={treat.id}
+                  className="even:bg-gray-150 hover:bg-blue-50 transition"
+                >
+                  <td className="border border-gray-200 px-3 py-2 text-center">
+                    {index + 1}
+                  </td>
+                  <td className="border  border-gray-200 px-3 py-2">
+                    {treat.category}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2">
+                    {treat.contract_type}
+                  </td>
+                  <td className="border  border-gray-200 px-3 py-2">
+                    {treat.service}
+                  </td>
+                  <td className="border  border-gray-200 px-3 py-2">
+                    {treat.service_frequency}
+                  </td>
+                  <td className="border  border-gray-200 px-3 py-2">
+                    {moment(treat.start_date).format("DD MMM YYYY")} -{" "}
+                    {moment(treat.expiry_date).format("DD MMM YYYY")}
+                  </td>
+                  <td className="border border-gray-200  px-3 py-2">
+                    {treat.amtPaidDate
+                      ? moment(treat.amtPaidDate).format("DD MMM YYYY")
+                      : "-"}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2 text-right">
+                    ₹ {treat.service_charge}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2">
+                    {treat.description}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2 space-x-2">
+                    <button
+                      onClick={() => handleEdit(index)}
+                      className="text-blue-600 hover:underline text-xs"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => window.open(`/bill/${treat.id}`, "_blank")}
+                      className="text-green-600 hover:underline text-xs"
+                    >
+                      Bill
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
