@@ -67,7 +67,6 @@ const Login = () => {
                 name="email"
                 value={credentials.email}
                 onChange={handleChange}
-                placeholder="Enter your email or username"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
               />
             </div>
@@ -79,7 +78,6 @@ const Login = () => {
                 name="password"
                 value={credentials.password}
                 onChange={handleChange}
-                placeholder="Enter your password"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
               />
             </div>

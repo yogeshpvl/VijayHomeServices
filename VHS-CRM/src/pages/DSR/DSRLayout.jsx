@@ -9,7 +9,7 @@ const DSRLayout = () => {
 
       <div
         className="mt-5 bg-white shadow-md p-4 rounded-md"
-        style={{ background: "#f5eceab8" }}
+        // style={{ background: "#f5eceab8" }}
       >
         <Outlet />
       </div>

@@ -132,23 +132,16 @@ exports.deleteBooking = async (req, res) => {
 
 exports.getMonthlyCounts = async (req, res) => {
   try {
-    const { year, month, category, city } = req.query;
-    const cacheKey = `bookings:${year}-${month}:${category}:${city}`;
+    const { fromdate, enddate, category, city } = req.query;
 
-    // Check Redis cache
-    const cachedData = await redisClient.get(cacheKey);
-    if (cachedData) {
-      console.log("🚀 Returning cached data");
-      return res.json(JSON.parse(cachedData));
-    }
-
+    console.log("city", city);
     // Fetch from DB if not cached
     const bookings = await Booking.findAll({
       where: {
         category,
         city,
         start_date: {
-          [Op.between]: [`${year}-${month}-01`, `${year}-${month}-31`],
+          [Op.between]: [`${fromdate}`, `${enddate}`],
         },
       },
     });
@@ -159,9 +152,6 @@ exports.getMonthlyCounts = async (req, res) => {
       const date = booking.start_date.toISOString().split("T")[0]; // Extract YYYY-MM-DD
       dailyCounts[date] = (dailyCounts[date] || 0) + 1;
     });
-
-    // Store in Redis for 1 hour
-    await redisClient.setEx(cacheKey, 3600, JSON.stringify(dailyCounts));
 
     return res.json(dailyCounts);
   } catch (error) {

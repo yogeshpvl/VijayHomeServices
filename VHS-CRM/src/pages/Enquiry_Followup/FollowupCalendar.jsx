@@ -39,7 +39,7 @@ function FollowupCalendar() {
       );
 
       const calendarEvents = followups.map((followup) => ({
-        title: `Survey: ${followup.count}`,
+        title: `Call Later: ${followup.count}`,
         start: moment(followup.next_followup_date).toDate(),
         end: moment(followup.next_followup_date).add(1, "hour").toDate(),
       }));

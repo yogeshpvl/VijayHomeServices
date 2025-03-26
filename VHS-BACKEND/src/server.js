@@ -85,7 +85,7 @@ app.use("/api", quotationItemRoutes);
 
 //service booking
 app.use("/api/bookings", bookingsRoutes);
-app.use("/api", bookingServicesRoutes);
+app.use("/api/bookingService", bookingServicesRoutes);
 app.use("/api", vendorAssignmentsRoutes);
 
 const PORT = process.env.PORT || 5000;

@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../../config/database"); // Import DB connection
+const User = require("../../models/customer/customer");
 
 const Booking = sequelize.define(
   "Booking",
@@ -56,5 +57,8 @@ const Booking = sequelize.define(
   },
   { tableName: "bookings", timestamps: false }
 );
+
+// In Booking model
+Booking.belongsTo(User, { foreignKey: "user_id", as: "customer" });
 
 module.exports = Booking;

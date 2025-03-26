@@ -9,8 +9,6 @@ import { useLocation } from "react-router-dom";
 function Add() {
   const { state } = useLocation();
 
-  // Example: state.name, state.mobile, etc.
-  console.log("Pre-filled enquiry data:", state);
   const users = JSON.parse(localStorage.getItem("user"));
 
   const [customertypedata, setcustomertypedata] = useState([]);

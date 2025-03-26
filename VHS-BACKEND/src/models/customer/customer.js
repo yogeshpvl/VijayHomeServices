@@ -31,6 +31,7 @@ const Customer = sequelize.define(
     reference: { type: DataTypes.STRING },
   },
   {
+    tableName: "customers",
     timestamps: true,
   }
 );

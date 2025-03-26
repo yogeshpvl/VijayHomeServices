@@ -30,7 +30,7 @@ function CustomerDetailsPage() {
     amountFrequency: "",
     amtexpiry_date: "",
     amtPaidDate: "",
-    slots: "",
+    selected_slot_text: "",
     latitude: 0,
     longitude: 0,
     description: "",
@@ -89,8 +89,10 @@ function CustomerDetailsPage() {
         ...form,
         user_id: id,
         start_date: form.start_date,
+        city: customer.city,
+        type: customer.approach,
         expiry_date:
-          form.contract_type === "AMC" ? form.expiry_date : form.start_date, // 👈 this is the fix
+          form.contract_type === "AMC" ? form.expiry_date : form.start_date,
       };
 
       await axios.post(`${config.API_BASE_URL}/bookings/create`, payload);
@@ -107,7 +109,7 @@ function CustomerDetailsPage() {
         amountFrequency: "",
         amtexpiry_date: "",
         amtPaidDate: "",
-        slots: "",
+        selected_slot_text: "",
         latitude: 0,
         longitude: 0,
         description: "",
@@ -295,15 +297,15 @@ function CustomerDetailsPage() {
             />
           </div>
 
-          {/* Slots */}
+          {/* selected_slot_text */}
           <div>
             <label className="block font-medium mb-1">
-              Slots <span className="text-red-800">*</span>
+              selected_slot_text <span className="text-red-800">*</span>
             </label>
 
             <select
-              name="slots"
-              value={form.slots}
+              name="selected_slot_text"
+              value={form.selected_slot_text}
               onChange={handleChange}
               className="w-full border border-gray-300 p-1.5 rounded"
             >
