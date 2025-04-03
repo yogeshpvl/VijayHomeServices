@@ -18,7 +18,7 @@ const TryToBooking = sequelize.define(
     phoneNumber: {
       type: DataTypes.STRING,
       allowNull: false,
-      field: "phonenumber", // 👈 map it to the actual column in DB
+      field: "phonenumber",
     },
 
     service: {

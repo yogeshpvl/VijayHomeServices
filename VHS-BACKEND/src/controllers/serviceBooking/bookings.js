@@ -1,5 +1,6 @@
 const Booking = require("../../models/serviceBooking/bookings");
 const BookingService = require("../../models/serviceBooking/bookingServices");
+const User = require("../../models/customer/customer");
 const { Op } = require("sequelize");
 
 exports.createBooking = async (req, res) => {
@@ -102,14 +103,28 @@ exports.getBookingsByUserId = async (req, res) => {
   }
 };
 
-// ✅ Update a booking by ID
 exports.updateBooking = async (req, res) => {
   try {
-    const updatedBooking = await Booking.update(req.body, {
-      where: { id: req.params.id },
-    });
-    if (updatedBooking[0] === 0)
+    // Check if body is empty
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({ message: "No data to update" });
+    }
+
+    console.log("req.params.id ", req.params.id, req.body);
+
+    // Find the booking first
+    const booking = await Booking.findOne({ where: { id: req.params.id } });
+
+    if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Dynamically update only the fields that are present in req.body
+    const updatedBooking = await booking.update(req.body);
+
+    // Log the update result
+    console.log("updatedBooking", updatedBooking);
+
     res.status(200).json({ message: "Booking updated successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -180,6 +195,77 @@ exports.getBookingsWithFilter = async (req, res) => {
       order: [["start_date", "DESC"]],
     });
 
+    return res.json({
+      totalRecords: bookings.count,
+      totalPages: Math.ceil(bookings.count / limitNumber),
+      currentPage: pageNumber,
+      bookings: bookings.rows,
+    });
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+exports.getRunningProjectWithFilter = async (req, res) => {
+  try {
+    const { page = 1, limit = 25 } = req.query;
+    const city = "Bangalore";
+    const category = "Painting";
+    const contract_type = "AMC";
+
+    // Convert page & limit to numbers
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+    const offset = (pageNumber - 1) * limitNumber;
+
+    // Log filters for debugging
+    console.log("Filters:", { category, city, contract_type });
+
+    const bookings = await Booking.findAndCountAll({
+      where: {
+        category,
+        city,
+        contract_type,
+      },
+      limit: limitNumber,
+      offset: offset,
+      order: [["start_date", "DESC"]],
+      include: [
+        {
+          model: BookingService,
+          required: true,
+          attributes: [
+            "id",
+            "worker_names",
+            "day_to_complete",
+            "job_complete",
+            "tech_comment",
+            "worker_amount",
+            "vendor_name",
+          ],
+        },
+        {
+          model: User, // Include the customer model
+          as: "customer",
+          attributes: [
+            "id",
+            "customerName",
+            "email",
+            "mainContact",
+            "alternateContact",
+            "lnf",
+            "city",
+            "approach",
+            "reference",
+          ],
+        },
+      ],
+    });
+
+    console.log("Bookings found:", bookings.count); // Log count of found bookings
+
+    // Return the paginated result
     return res.json({
       totalRecords: bookings.count,
       totalPages: Math.ceil(bookings.count / limitNumber),

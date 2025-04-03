@@ -11,9 +11,17 @@ router.get(
   followupController.getMonthlyFollowupCountsByDateAndResponse
 );
 router.get("/datewise", followupController.getCallLaterDateWiseFollowups);
+router.get("/datewiseSurveys", followupController.getSurveyDateWiseFollowups);
 
 router.get("/call-later", followupController.getFollowupsByResponse);
-
+router.put(
+  "/update-followup-appointment/:followupId",
+  followupController.updateFollowupAppointment
+);
+router.put(
+  "/update-cancel-survey/:followupId",
+  followupController.updateFollowupSurveyCancel
+);
 // ✅ 2️⃣ Get Follow-ups Response-wise
 router.get("/response/:response", followupController.getFollowupsByResponse);
 

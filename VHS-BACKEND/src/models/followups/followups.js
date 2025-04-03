@@ -54,6 +54,36 @@ const Followup = sequelize.define(
     next_followup_date: {
       type: DataTypes.DATE,
     },
+    // ✅ New fields added correctly
+    appo_date: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
+    appo_time: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    executive_name: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    status: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: "NOT ASSIGNED",
+    },
+    creason: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    executive_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "vendors", // 🔁 typo fixed: was "venodrs"
+        key: "id", // make sure this matches vendor primary key
+      },
+    },
   },
   {
     timestamps: true,

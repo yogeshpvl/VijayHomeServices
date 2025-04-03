@@ -15,7 +15,34 @@ const BookingService = sequelize.define(
     service_id: { type: DataTypes.STRING, allowNull: false },
     service_charge: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
     service_date: { type: DataTypes.DATE, allowNull: false },
-    status: { type: DataTypes.STRING, defaultValue: "Pending" }, // Status: Pending, Completed, Canceled
+    customer_feedback: {
+      type: DataTypes.TEXT,
+    },
+    worker_names: {
+      type: DataTypes.TEXT,
+    },
+    day_to_complete: {
+      type: DataTypes.TEXT,
+    },
+    job_complete: {
+      type: DataTypes.STRING,
+    },
+    tech_comment: {
+      type: DataTypes.TEXT,
+    },
+    worker_amount: {
+      type: DataTypes.DECIMAL(10, 2),
+    },
+    vendor_id: {
+      type: DataTypes.STRING,
+    },
+    vendor_name: {
+      type: DataTypes.STRING,
+    },
+    cancel_reason: {
+      type: DataTypes.STRING,
+    },
+    status: { type: DataTypes.STRING, defaultValue: "Pending" },
     created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   },
   { tableName: "booking_services", timestamps: false }

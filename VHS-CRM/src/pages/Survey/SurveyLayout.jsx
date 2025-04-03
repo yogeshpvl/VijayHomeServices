@@ -7,10 +7,7 @@ const SurveyLayout = () => {
     <div className="p-6">
       <Navbar />
 
-      <div
-        className="mt-5 bg-white shadow-md p-4 rounded-md"
-        style={{ background: "#f5eceab8" }}
-      >
+      <div className="mt-5 bg-white shadow-md p-4 rounded-md">
         <Outlet />
       </div>
     </div>

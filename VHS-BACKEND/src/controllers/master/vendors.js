@@ -174,24 +174,23 @@ exports.getByCityAndCategory = async (req, res) => {
   const { city, category, type } = req.query;
 
   try {
-    // Fetch vendors based on city and type
     const list = await Vendor.findAll({
-      where: { city, type },
-      attributes: ["vhsname", "smsname", "id"], // Correct attributes syntax
+      where: {
+        city,
+        type,
+        category: {
+          [Op.contains]: [{ name: category }],
+        },
+      },
+      attributes: ["vhsname", "smsname", "type", "id"],
     });
-    console.log("list", list);
-    // Filter the vendors based on category (assuming category is an array)
-    const filtered = list.filter(
-      (vendor) => vendor.category?.some((cat) => cat.name === category) // Check if the category exists
-    );
 
-    res.json(filtered); // Return the filtered list of vendors
+    res.json(list);
   } catch (error) {
     console.error("Error fetching vendors:", error);
-    res.status(500).json({ error: error.message }); // Error handling
+    res.status(500).json({ error: error.message });
   }
 };
-
 exports.edit = async (req, res) => {
   try {
     const vendor = await Vendor.update(req.body, {

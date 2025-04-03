@@ -36,9 +36,8 @@ const TableReuse = ({
     onPageChange(newPage); // Send updated page to the parent
   };
 
-  // Redirect to Survey Details
-  const handleRowClick = (id) => {
-    navigate(`/Survey/surveyDetails`);
+  const handleRowClick = (id, rowData) => {
+    navigate(`/Survey/surveyDetails/${id}`, { state: { rowData } });
   };
 
   return (
@@ -63,7 +62,6 @@ const TableReuse = ({
                         ...searchFilters,
                         [col.accessor]: e.target.value,
                       });
-                      onFilterChange(updatedFilters);
                     }}
                   >
                     <option value="">All</option>
@@ -73,11 +71,30 @@ const TableReuse = ({
                       </option>
                     ))}
                   </select>
+                ) : col.type === "status" ? (
+                  <select
+                    className="mt-2 block w-full px-2 py-1 text-gray-700 bg-gray-100 rounded-md focus:outline-none focus:ring focus:ring-red-300"
+                    value={searchFilters[col.accessor] || ""}
+                    onChange={(e) => {
+                      handleFilterChange(e, col.accessor);
+                      onFilterChange({
+                        ...searchFilters,
+                        [col.accessor]: e.target.value,
+                      });
+                    }}
+                  >
+                    <option value="">All</option>
+                    <option value="NOT ASSIGNED">NOT ASSIGNED</option>
+                    <option value="ASSIGNED FOR SURVEY">
+                      ASSIGNED FOR SURVEY
+                    </option>
+                    <option value="QUOTE GENERATE">QUOTE GENERATE</option>
+                    <option value="QUOTE SHARED">QUOTE SHARED</option>
+                  </select>
                 ) : (
                   <input
                     type="text"
                     className="mt-2 block w-full px-2 py-1 text-gray-700 bg-gray-100 rounded-md focus:outline-none focus:ring focus:ring-red-300"
-                    // placeholder={`Search ${col.label}`}
                     value={searchFilters[col.accessor] || ""}
                     onChange={(e) => handleFilterChange(e, col.accessor)}
                     onKeyPress={handleKeyPress}
@@ -93,7 +110,7 @@ const TableReuse = ({
           {data.map((row, index) => (
             <tr
               key={row.enquiryId}
-              onClick={() => handleRowClick(row.enquiryId)}
+              onClick={() => handleRowClick(row.enquiryId, row)}
               className="border-b border-gray-300 even:bg-gray-50 hover:bg-red-50 cursor-pointer transition text-xs"
             >
               {columns.map((col, colIndex) => (

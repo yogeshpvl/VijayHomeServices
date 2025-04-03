@@ -1,0 +1,9 @@
+appartmentname;
+communityn;
+percentage;
+projectmanager;
+contactperson;
+contactno;
+email;
+login;
+password;

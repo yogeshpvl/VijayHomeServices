@@ -1,0 +1,16 @@
+b2bname;
+b2b_id;
+contactperson;
+maincontact;
+alternateno;
+email;
+gst;
+address;
+city;
+b2btype;
+approach;
+executive_name;
+executive_number;
+instructions;
+date;
+time;

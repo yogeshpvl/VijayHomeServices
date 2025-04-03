@@ -20,8 +20,6 @@ const EnquiryDetail = () => {
   const [error, setError] = useState(null);
   const [responses, setResponses] = useState([]);
 
-  console.log("enquiry?.category", enquiry?.category);
-
   const [formData, setFormData] = useState({
     enquiryId: id,
     staff: users.displayname,

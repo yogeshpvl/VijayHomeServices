@@ -5,8 +5,6 @@ const bookingServiceController = require("../../controllers/serviceBooking/booki
 router.get("/MonthlyCounts", bookingServiceController.getMonthlyServiceCounts);
 router.get("/dailydata", bookingServiceController.getDailyServiceData);
 
-// ✅ Create a booking service entry
-router.post("/", bookingServiceController.createBookingService);
 router.get("/service/:id", bookingServiceController.getServiceById);
 
 // ✅ Get all services for a specific booking
@@ -15,10 +13,11 @@ router.get(
   bookingServiceController.getServicesByBookingId
 );
 
-// ✅ Get monthly services with vendor filter
+// ✅ Create a booking service entry
+router.post("/", bookingServiceController.createBookingService);
 
 // ✅ Update service status
-router.put("/:id/status", bookingServiceController.updateServiceStatus);
+router.put("/:id", bookingServiceController.updateServiceDetails);
 
 // ✅ Delete a booking service
 router.delete("/:id", bookingServiceController.deleteBookingService);

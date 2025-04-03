@@ -61,7 +61,7 @@ const RunningProjects = ({ itemsPerPage = 10 }) => {
   // Filtered and paginated data
   const filteredData = data.filter((row) =>
     columns.some((col) =>
-      String(row[col.accessor]).toLowerCase().includes(searchTerm)
+      String(row[col.accessor]).toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
@@ -69,14 +69,37 @@ const RunningProjects = ({ itemsPerPage = 10 }) => {
   const endIndex = startIndex + itemsPerPage;
   const paginatedData = filteredData.slice(startIndex, endIndex);
 
+  // Handle pagination
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
   return (
-    <div
-      className="mt-5 bg-white shadow-md p-4 rounded-md"
-      style={{ background: "#f5eceab8" }}
-    >
+    <div className="mt-5 bg-white shadow-md p-4 rounded-md">
       <div className="p-4 bg-white shadow-md rounded-md">
-        <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse text-sm">
+        <h2>Running Projects</h2>
+        <div className="mb-4">
+          {/* Search Input */}
+          <input
+            type="text"
+            className="px-4 py-2 w-full border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            placeholder="Search in table..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* Table with scrollable columns */}
+        <div className="overflow-x-auto max-w-full  border border-red-100 rounded-md">
+          <table className="min-w-full table-auto text-sm">
             <thead className="bg-gray-200">
               <tr>
                 {columns.map((col, index) => (
@@ -101,6 +124,27 @@ const RunningProjects = ({ itemsPerPage = 10 }) => {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="flex justify-between items-center mt-4">
+          <button
+            onClick={handlePrev}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400"
+            disabled={currentPage === 1}
+          >
+            Previous
+          </button>
+          <div className="text-sm text-gray-600">
+            Page {currentPage} of {totalPages}
+          </div>
+          <button
+            onClick={handleNext}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400"
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>

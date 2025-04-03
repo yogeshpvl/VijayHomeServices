@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../../config/database"); // Import DB connection
+const sequelize = require("../../config/database");
 const User = require("../../models/customer/customer");
 
 const Booking = sequelize.define(
@@ -15,7 +15,7 @@ const Booking = sequelize.define(
     service_id: { type: DataTypes.STRING },
     plan_name: { type: DataTypes.STRING },
     service_charge: { type: DataTypes.STRING(50) },
-    date_of_service: { type: DataTypes.ARRAY(DataTypes.TEXT) }, // Array of dates
+    date_of_service: { type: DataTypes.ARRAY(DataTypes.TEXT) },
     delivery_address: { type: DataTypes.JSONB },
     description: { type: DataTypes.TEXT },
     marker_coordinate: { type: DataTypes.JSONB },

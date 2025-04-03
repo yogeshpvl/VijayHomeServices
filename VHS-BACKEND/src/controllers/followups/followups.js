@@ -86,14 +86,6 @@ exports.getMonthlyFollowupCountsByDateAndResponse = async (req, res) => {
   try {
     const { from_date, end_date, response, category } = req.query;
 
-    console.log(
-      "from_date, end_date, response, category",
-      from_date,
-      end_date,
-      response,
-      category
-    );
-
     if (!from_date || !end_date || !response) {
       return res.status(400).json({
         message: "from_date, end_date, and response are required",
@@ -154,7 +146,9 @@ exports.getMonthlyFollowupCountsByDateAndResponse = async (req, res) => {
 
 exports.getCallLaterDateWiseFollowups = async (req, res) => {
   try {
-    const { page = 1, limit = 25, search = "{}", date, category } = req.query;
+    const { page = 1, limit = 25, search, date, category } = req.query;
+
+    console.log("req.query", req.query);
 
     const offset = (page - 1) * limit;
     const filters = JSON.parse(search);
@@ -227,6 +221,95 @@ exports.getCallLaterDateWiseFollowups = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+exports.getSurveyDateWiseFollowups = async (req, res) => {
+  try {
+    const { page = 1, limit = 25, search, date, category } = req.query;
+
+    console.log("req.query", req.query);
+
+    const offset = (page - 1) * limit;
+    const filters = JSON.parse(search);
+
+    if (!date) {
+      return res
+        .status(400)
+        .json({ message: "❌ 'date' parameter is required" });
+    }
+
+    let filterConditions = ``;
+    if (category) {
+      filterConditions += ` AND LOWER(e."category") = LOWER(:category)`;
+    }
+
+    // Search filters
+    let searchQuery = "";
+    if (filters.name) {
+      searchQuery += ` AND LOWER(e."name") LIKE LOWER('%${filters.name}%')`;
+    }
+    if (filters.mobile) {
+      searchQuery += ` AND e."mobile" LIKE '%${filters.mobile}%'`;
+    }
+    if (filters.city) {
+      searchQuery += ` AND LOWER(e."city") LIKE LOWER('%${filters.city}%')`;
+    }
+
+    const result = await sequelize.query(
+      `
+      SELECT 
+        e.*,
+        f.response AS followup_response,
+         f."followupId" AS followup_id,
+        f.description AS followup_description,
+        f.date AS followup_date,
+        f.next_followup_date,
+        f.staff AS followup_staff,
+  f.appo_date AS followup_appo_date,
+  f.next_followup_date AS followup_next_followup_date,
+
+  f.appo_time AS followup_appo_time,
+  f.executive_name AS followup_executive_name,
+  f.executive_id AS followup_executive_id,
+  f.status AS followup_status,
+    f.creason AS followup_creason,
+  f.appo_time AS followup_appo_time,
+        f."createdAt" AS followup_createdAt
+      FROM enquiries e
+      JOIN (
+        SELECT f1.*
+        FROM followups f1
+        INNER JOIN (
+          SELECT "enquiryId", MAX("createdAt") AS max_created
+          FROM followups
+          WHERE response = 'Survey'
+          GROUP BY "enquiryId"
+        ) f2 ON f1."enquiryId" = f2."enquiryId" AND f1."createdAt" = f2.max_created
+        WHERE f1."next_followup_date" = :date
+      ) f ON f."enquiryId" = e."enquiryId"
+      WHERE 1=1
+      ${filterConditions}
+      ${searchQuery}
+      ORDER BY f."createdAt" DESC
+      LIMIT :limit OFFSET :offset
+      `,
+      {
+        replacements: {
+          limit,
+          offset,
+          date,
+          category,
+        },
+        type: QueryTypes.SELECT,
+      }
+    );
+
+    res.status(200).json({ data: result });
+  } catch (error) {
+    console.error("❌ Error in getCallLaterDateWiseFollowups:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 exports.createFollowup = async (req, res) => {
   try {
     const {
@@ -575,5 +658,62 @@ exports.getFollowupsByResponse = async (req, res) => {
   } catch (error) {
     console.error("Error fetching followups:", error);
     res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateFollowupAppointment = async (req, res) => {
+  try {
+    const { followupId } = req.params;
+    const {
+      next_followup_date,
+      appo_time,
+      executive_name,
+      executive_id,
+      status = "ASSIGNED FOR SURVEY",
+    } = req.body;
+
+    const followup = await Followup.findByPk(followupId);
+
+    if (!followup) {
+      return res.status(404).json({ message: "❌ Followup not found" });
+    }
+
+    await followup.update({
+      next_followup_date,
+      appo_time,
+      executive_name,
+      executive_id,
+      status,
+    });
+
+    res
+      .status(200)
+      .json({ message: "✅ Followup updated successfully", followup });
+  } catch (error) {
+    console.error("❌ Error updating followup:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+exports.updateFollowupSurveyCancel = async (req, res) => {
+  try {
+    const { followupId } = req.params;
+    const { creason, status = "CANCEL" } = req.body;
+
+    const followup = await Followup.findByPk(followupId);
+
+    if (!followup) {
+      return res.status(404).json({ message: "❌ Followup not found" });
+    }
+
+    await followup.update({
+      creason,
+      status,
+    });
+
+    res.status(200).json({ message: "✅ Followup cancelled successfully" });
+  } catch (error) {
+    console.error("❌ Error updating followup:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };

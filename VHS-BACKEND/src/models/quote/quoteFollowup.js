@@ -1,0 +1,10 @@
+enquiry_id;
+category;
+foll_date;
+foll_time;
+staff_name;
+response;
+desc;
+nxtfoll;
+staffame;
+colorcode;

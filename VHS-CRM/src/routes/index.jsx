@@ -115,7 +115,7 @@ const AppContent = () => {
       }
     }
 
-    setTimeout(() => dispatch(setLoading(false)), 1000); // Simulate loading
+    setTimeout(() => dispatch(setLoading(false)), 500); // Simulate loading
   }, [location.pathname, dispatch, navigate]);
 
   return (
@@ -150,7 +150,10 @@ const AppContent = () => {
             <Route path="Survey" element={<SurveyLayout />}>
               <Route index element={<SurveyCalendar />} /> {/* Default route */}
               <Route path="SurveyCalendar" element={<SurveyCalendar />} />
-              <Route path="surveyDetails" element={<SurveyDetails />} />
+              <Route
+                path="surveyDetails/:enquiryId"
+                element={<SurveyDetails />}
+              />
               <Route
                 path="SurveyList/:date/:category"
                 element={<SurveyList />}

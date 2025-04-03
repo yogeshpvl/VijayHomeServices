@@ -65,6 +65,12 @@ const EnquiryService = {
         params: { page, limit, search, date, category },
       })
     ),
+  getSurveyDateWiseFollowups: ({ page, limit, search, date, category }) =>
+    handleRequest(() =>
+      api.get(`/followups/datewiseSurveys`, {
+        params: { page, limit, search, date, category },
+      })
+    ),
 
   getCallLaterFollowups: ({
     page = 1,

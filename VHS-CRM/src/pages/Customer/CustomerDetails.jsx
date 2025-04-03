@@ -91,6 +91,7 @@ function CustomerDetailsPage() {
         start_date: form.start_date,
         city: customer.city,
         type: customer.approach,
+        backoffice_executive: users.displayname,
         expiry_date:
           form.contract_type === "AMC" ? form.expiry_date : form.start_date,
       };

@@ -27,6 +27,8 @@ const roleList = [
   "Reports",
 ];
 
+const roleList1 = ["Cancel", "Reschedule"];
+
 const UserDetails = () => {
   const { id } = useParams();
 
@@ -35,6 +37,8 @@ const UserDetails = () => {
   const [city, setCity] = useState([]);
   const [categories, setCategories] = useState([]);
   const [cities, setCities] = useState([]);
+
+  console.log("roles", roles);
 
   // ✅ Fetch categories from API
   const fetchCategories = async () => {
@@ -130,19 +134,36 @@ const UserDetails = () => {
         />
       </div>
 
-      {/* Roles Checkboxes */}
-      <div className="border rounded p-4 mb-4 max-w-md">
-        {roleList.map((role) => (
-          <div key={role} className="flex items-center mb-2">
-            <input
-              type="checkbox"
-              checked={!!roles[role]}
-              onChange={() => handleRoleChange(role)}
-              className="mr-2 text-red-600 focus:ring-red-500 accent-red-700"
-            />
-            <label>{role}</label>
-          </div>
-        ))}
+      <div className="grid grid-cols-2 gap-1">
+        {/* Left column: Main roles */}
+        <div className="border rounded border-gray-200 p-4 mb-4 max-w-md">
+          {roleList.map((role) => (
+            <div key={role} className="flex items-center mb-2">
+              <input
+                type="checkbox"
+                checked={!!roles[role]}
+                onChange={() => handleRoleChange(role)}
+                className="mr-2"
+              />
+              <label>{role}</label>
+            </div>
+          ))}
+        </div>
+
+        {/* Right column: Extra roles like Cancel / Reschedule */}
+        <div className="border rounded border-gray-200 p-4 mb-4 max-w-md">
+          {roleList1.map((role) => (
+            <div key={role} className="flex items-center mb-2">
+              <input
+                type="checkbox"
+                checked={!!roles[role]}
+                onChange={() => handleRoleChange(role)}
+                className="mr-2"
+              />
+              <label>{role}</label>
+            </div>
+          ))}
+        </div>
       </div>
 
       <Button onClick={handleSubmit}>Save Rights</Button>

@@ -1,0 +1,9 @@
+b2b_id;
+category;
+folldate;
+staffname;
+response;
+desc;
+value;
+colorcode;
+nxtfoll;
