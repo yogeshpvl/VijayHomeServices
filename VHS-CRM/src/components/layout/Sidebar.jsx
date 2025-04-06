@@ -72,7 +72,7 @@ const menuConfig = [
   },
   {
     key: "Close Project",
-    path: "/Closed",
+    path: "/CloseProject",
     label: "Closed Project",
     icon: faTasks,
   },

@@ -3,6 +3,7 @@ const BookingService = require("../../models/serviceBooking/bookingServices");
 const { Op, Sequelize } = require("sequelize");
 const Booking = require("../../models/serviceBooking/bookings");
 const User = require("../../models/customer/customer");
+const Payment = require("../../models/payments/payments");
 
 // ✅ Create a new booking service entry
 exports.createBookingService = async (req, res) => {
@@ -125,14 +126,22 @@ exports.updateServiceDetails = async (req, res) => {
     job_complete,
     tech_comment,
     worker_amount,
-    status,
+
     vendor_id,
     vendor_name,
     cancel_reason,
+    service_date,
   } = req.body;
 
-  console.log(job_complete);
+  let finalStatus = req.body.status;
 
+  if (job_complete === "CANCEL") {
+    finalStatus = "SERVICE CANCELLED";
+  } else if (job_complete === "YES") {
+    finalStatus = "CLOSED BY OPERATION MANAGER";
+  } else if (vendor_name) {
+    finalStatus = "ASSIGNED FOR TECHNICIAN";
+  }
   try {
     const service = await BookingService.findByPk(id);
     if (!service) return res.status(404).json({ message: "Service not found" });
@@ -146,10 +155,11 @@ exports.updateServiceDetails = async (req, res) => {
       service.job_complete = job_complete || service.job_complete;
       service.tech_comment = tech_comment || service.tech_comment;
       service.worker_amount = worker_amount || service.worker_amount;
-      service.status = status || service.status;
+      service.status = finalStatus || service.status;
       service.vendor_id = vendor_id || service.vendor_id;
       service.vendor_name = vendor_name || service.vendor_name;
       service.cancel_reason = cancel_reason || service.cancel_reason;
+      service.service_date = service_date || service.service_date;
 
       await service.save(); // Save within the transaction
 
@@ -167,6 +177,119 @@ exports.updateServiceDetails = async (req, res) => {
   }
 };
 
+exports.ServiceStartByTenhnicain = async (req, res) => {
+  const { id } = req.params;
+  const {
+    customer_feedback,
+    worker_names,
+    day_to_complete,
+    job_complete,
+    tech_comment,
+    worker_amount,
+    start_date_time,
+    vendor_id,
+    vendor_name,
+    cancel_reason,
+    service_date,
+    before_service_img,
+  } = req.body;
+
+  let finalStatus = "SERVICE STARTED";
+
+  try {
+    const service = await BookingService.findByPk(id);
+    if (!service) return res.status(404).json({ message: "Service not found" });
+
+    try {
+      // Update the service details inside the transaction
+      service.customer_feedback =
+        customer_feedback || service.customer_feedback;
+      service.worker_names = worker_names || service.worker_names;
+      service.day_to_complete = day_to_complete || service.day_to_complete;
+      service.job_complete = job_complete || service.job_complete;
+      service.tech_comment = tech_comment || service.tech_comment;
+      service.worker_amount = worker_amount || service.worker_amount;
+      service.status = finalStatus || service.status;
+      service.vendor_id = vendor_id || service.vendor_id;
+      service.vendor_name = vendor_name || service.vendor_name;
+      service.cancel_reason = cancel_reason || service.cancel_reason;
+      service.service_date = service_date || service.service_date;
+      service.start_date_time = start_date_time || service.start_date_time;
+      service.before_service_img =
+        before_service_img || service.before_service_img;
+
+      await service.save(); // Save within the transaction
+
+      res.status(200).json({
+        message: "Service details updated successfully",
+        data: service,
+      });
+    } catch (error) {
+      console.error("Error in transaction:", error);
+      res.status(500).json({ error: error.message });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.ServiceENDByTenhnicain = async (req, res) => {
+  const { id } = req.params;
+  const {
+    customer_feedback,
+    worker_names,
+    day_to_complete,
+    job_complete,
+    tech_comment,
+    worker_amount,
+    end_date_time,
+    vendor_id,
+    vendor_name,
+    cancel_reason,
+    service_date,
+    after_service_img,
+  } = req.body;
+
+  let finalStatus = "SERVICE COMPLETED";
+
+  try {
+    const service = await BookingService.findByPk(id);
+    if (!service) return res.status(404).json({ message: "Service not found" });
+
+    try {
+      // Update the service details inside the transaction
+      service.customer_feedback =
+        customer_feedback || service.customer_feedback;
+      service.worker_names = worker_names || service.worker_names;
+      service.day_to_complete = day_to_complete || service.day_to_complete;
+      service.job_complete = job_complete || service.job_complete;
+      service.tech_comment = tech_comment || service.tech_comment;
+      service.worker_amount = worker_amount || service.worker_amount;
+      service.status = finalStatus || service.status;
+      service.vendor_id = vendor_id || service.vendor_id;
+      service.vendor_name = vendor_name || service.vendor_name;
+      service.cancel_reason = cancel_reason || service.cancel_reason;
+      service.service_date = service_date || service.service_date;
+      service.end_date_time = end_date_time || service.end_date_time;
+      service.after_service_img =
+        after_service_img || service.after_service_img;
+
+      await service.save(); // Save within the transaction
+
+      res.status(200).json({
+        message: "Service details updated successfully",
+        data: service,
+      });
+    } catch (error) {
+      console.error("Error in transaction:", error);
+      res.status(500).json({ error: error.message });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+};
 // ✅ Delete a booking service entry
 exports.deleteBookingService = async (req, res) => {
   try {
@@ -258,110 +381,84 @@ exports.getMonthlyServiceCounts = async (req, res) => {
     res.status(500).json({ error: "Server error, please try again later." });
   }
 };
-// exports.getDailyServiceData = async (req, res) => {
-//   try {
-//     const { date, city, category, page = 1, limit = 10 } = req.query;
 
-//     // Validate input parameters
-//     if (!date || !city || !category) {
-//       return res.status(400).json({
-//         error: "date, city, and category are required",
-//       });
-//     }
+exports.getMonthlyPaymentsServiceCounts = async (req, res) => {
+  try {
+    const { from_date, end_date, city } = req.query;
 
-//     const parsedDate = date; // Date is already in YYYY-MM-DD format
+    // Validate input parameters
+    if (!from_date || !end_date || !city) {
+      return res.status(400).json({
+        error: "from_date, end_date, city,  are required",
+      });
+    }
 
-//     // Split cities into an array, making sure to trim spaces
-//     const cityList = city.split(",").map((c) => c.trim());
+    // Parse the dates
+    const parsedFromDate = moment(from_date).startOf("day").toDate();
+    const parsedEndDate = moment(end_date).endOf("day").toDate();
 
-//     // Convert page and limit to numbers
-//     const pageNumber = parseInt(page, 10);
-//     const pageLimit = parseInt(limit, 10);
+    // Split cities into an array
+    const cityList = city.split(",");
 
-//     // Calculate the offset for pagination
-//     const offset = (pageNumber - 1) * pageLimit;
+    // Step 1: Get the services for the given date range, cities, and category
+    const services = await BookingService.findAll({
+      where: {
+        amt_date: {
+          [Op.gte]: parsedFromDate, // greater than or equal to the start date
+          [Op.lte]: parsedEndDate, // less than or equal to the end date
+        },
+      },
+      include: {
+        model: Booking, // Include the related Booking model
+        where: {
+          city: { [Op.in]: cityList }, // Filter by multiple cities using Op.in
+        },
+        required: true, // Ensures that the `Booking` model is joined (inner join)
+        attributes: [], // Optionally, exclude fields from the `Booking` model
+      },
+    });
 
-//     const services = await BookingService.findAll({
-//       where: Sequelize.where(
-//         Sequelize.fn("date", Sequelize.col("service_date")), // Extract only the date part
-//         parsedDate
-//       ),
-//       include: [
-//         {
-//           model: Booking, // Include the related Booking model
-//           where: {
-//             city: { [Op.in]: cityList }, // Filter by multiple cities using Op.in
-//             category: category, // Filter by category
-//           },
-//           required: true, // Ensures that the `Booking` model is joined (inner join)
-//           attributes: [
-//             "city",
-//             "category",
-//             "selected_slot_text",
-//             "service_charge",
-//             "delivery_address",
-//             "description",
-//             "payment_mode",
-//             "type",
-//           ], // Include city and category in the response
-//           include: [
-//             {
-//               model: User, // Include the related User model (customer details)
-//               as: "customer", // Alias used in the association
-//               attributes: [
-//                 "id",
-//                 "customerName", // Include customer details
-//                 "email",
-//                 "mainContact",
-//                 "alternateContact",
-//                 "gst",
-//                 // Add other customer attributes here
-//               ],
-//             },
-//           ],
-//         },
-//       ],
-//       offset: offset, // Apply pagination offset
-//       limit: pageLimit, // Apply pagination limit
-//     });
+    if (services.length === 0) {
+      return res
+        .status(200)
+        .json({ message: "No services found for the given parameters." });
+    }
 
-//     // If no services found, return a message
-//     if (services.length === 0) {
-//       return res
-//         .status(200)
-//         .json({ message: "No services found for the given parameters." });
-//     }
+    // Step 2: Group services by day
+    const serviceCountsByDay = {};
+    let totalServiceCount = 0; // Initialize total count
 
-//     // Step 2: Get the total number of services for pagination (without limits)
-//     const totalServicesCount = await BookingService.count({
-//       where: {
-//         service_date: parsedDate, // Exact match for the service date
-//       },
-//       include: [
-//         {
-//           model: Booking, // Include the related Booking model
-//           where: {
-//             city: { [Op.in]: cityList }, // Filter by multiple cities using Op.in
-//             category: category, // Filter by category
-//           },
-//           required: true, // Ensures that the `Booking` model is joined (inner join)
-//         },
-//       ],
-//     });
+    services.forEach((service) => {
+      const day = moment(service.service_date).format("YYYY-MM-DD"); // Get the day in "YYYY-MM-DD" format
 
-//     // Include the total count in the response with pagination metadata
-//     const totalPages = Math.ceil(totalServicesCount / pageLimit);
-//     res.status(200).json({
-//       totalCount: totalServicesCount,
-//       totalPages: totalPages,
-//       currentPage: pageNumber,
-//       data: services,
-//     });
-//   } catch (error) {
-//     console.log("Error fetching service data:", error.message);
-//     res.status(500).json({ error: "Server error, please try again later." });
-//   }
-// };
+      if (!serviceCountsByDay[day]) {
+        serviceCountsByDay[day] = 0;
+      }
+
+      serviceCountsByDay[day] += 1;
+      totalServiceCount += 1; // Increment total service count
+    });
+
+    // Prepare response data in a sorted format (by day)
+    const responseData = Object.keys(serviceCountsByDay)
+      .sort() // Sort the days in ascending order
+      .map((day) => ({
+        day,
+        serviceCount: serviceCountsByDay[day],
+      }));
+
+    console.log("responseData", responseData);
+    // Include the total count in the response
+    res.status(200).json({
+      totalCount: totalServiceCount,
+      data: responseData,
+    });
+  } catch (error) {
+    console.log("Error fetching service counts:", error.message);
+    res.status(500).json({ error: "Server error, please try again later." });
+  }
+};
+
 exports.getDailyServiceData = async (req, res) => {
   try {
     const {
@@ -381,59 +478,77 @@ exports.getDailyServiceData = async (req, res) => {
       limit = 10,
     } = req.query;
 
-    console.log("name", name);
-
-    // Validation for required parameters
-    if (!date || !city || !category) {
+    if (!date || !category) {
       return res
         .status(400)
         .json({ error: "date, city, and category are required" });
     }
 
-    // Split the city parameter into a list (if multiple cities are passed)
     const cityList = city.split(",").map((c) => c.trim());
     const pageNumber = parseInt(page, 10);
     const pageLimit = parseInt(limit, 10);
     const offset = (pageNumber - 1) * pageLimit;
 
-    // Conditional filters
-    const filters = {};
+    // Filters for Booking
+    const bookingFilters = {
+      [Op.and]: [
+        { category },
+        { city: { [Op.in]: cityList } },
 
-    // Handle each filter conditionally
-    if (category) filters.category = category;
-    if (technician) filters.technician = technician;
-    if (jobType) filters.type = jobType;
-    if (paymentMode) filters.payment_mode = paymentMode;
-    if (description) filters.description = { [Op.like]: `%${description}%` };
-    if (reference) filters.reference = { [Op.like]: `%${reference}%` };
-    if (address) {
-      filters.delivery_address = Sequelize.where(
-        Sequelize.json("delivery_address.address"), // Assuming address is a key inside JSONB
-        { [Op.like]: `%${address}%` }
-      );
-    }
-    if (jobAmount) filters.service_charge = { [Op.like]: `%${jobAmount}%` };
+        paymentMode ? { payment_mode: paymentMode } : {},
+        description ? { description: { [Op.like]: `%${description}%` } } : {},
+        reference ? { type: { [Op.like]: `%${reference}%` } } : {},
+        jobAmount ? { service_charge: { [Op.like]: `%${jobAmount}%` } } : {},
+        address
+          ? Sequelize.where(Sequelize.json("delivery_address.address"), {
+              [Op.like]: `%${address}%`,
+            })
+          : {},
+      ],
+    };
 
-    // Handle mainContact filtering based on contactNo provided
-    const customerFilter = {};
-    if (name) customerFilter.customerName = { [Op.like]: `%${name}%` };
-    if (contactNo) customerFilter.mainContact = { [Op.eq]: contactNo };
+    // Filters for User (customer)
+    const customerFilter = {
+      ...(name && { customerName: { [Op.iLike]: `%${name}%` } }),
+      ...(contactNo && { mainContact: contactNo }),
+    };
 
-    // Query the BookingService model with the filters
+    const serviceFilters = {
+      [Op.and]: [
+        Sequelize.where(
+          Sequelize.fn("DATE", Sequelize.col("service_date")),
+          date
+        ),
+        jobType
+          ? { service_name: { [Op.iLike]: `%${jobType}%` } } // ✅ partial match
+          : {},
+        technician
+          ? { vendor_name: { [Op.iLike]: `%${technician}%` } } // ✅ partial match
+          : {},
+      ],
+    };
+
+    // Main query with includes
     const services = await BookingService.findAll({
-      where: Sequelize.where(
-        Sequelize.fn("date", Sequelize.col("service_date")),
-        date
-      ),
+      where: serviceFilters,
+      attributes: [
+        "vendor_name",
+        "service_charge",
+        "service_name",
+        "service_date",
+        "status",
+        "id",
+      ],
       include: [
         {
-          model: Booking, // Include the Booking model
-          where: filters,
-          required: true, // Ensure the `Booking` model is included in the result
+          model: Booking,
+          required: true,
+          where: bookingFilters,
           include: [
             {
-              model: User, // Include the customer model
-              as: "customer", // Alias used in the association
+              model: User,
+              as: "customer",
+              where: customerFilter,
               attributes: [
                 "id",
                 "customerName",
@@ -442,81 +557,126 @@ exports.getDailyServiceData = async (req, res) => {
                 "alternateContact",
                 "gst",
               ],
-              where: customerFilter, // Apply the customer filters
             },
           ],
         },
       ],
-      offset, // Apply pagination offset
-      limit: pageLimit, // Apply pagination limit
+      offset,
+      limit: pageLimit,
+      order: [["service_date", "ASC"]],
+    });
+    const vendorNames = await BookingService.findAll({
+      where: Sequelize.where(
+        Sequelize.fn("DATE", Sequelize.col("service_date")),
+        date
+      ),
+
+      attributes: ["vendor_name"],
+      group: ["vendor_name"],
+      raw: true,
     });
 
-    // Count the total number of matching services for pagination
+    // Count query for pagination
     const totalServicesCount = await BookingService.count({
-      where: {
-        service_date: date, // Filter by service date
-      },
-      include: [
-        {
-          model: Booking, // Include the Booking model
-          where: filters,
-        },
-      ],
+      where: serviceFilters,
     });
 
-    // Calculate the total number of pages
     const totalPages = Math.ceil(totalServicesCount / pageLimit);
 
-    // Send the response with the paginated data
     res.status(200).json({
       totalCount: totalServicesCount,
       totalPages,
       currentPage: pageNumber,
       data: services,
+      vendorNames: vendorNames,
     });
   } catch (error) {
-    console.error("Error fetching service data:", error.message);
+    console.error("Error fetching service data:", error);
     res.status(500).json({ error: "Server error, please try again later." });
   }
 };
 
-exports.getRunningProjectWithFilter = async (req, res) => {
+exports.getPaymentsReportDailyServiceData = async (req, res) => {
   try {
-    const { page = 1, limit = 25, date } = req.query; // Include 'date' parameter from the query
-    const city = "Bangalore"; // City filter, you can change this to a dynamic filter if needed
-    const category = "Painting"; // Category filter, same as above
-    const contract_type = "AMC"; // Contract type filter, same as above
-
-    // Convert page & limit to numbers
-    const pageNumber = parseInt(page, 10);
-    const limitNumber = parseInt(limit, 10);
-    const offset = (pageNumber - 1) * limitNumber;
-
-    // Create filters for the Booking model
-    const filters = {
-      category,
+    const {
+      date,
       city,
-      contract_type,
+
+      technician,
+      jobType,
+      paymentMode,
+      name,
+      address,
+      contactNo,
+      jobAmount,
+      description,
+      reference,
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    if (!date) {
+      return res.status(400).json({ error: "date and city are required" });
+    }
+
+    const cityList = city.split(",").map((c) => c.trim());
+    const pageNumber = parseInt(page, 10);
+    const pageLimit = parseInt(limit, 10);
+    const offset = (pageNumber - 1) * pageLimit;
+
+    // Filters for Booking
+    const bookingFilters = {
+      [Op.and]: [
+        { city: { [Op.in]: cityList } },
+
+        paymentMode ? { payment_mode: paymentMode } : {},
+        description ? { description: { [Op.like]: `%${description}%` } } : {},
+        reference ? { type: { [Op.like]: `%${reference}%` } } : {},
+        jobAmount ? { service_charge: { [Op.like]: `%${jobAmount}%` } } : {},
+        address
+          ? Sequelize.where(Sequelize.json("delivery_address.address"), {
+              [Op.like]: `%${address}%`,
+            })
+          : {},
+      ],
     };
 
-    // Create filters for the User model (optional, based on your needs)
-    const customerFilter = {};
+    // Filters for User (customer)
+    const customerFilter = {
+      ...(name && { customerName: { [Op.iLike]: `%${name}%` } }),
+      ...(contactNo && { mainContact: contactNo }),
+    };
 
-    // Query the BookingService model
+    const serviceFilters = {
+      [Op.and]: [
+        Sequelize.where(Sequelize.fn("DATE", Sequelize.col("amt_date")), date),
+        jobType ? { service_name: { [Op.iLike]: `%${jobType}%` } } : {},
+        technician ? { vendor_name: { [Op.iLike]: `%${technician}%` } } : {},
+      ],
+    };
+
+    // Main query with includes
     const services = await BookingService.findAll({
-      where: Sequelize.where(
-        Sequelize.fn("date", Sequelize.col("service_date")), // Apply date filter on the service_date field
-        date // Date passed as a parameter in the query
-      ),
+      where: serviceFilters,
+      attributes: [
+        "vendor_name",
+        "service_charge",
+        "service_name",
+        "service_date",
+        "status",
+        "id",
+        "amt_date",
+      ],
       include: [
         {
-          model: Booking, // Include the Booking model
-          where: filters, // Apply filters on the Booking model
-          required: true, // Ensure the `Booking` model is included in the result
+          model: Booking,
+          required: true,
+          where: bookingFilters,
           include: [
             {
-              model: User, // Include the customer model
-              as: "customer", // Alias used in the association
+              model: User,
+              as: "customer",
+              where: customerFilter,
               attributes: [
                 "id",
                 "customerName",
@@ -525,41 +685,183 @@ exports.getRunningProjectWithFilter = async (req, res) => {
                 "alternateContact",
                 "gst",
               ],
-              where: customerFilter, // Apply customer filter (optional)
+            },
+            {
+              model: Payment,
+              as: "payments",
             },
           ],
         },
       ],
-      offset, // Apply pagination offset
-      limit: limitNumber, // Apply pagination limit
-      order: [["start_date", "DESC"]], // Optional, you can order by the start date
+      offset,
+      limit: pageLimit,
+      order: [["service_date", "ASC"]],
+    });
+    const vendorNames = await BookingService.findAll({
+      where: Sequelize.where(
+        Sequelize.fn("DATE", Sequelize.col("service_date")),
+        date
+      ),
+
+      attributes: ["vendor_name"],
+      group: ["vendor_name"],
+      raw: true,
     });
 
-    // Count the total number of matching services for pagination
+    // Count query for pagination
     const totalServicesCount = await BookingService.count({
-      where: {
-        service_date: date, // Filter by service date
-      },
-      include: [
-        {
-          model: Booking, // Include the Booking model
-          where: filters, // Apply the filters to the Booking model
-        },
-      ],
+      where: serviceFilters,
     });
 
-    // Calculate the total number of pages
-    const totalPages = Math.ceil(totalServicesCount / limitNumber);
+    const totalPages = Math.ceil(totalServicesCount / pageLimit);
 
-    // Send the response with the paginated data
     res.status(200).json({
       totalCount: totalServicesCount,
       totalPages,
       currentPage: pageNumber,
       data: services,
+      vendorNames: vendorNames,
     });
   } catch (error) {
-    console.error("Error fetching service data:", error.message);
+    console.error("Error fetching service data:", error);
+    res.status(500).json({ error: "Server error, please try again later." });
+  }
+};
+
+exports.getDSRReportFilter = async (req, res) => {
+  try {
+    const {
+      fromdate,
+      todate,
+      city,
+      category,
+      technician,
+      jobType,
+      paymentMode,
+      description,
+      reference,
+      page = 1,
+      limit = 25,
+    } = req.query;
+
+    const pageNumber = parseInt(page, 10);
+    const pageLimit = parseInt(limit, 10);
+    const offset = (pageNumber - 1) * pageLimit;
+
+    const cityList = city?.split(",").map((c) => c.trim()) || [];
+
+    // Filters for Booking
+    const bookingFilters = {
+      [Op.and]: [
+        category ? { category } : {},
+        cityList.length ? { city: { [Op.in]: cityList } } : {},
+        paymentMode ? { payment_mode: paymentMode } : {},
+        description ? { description: { [Op.like]: `%${description}%` } } : {},
+        reference ? { type: { [Op.like]: `%${reference}%` } } : {},
+      ],
+    };
+
+    // Filters for Customer (User)
+    const customerFilter = {};
+    // Add name/contact filters here if needed
+
+    // Filters for BookingService
+    const serviceFilters = {
+      [Op.and]: [
+        fromdate && todate
+          ? {
+              service_date: {
+                [Op.between]: [
+                  new Date(fromdate),
+                  new Date(new Date(todate).setHours(23, 59, 59)),
+                ],
+              },
+            }
+          : {},
+        jobType ? { service_name: { [Op.iLike]: `%${jobType}%` } } : {},
+        technician ? { vendor_name: { [Op.iLike]: `%${technician}%` } } : {},
+      ],
+    };
+
+    const services = await BookingService.findAll({
+      where: serviceFilters,
+      attributes: [
+        "vendor_name",
+        "service_charge",
+        "service_name",
+        "service_date",
+        "status",
+        "id",
+      ],
+      include: [
+        {
+          model: Booking,
+          required: true,
+          attributes: [
+            "category",
+            "city",
+            "contract_type",
+            "delivery_address",
+            "description",
+            "payment_mode",
+            "reference",
+            "selected_slot_text",
+            "service",
+            "service_charge",
+            "type",
+            "backoffice_executive",
+          ],
+          include: [
+            {
+              model: User,
+              as: "customer",
+              attributes: [
+                "id",
+                "customerName",
+                "email",
+                "mainContact",
+                "alternateContact",
+              ],
+            },
+          ],
+        },
+      ],
+
+      offset,
+      limit: pageLimit,
+      order: [["service_date", "ASC"]],
+    });
+
+    const vendorNames = await BookingService.findAll({
+      where:
+        fromdate && todate
+          ? {
+              service_date: {
+                [Op.between]: [
+                  new Date(fromdate),
+                  new Date(new Date(todate).setHours(23, 59, 59)),
+                ],
+              },
+            }
+          : {},
+      attributes: ["vendor_name"],
+      group: ["vendor_name"],
+      raw: true,
+    });
+
+    const totalServicesCount = await BookingService.count({
+      where: serviceFilters,
+    });
+
+    res.status(200).json({
+      totalCount: totalServicesCount,
+      totalPages: Math.ceil(totalServicesCount / pageLimit),
+      currentPage: pageNumber,
+      data: services,
+      vendorNames,
+    });
+  } catch (error) {
+    console.error("Error fetching service data:", error);
     res.status(500).json({ error: "Server error, please try again later." });
   }
 };

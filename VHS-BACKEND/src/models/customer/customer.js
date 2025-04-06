@@ -5,7 +5,7 @@ const Customer = sequelize.define(
   "customers",
   {
     cardNo: { type: DataTypes.INTEGER, unique: true },
-    enquiryId: { type: DataTypes.INTEGER },
+    enquiryId: { type: DataTypes.INTEGER, defaultValue: 0 },
     customerName: { type: DataTypes.STRING },
     category: { type: DataTypes.STRING },
     contactPerson: { type: DataTypes.STRING },

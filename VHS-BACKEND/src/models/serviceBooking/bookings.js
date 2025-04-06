@@ -6,7 +6,11 @@ const Booking = sequelize.define(
   "Booking",
   {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    enquiry_id: { type: DataTypes.INTEGER, defaultValue: 0 },
+    enquiryId: {
+      type: DataTypes.INTEGER,
+      field: "enquiry_id",
+      defaultValue: 0,
+    },
     user_id: { type: DataTypes.INTEGER },
     selected_slot_text: { type: DataTypes.STRING },
     category: { type: DataTypes.STRING },
@@ -40,6 +44,9 @@ const Booking = sequelize.define(
     cancel_reason: { type: DataTypes.TEXT },
     cancel_date: { type: DataTypes.DATE },
     complaint: { type: DataTypes.TEXT },
+    amt_frequency: { type: DataTypes.STRING(50) },
+    amtstart_date: { type: DataTypes.DATE },
+    amtexpiry_date: { type: DataTypes.DATE },
     latitude: {
       type: DataTypes.DECIMAL(9, 6),
       defaultValue: 0,

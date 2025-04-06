@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import axios from "axios";
 import EnquiryService from "../../services/enquiryService";
+import { useNavigate } from "react-router-dom";
 
 const EnquirySearch = () => {
   const [filters, setFilters] = useState({
     name: "",
-    contact: "",
+    mobile: "",
     fromDate: "",
     toDate: "",
     city: "",
@@ -24,6 +25,8 @@ const EnquirySearch = () => {
     setLoading(true);
     try {
       const response = await EnquiryService.searchEnquiry(filters);
+
+      console.log("response", response);
 
       if (response && response.success && response.enquiries) {
         setEnquiries(response.enquiries);
@@ -46,13 +49,17 @@ const EnquirySearch = () => {
   const handleReset = () => {
     setFilters({
       name: "",
-      contact: "",
+      mobile: "",
       fromDate: "",
       toDate: "",
       city: "",
       executive: "",
     });
     setEnquiries([]);
+  };
+  const navigate = useNavigate();
+  const handleRowClick = (id) => {
+    navigate(`/enquiry/enquiry-details/${id}`);
   };
 
   return (
@@ -105,15 +112,15 @@ const EnquirySearch = () => {
           />
         </div>
 
-        {/* Contact */}
+        {/* mobile */}
         <div>
           <label className="block text-gray-700 text-sm font-bold mb-1">
-            Contact *
+            mobile *
           </label>
           <input
             type="text"
-            name="contact"
-            value={filters.contact}
+            name="mobile"
+            value={filters.mobile}
             onChange={handleChange}
             className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:ring-2 focus:ring-blue-400"
           />
@@ -177,28 +184,46 @@ const EnquirySearch = () => {
         {loading ? (
           <p className="text-center text-gray-700">Loading...</p>
         ) : enquiries.length > 0 ? (
-          <table className="min-w-full bg-white border border-gray-300 mt-4">
-            <thead>
+          <table className="min-w-full bg-white border border-gray-200 text-sm shadow-sm">
+            <thead className="bg-gray-0 text-gray-700">
               <tr className="bg-gray-200">
-                <th className="border px-4 py-2">Enquiry ID</th>
-                <th className="border px-4 py-2">Date</th>
-                <th className="border px-4 py-2">Time</th>
-                <th className="border px-4 py-2">Executive</th>
-                <th className="border px-4 py-2">Name</th>
-                <th className="border px-4 py-2">Mobile</th>
-                <th className="border px-4 py-2">City</th>
+                <th className="border border-gray-200 px-3 py-2">Enquiry ID</th>
+                <th className="border border-gray-200 px-3 py-2">Date</th>
+                <th className="border border-gray-200 px-3 py-2">Time</th>
+                <th className="border border-gray-200 px-3 py-2">Executive</th>
+                <th className="border border-gray-200 px-3 py-2">Name</th>
+                <th className="border border-gray-200 px-3 py-2">Mobile</th>
+                <th className="border border-gray-200 px-3 py-2">City</th>
               </tr>
             </thead>
             <tbody>
               {enquiries.map((enquiry) => (
-                <tr key={enquiry.enquiryId} className="text-center">
-                  <td className="border px-4 py-2">{enquiry.enquiryId}</td>
-                  <td className="border px-4 py-2">{enquiry.date}</td>
-                  <td className="border px-4 py-2">{enquiry.time}</td>
-                  <td className="border px-4 py-2">{enquiry.executive}</td>
-                  <td className="border px-4 py-2">{enquiry.name}</td>
-                  <td className="border px-4 py-2">{enquiry.mobile}</td>
-                  <td className="border px-4 py-2">{enquiry.city}</td>
+                <tr
+                  key={enquiry.enquiryId}
+                  className="text-center cursor-pointer"
+                  onClick={() => handleRowClick(enquiry.enquiryId)}
+                >
+                  <td className="border border-gray-200 px-3 py-2">
+                    {enquiry.enquiryId}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2">
+                    {enquiry.date}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2">
+                    {enquiry.time}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2">
+                    {enquiry.executive}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2">
+                    {enquiry.name}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2">
+                    {enquiry.mobile}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2">
+                    {enquiry.city}
+                  </td>
                 </tr>
               ))}
             </tbody>

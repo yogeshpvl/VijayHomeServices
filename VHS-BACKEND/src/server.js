@@ -39,17 +39,35 @@ const whatappMsgRoutes = require("./routes/whatappMsg");
 
 //customer
 const customerRoutes = require("./routes/customer/customer");
+const userAddressRoutes = require("./routes/customer/customeraddresss");
 
 //try to booking
 const trytobookingRoutes = require("./routes/trytobooking");
 
 const quotationRoutes = require("./routes/quote/quote");
 const quotationItemRoutes = require("./routes/quote/quotationItem");
+const quoteFollowupRoutes = require("./routes/quote/quoteFollowup");
 
 //servcice bookings data
 const bookingsRoutes = require("./routes/serviceBooking/bookings");
 const bookingServicesRoutes = require("./routes/serviceBooking/bookingServices");
 const vendorAssignmentsRoutes = require("./routes/serviceBooking/vendorAssignments");
+const rescheduleRoutes = require("./routes/serviceBooking/resheduledata");
+const rmaterialRoutes = require("./routes/serviceBooking/rMaterials");
+const workMaterialRoutes = require("./routes/serviceBooking/work");
+
+const manpowerRoutes = require("./routes/serviceBooking/manpower");
+
+//b2b
+const b2bRoutes = require("./routes/b2b/b2b");
+const b2bFollowupRoutes = require("./routes/b2b/b2bfollowups");
+
+//comunity
+const communityRoutes = require("./routes/1community/community");
+const communityPaymentRoutes = require("./routes/1community/communityPayments");
+
+//paymets
+const paymentRoutes = require("./routes/payments/payments");
 
 app.use("/api/enquiries", enquiryRoutes);
 app.use("/api/auth", userRoutes);
@@ -80,13 +98,31 @@ app.use("/api/trytobooking", trytobookingRoutes);
 
 //customer
 app.use("/api/customers", customerRoutes);
+app.use("/api/customer-address", userAddressRoutes);
 app.use("/api/quotation", quotationRoutes);
 app.use("/api", quotationItemRoutes);
+app.use("/api/quote-followups", quoteFollowupRoutes);
 
 //service booking
 app.use("/api/bookings", bookingsRoutes);
 app.use("/api/bookingService", bookingServicesRoutes);
+app.use("/api/reschedules", rescheduleRoutes);
 app.use("/api", vendorAssignmentsRoutes);
+app.use("/api/manpower", manpowerRoutes);
+app.use("/api/rmaterial", rmaterialRoutes);
+app.use("/api/work-materials", workMaterialRoutes);
+
+//b2b
+app.use("/api/b2b", b2bRoutes);
+app.use("/api/b2b-followups", b2bFollowupRoutes);
+
+//comunity
+app.use("/api/communities", communityRoutes);
+app.use("/api/community-payments", communityPaymentRoutes);
+
+//payments
+
+app.use("/api/payments", paymentRoutes);
 
 const PORT = process.env.PORT || 5000;
 

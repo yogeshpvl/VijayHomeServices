@@ -1,70 +1,238 @@
-const Booking = require("../../models/serviceBooking/bookings");
-const BookingService = require("../../models/serviceBooking/bookingServices");
-const User = require("../../models/customer/customer");
+const db = require("../../models");
+const { Booking, BookingService, User } = db;
 const { Op } = require("sequelize");
 
+exports.getRunningProjectWithFilter = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 25,
+      name,
+      address,
+      contactNo,
+      jobAmount,
+      description,
+      reference,
+
+      technician,
+    } = req.query;
+    const city = "Bangalore";
+    const category = "Cleaning";
+    const contract_type = "One Time";
+
+    // Convert page & limit to numbers
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+    const offset = (pageNumber - 1) * limitNumber;
+
+    const customerFilters = {};
+    if (name) customerFilters.customerName = { [Op.iLike]: `%${name}%` };
+    if (contactNo)
+      customerFilters.mainContact = { [Op.iLike]: `%${contactNo}%` };
+    if (reference) customerFilters.reference = { [Op.iLike]: `%${reference}%` };
+
+    const quotationFilters = {};
+    if (technician)
+      quotationFilters.sales_executive = { [Op.iLike]: `%${technician}%` };
+
+    const bookingServiceFilters = {};
+    if (jobAmount)
+      bookingServiceFilters.worker_amount = { [Op.iLike]: `%${jobAmount}%` };
+    if (description)
+      bookingServiceFilters.tech_comment = { [Op.iLike]: `%${description}%` };
+
+    const bookings = await Booking.findAndCountAll({
+      where: {
+        category,
+        city,
+        contract_type,
+      },
+      attributes: [
+        "id",
+        "enquiryId",
+        "category",
+        "city",
+        "delivery_address",
+        "createdAt",
+      ],
+      limit: limitNumber,
+      offset: offset,
+      order: [["id", "DESC"]],
+
+      include: [
+        {
+          model: BookingService,
+          required: true,
+          attributes: [
+            "id",
+            "worker_names",
+            "day_to_complete",
+            "job_complete",
+            "tech_comment",
+            "worker_amount",
+            "vendor_name",
+          ],
+        },
+        {
+          model: User,
+          as: "customer",
+          attributes: [
+            "id",
+            "customerName",
+            "email",
+            "mainContact",
+            "alternateContact",
+            "lnf",
+            "city",
+            "approach",
+            "reference",
+          ],
+        },
+        {
+          model: db.Quotation,
+          as: "quotation",
+          attributes: [
+            "quotation_id",
+            "enquiryId",
+            "project_type",
+            "grand_total",
+            "quotation_date",
+            "booked_by",
+            "sales_executive",
+          ],
+        },
+        {
+          model: db.Payment,
+          as: "payments",
+        },
+      ],
+    });
+
+    // Return the paginated result
+    return res.json({
+      totalRecords: bookings.count,
+      totalPages: Math.ceil(bookings.count / limitNumber),
+      currentPage: pageNumber,
+      bookings: bookings.rows,
+    });
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const safeDate = (val) => {
+  const d = new Date(val);
+  return isNaN(d) ? null : d;
+};
 exports.createBooking = async (req, res) => {
   try {
     const {
       contract_type,
       service,
-      service_id,
+      delivery_address,
       service_charge,
       serviceFrequency,
       start_date,
       expiry_date,
+      amt_frequency,
+      amtstart_date,
+      amtexpiry_date,
+      enquiryId,
     } = req.body;
 
-    console.log("start_date,expiry_date", start_date, expiry_date, service);
+    const service_id = "121";
 
-    // Step 1: Create booking entry
-    const newBooking = await Booking.create(req.body);
+    // Step 1: Create the booking
+    const newBooking = await Booking.create({
+      ...req.body,
+      amt_frequency: amt_frequency || null,
+      amtstart_date: safeDate(amtstart_date),
+      amtexpiry_date: safeDate(amtexpiry_date),
+      start_date: safeDate(start_date),
+      expiry_date: safeDate(expiry_date),
+      delivery_address,
+      service_frequency: serviceFrequency,
+      enquiryId,
+    });
 
-    // Step 2: If AMC, calculate multiple service dates
+    console.log("service_id", service_id, service);
+    if (!service_id || !service) {
+      return res.status(400).json({
+        error: "service_id and service are required to create booking_services",
+      });
+    }
+
     if (contract_type === "AMC") {
+      const frequency = Number(serviceFrequency);
+      const start = new Date(start_date);
+      const end = new Date(expiry_date);
+
+      const amtFreq = Number(amt_frequency);
+      const amtStart = new Date(amtstart_date);
+      const amtEnd = new Date(amtexpiry_date);
+
+      const totalCharge = parseFloat(service_charge);
+      const dividedAmount = +(totalCharge / amtFreq).toFixed(2); // Rounded to 2 decimals
+
       let serviceDates = [];
-      let currentDate = new Date(start_date);
+      let amtDates = [];
 
-      while (currentDate <= new Date(expiry_date)) {
-        serviceDates.push(new Date(currentDate));
-
-        if (serviceFrequency === "Monthly") {
-          currentDate.setMonth(currentDate.getMonth() + 1);
-        } else if (serviceFrequency === "Quarterly") {
-          currentDate.setMonth(currentDate.getMonth() + 3);
-        } else if (serviceFrequency === "Yearly") {
-          currentDate.setFullYear(currentDate.getFullYear() + 1);
+      // Generate service dates
+      if (frequency <= 1) {
+        serviceDates = [start];
+      } else {
+        const interval = (end.getTime() - start.getTime()) / (frequency - 1);
+        for (let i = 0; i < frequency; i++) {
+          serviceDates.push(new Date(start.getTime() + i * interval));
         }
       }
 
-      // Insert all service dates into `booking_services`
-      const serviceEntries = serviceDates.map((date) => ({
+      // Generate amount dates
+      if (amtFreq <= 1) {
+        amtDates = [amtStart];
+      } else {
+        const amtInterval =
+          (amtEnd.getTime() - amtStart.getTime()) / (amtFreq - 1);
+        for (let i = 0; i < amtFreq; i++) {
+          amtDates.push(new Date(amtStart.getTime() + i * amtInterval));
+        }
+      }
+
+      const entryCount = Math.max(serviceDates.length, amtDates.length);
+
+      const serviceEntries = Array.from({ length: entryCount }, (_, i) => ({
         booking_id: newBooking.id,
         service_name: service,
-        service_id,
-        service_charge,
-        service_date: date,
+        service_id: service_id || "",
+        service_charge: dividedAmount,
+        service_date: serviceDates[i] || serviceDates[serviceDates.length - 1],
+        amt_date: amtDates[i] || amtDates[amtDates.length - 1],
         status: "Pending",
       }));
 
       await BookingService.bulkCreate(serviceEntries);
-    } else {
-      // For one-time services, insert a single row
+    }
+
+    // Step 3: Handle One Time contract
+    if (contract_type === "One Time") {
       await BookingService.create({
         booking_id: newBooking.id,
         service_name: service,
-        service_id: "",
+        service_id,
         service_charge,
-        service_date: new Date(start_date),
+        service_date: safeDate(start_date),
+        amt_date: safeDate(start_date),
         status: "Pending",
       });
     }
 
-    res
-      .status(201)
-      .json({ message: "Booking created successfully", booking: newBooking });
+    res.status(201).json({
+      message: "Booking created successfully",
+      booking: newBooking,
+    });
   } catch (error) {
-    console.log("error.message", error.message);
+    console.error("Booking creation error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -109,8 +277,6 @@ exports.updateBooking = async (req, res) => {
     if (!req.body || Object.keys(req.body).length === 0) {
       return res.status(400).json({ message: "No data to update" });
     }
-
-    console.log("req.params.id ", req.params.id, req.body);
 
     // Find the booking first
     const booking = await Booking.findOne({ where: { id: req.params.id } });
@@ -195,77 +361,6 @@ exports.getBookingsWithFilter = async (req, res) => {
       order: [["start_date", "DESC"]],
     });
 
-    return res.json({
-      totalRecords: bookings.count,
-      totalPages: Math.ceil(bookings.count / limitNumber),
-      currentPage: pageNumber,
-      bookings: bookings.rows,
-    });
-  } catch (error) {
-    console.error("Error fetching bookings:", error);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-};
-
-exports.getRunningProjectWithFilter = async (req, res) => {
-  try {
-    const { page = 1, limit = 25 } = req.query;
-    const city = "Bangalore";
-    const category = "Painting";
-    const contract_type = "AMC";
-
-    // Convert page & limit to numbers
-    const pageNumber = parseInt(page, 10);
-    const limitNumber = parseInt(limit, 10);
-    const offset = (pageNumber - 1) * limitNumber;
-
-    // Log filters for debugging
-    console.log("Filters:", { category, city, contract_type });
-
-    const bookings = await Booking.findAndCountAll({
-      where: {
-        category,
-        city,
-        contract_type,
-      },
-      limit: limitNumber,
-      offset: offset,
-      order: [["start_date", "DESC"]],
-      include: [
-        {
-          model: BookingService,
-          required: true,
-          attributes: [
-            "id",
-            "worker_names",
-            "day_to_complete",
-            "job_complete",
-            "tech_comment",
-            "worker_amount",
-            "vendor_name",
-          ],
-        },
-        {
-          model: User, // Include the customer model
-          as: "customer",
-          attributes: [
-            "id",
-            "customerName",
-            "email",
-            "mainContact",
-            "alternateContact",
-            "lnf",
-            "city",
-            "approach",
-            "reference",
-          ],
-        },
-      ],
-    });
-
-    console.log("Bookings found:", bookings.count); // Log count of found bookings
-
-    // Return the paginated result
     return res.json({
       totalRecords: bookings.count,
       totalPages: Math.ceil(bookings.count / limitNumber),

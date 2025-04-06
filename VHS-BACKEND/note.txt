@@ -1,2 +1,15 @@
 ALTER TABLE bookings
 RENAME COLUMN createdat TO "createdAt";
+
+
+//index for dsr
+
+CREATE INDEX idx_booking_category ON bookings(category);
+CREATE INDEX idx_booking_city ON bookings(city);
+CREATE INDEX idx_booking_service_charge ON bookings(service_charge);
+CREATE INDEX idx_booking_payment_mode ON bookings(payment_mode);
+CREATE INDEX idx_booking_vendor_name ON bookings(vendor_name);
+CREATE INDEX idx_booking_delivery_address_address ON bookings USING GIN ((delivery_address->>'address') gin_trgm_ops);
+
+CREATE INDEX idx_service_service_date ON booking_services(service_date);
+CREATE INDEX idx_service_service_name ON booking_services(service_name);

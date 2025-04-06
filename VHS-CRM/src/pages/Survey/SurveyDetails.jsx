@@ -10,6 +10,8 @@ const SurveyDetails = () => {
   const location = useLocation();
   const rowData = location.state?.rowData;
 
+  console.log("rowData", rowData);
+
   const navigate = useNavigate();
   const [sendWhatsApp, setSendWhatsApp] = useState("yes");
   const [vendorData, setvendorData] = useState([]);
@@ -21,7 +23,6 @@ const SurveyDetails = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
 
-  console.log("rowData", rowData);
   const [formData, setFormData] = useState({
     next_followup_date: "",
     appo_time: "",
@@ -117,7 +118,7 @@ const SurveyDetails = () => {
   };
 
   const makeApiCall = async () => {
-    const contentTemplate = WhatsappData || "";
+    const contentTemplate = whatsappData || "";
 
     if (!contentTemplate) {
       console.error("Content template is empty. Cannot proceed.");
@@ -142,7 +143,7 @@ const SurveyDetails = () => {
       const response = await axios.post(
         `${config.API_BASE_URL}/whats-msg/send-message`,
         {
-          mobile: rowData?.mobile,
+          mobile: "91" + rowData?.mobile,
           msg: convertedText,
         }
       );
@@ -208,7 +209,7 @@ const SurveyDetails = () => {
       const response = await axios.post(
         `${config.API_BASE_URL}/whats-msg/send-message`,
         {
-          mobile: rowData?.mobile,
+          mobile: "91" + rowData?.mobile,
           msg: message,
         }
       );
@@ -240,7 +241,11 @@ const SurveyDetails = () => {
         </button>
         <button
           className="bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-500 active:scale-95 transition"
-          onClick={() => navigate(`/Quote/quoteDetails/${enquiryId}`)}
+          onClick={() =>
+            navigate(
+              `/Quote/quoteDetails/${enquiryId}?followup_id=${rowData?.followup_id}`
+            )
+          }
         >
           Quotation
         </button>
@@ -459,12 +464,6 @@ const SurveyDetails = () => {
           </button>
         </div>
       )}
-      <button
-        className="bg-red-500 text-white px-5 py-2 rounded-md hover:bg-red-600 transition text-sm"
-        onClick={() => setShowCancelModal(true)}
-      >
-        Cancel Survey
-      </button>
 
       {showCancelModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">

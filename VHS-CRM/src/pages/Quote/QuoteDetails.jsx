@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import EnquiryService from "../../services/enquiryService";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { FaWhatsapp } from "react-icons/fa";
 import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
@@ -10,35 +10,96 @@ import { config } from "../../services/config";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { FaTrashAlt } from "react-icons/fa";
+import QuoteFollwups from "./QuoteFollwups";
 
 function QuoteDetails() {
   const [treactmentData, settreactmentData] = useState([]);
 
   const { id } = useParams(); // Fetch ID from URL parameters
+
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const followupId = searchParams.get("followup_id");
+
+  console.log("followupId", followupId);
   const [enquiryData, setEnquiryData] = useState(null);
   const [regions, setRegions] = useState([]);
   const [Materials, setMaterials] = useState([]);
   const [jobData, setJobData] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const users = JSON.parse(localStorage.getItem("user"));
+  const navigate = useNavigate();
 
   const [formData1, setFormData1] = useState({
-    projectType: "2 BHK Vacant",
-    total: 9093,
-    adjustments: 593,
-    sum: 9093,
-    gst: "NO", // Assuming NO initially
-    netTotal: 8500,
+    project_type: "",
+    total: 0,
+    adjustments: 0,
+    sum: 0,
+    gst: "", // Assuming NO initially
+    netTotal: 0,
   });
+
+  const fetchQuotation = async () => {
+    try {
+      const res = await axios.get(
+        `${config.API_BASE_URL}/quotation/enquiry/${id}`
+      );
+      if (res.status === 200 && res.data?.data?.length > 0) {
+        const q = res.data.data[0];
+
+        setFormData1({
+          project_type: q.project_type || "",
+          total: parseFloat(q.total_amount || 0),
+          adjustments: parseFloat(q.adjustment || 0),
+          sum: parseFloat(q.total_amount || 0),
+          gst: q.gst && q.gst ? q.gst : "NO",
+          netTotal: parseFloat(q.grand_total || 0),
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching existing quotation", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchQuotation();
+  }, [id]);
 
   // Handle form input changes
   const handleChange1 = (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
+    setFormData1((prevData) => ({
       ...prevData,
       [name]: value,
     }));
   };
+
+  useEffect(() => {
+    if (!treactmentData.length) return;
+
+    const total = treactmentData.reduce(
+      (acc, item) => acc + Number(item.subtotal),
+      0
+    );
+
+    const adjustments = Number(formData1.adjustments || 0);
+    const gstAmount =
+      formData1.gst === "YES" ? (total - adjustments) * 0.05 : 0;
+    const netTotal = total - adjustments + gstAmount;
+
+    const newSum = parseFloat(total.toFixed(2));
+    const newNetTotal = parseFloat(netTotal.toFixed(2));
+
+    if (formData1.sum !== newSum || formData1.netTotal !== newNetTotal) {
+      setFormData1((prev) => ({
+        ...prev,
+        sum: newSum,
+        total: newSum,
+        netTotal: newNetTotal,
+      }));
+    }
+  }, [treactmentData, formData1.adjustments, formData1.gst]);
 
   const [formData, setFormData] = useState({
     category: "",
@@ -49,8 +110,6 @@ function QuoteDetails() {
     rate: "",
     note: "",
   });
-  const users = JSON.parse(localStorage.getItem("user"));
-  const navigate = useNavigate();
 
   // Fetch enquiry data based on the id
   useEffect(() => {
@@ -195,30 +254,169 @@ function QuoteDetails() {
     }
   };
 
-  // Handle Save Quote
-  const handleSaveQuote = () => {
-    // Add logic for saving quote
-    alert("Quote Saved!");
-  };
-
   // Handle Print Quote
   const handlePrintQuote = () => {
     // Add logic for printing quote
-    alert("Quote Printed!");
+    navigate(`/quoteview?id=${id}`);
+  };
+
+  const handleSaveQuote = async () => {
+    try {
+      const payload = {
+        ...formData1,
+        enquiryId: id,
+        followupId: followupId,
+        booked_by: users.displayname,
+        sales_executive: users.displayname,
+        exe_number: users.contactno,
+      };
+
+      const res = await axios.put(
+        `${config.API_BASE_URL}/quotation/update-or-create/${id}`,
+        payload
+      );
+
+      toast.success("Quotation saved successfully!");
+      fetchQuotation();
+    } catch (err) {
+      console.error("Error saving quotation", err);
+      toast.error("Failed to save quotation");
+    }
   };
 
   // Handle Send Quote via WhatsApp
-  const handleSendQuote = () => {
-    // Add logic for sending quote via WhatsApp
-    alert("Quote Sent via WhatsApp!");
+  const handleSendQuote = async () => {
+    try {
+      const response = await axios.put(
+        `${config.API_BASE_URL}/quotation/follwups/${followupId}/${id}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      if (!response.ok) {
+        console.error("Failed to update follow-up status");
+        return;
+      }
+
+      await SendWhatsQuoteMSG();
+    } catch (error) {
+      console.error("Error in handleSendQuote:", error);
+    }
+  };
+
+  const SendWhatsQuoteMSG = async () => {
+    const contentTemplate = selectedResponse?.template || "";
+
+    if (!contentTemplate) {
+      console.error("Content template is empty. Cannot proceed.");
+      return;
+    }
+
+    try {
+      let content = contentTemplate;
+
+      content = content.replace(/\{Customer_name\}/g, enquiryData?.name || "");
+      content = content.replace(
+        /\{Service_name\}/g,
+        enquiryData?.interested_for || ""
+      );
+      content = content.replace(
+        /\{Executive_name\}/g,
+        users?.displayname || ""
+      );
+
+      const invoiceUrl = `https://vijayhomeservicebengaluru.in/quotations?id=${id}`;
+      content = content.replace(
+        /\{Quote_link\}/g,
+        `Click to view quotation: ${invoiceUrl}`
+      );
+
+      // Convert HTML to plain text with formatting
+      const convertedText = content
+        .replace(/<p>/g, "\n")
+        .replace(/<\/p>/g, "")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/&nbsp;/g, " ")
+        .replace(/<strong>(.*?)<\/strong>/gi, "$1")
+        .replace(/<[^>]*>/g, "") // Remove all remaining HTML tags
+        .trim();
+
+      const response = await axios.post(
+        `${config.API_BASE_URL}/whats-msg/send-message`,
+        {
+          mobile: "91" + enquiryData?.mobile,
+          msg: convertedText,
+        }
+      );
+
+      if (response.status === 200) {
+        alert("WhatsApp message sent successfully");
+      } else {
+        console.error("Failed to send WhatsApp message:", response);
+      }
+    } catch (error) {
+      console.error("Error sending WhatsApp message:", error);
+    }
+  };
+
+  const handleModify = () => {
+    navigate(`/enquiry/edit/${enquiryData.enquiryId}`);
+  };
+
+  const ConvertCustomer = async () => {
+    try {
+      const response = await axios.get(
+        `${config.API_BASE_URL}/customers/by-contact/${enquiryData.mobile}`
+      );
+
+      if (response.status === 200) {
+        // Customer exists, navigate to customerDetails
+
+        console.log(
+          `/customer/customerDetails/${response.data.id}?enquiry=${enquiryData.enquiryId}`
+        );
+        navigate(
+          `/customer/customerDetails/${response.data.id}?enquiry=${enquiryData.enquiryId}`
+        );
+      }
+    } catch (error) {
+      // Customer not found or API error, redirect to add page
+      console.error("Customer not found, redirecting to add:", error.message);
+      console.log(`/customer/add?enquiry=${enquiryData.enquiryId}`);
+      navigate(
+        {
+          pathname: "/customer/add",
+          search: `?enquiry=${enquiryData.enquiryId}`,
+        },
+        {
+          state: {
+            enquiryId: enquiryData.enquiryId, // probably you meant this, not enquiryDataId
+            name: enquiryData.name,
+            mobile: enquiryData.mobile,
+            city: enquiryData.city,
+            email: enquiryData.email,
+            address: enquiryData.address,
+          },
+        }
+      );
+    }
   };
 
   return (
     <div className="mx-auto ">
-      <div className="flex justify-between">
-        <h1 className="text-base font-bold  p-3">Billing Details</h1>
-        <div>
-          <Button variant="cancel">Edit Details</Button>
+      <div className="flex justify-between items-center px-3 py-2 border-b">
+        <h1 className="text-base font-bold">Billing Details</h1>
+
+        <div className="flex gap-2">
+          <Button variant="cancel" onClick={handleModify}>
+            Edit Details
+          </Button>
+
+          <Button className="text-sm w-40" onClick={ConvertCustomer}>
+            Convert Customer
+          </Button>
         </div>
       </div>
 
@@ -271,7 +469,6 @@ function QuoteDetails() {
 
         {/* Edit Details Button */}
       </div>
-
       <div className="bg-white rounded-lg shadow-md p-6 mt-4">
         <h1 className="text-base font-bold mt-4">Treatment Details</h1>
         <form onSubmit={handleSubmit} className="grid grid-cols-3 gap-6 mt-4">
@@ -421,9 +618,9 @@ function QuoteDetails() {
         </form>
 
         <div className="overflow-x-auto mt-4">
-          <table className="min-w-full bg-white shadow-md rounded-lg">
-            <thead className="bg-gray-200">
-              <tr>
+          <table className="min-w-full bg-white border border-gray-200 text-sm shadow-sm">
+            <thead className="bg-gray-50 text-gray-700">
+              <tr className="bg-blue-50 ">
                 <th className="py-2 px-4 text-left text-sm">Sr</th>
                 <th className="py-2 px-4 text-left text-sm">Category</th>
                 <th className="py-2 px-4 text-left text-sm">Region</th>
@@ -438,15 +635,31 @@ function QuoteDetails() {
             <tbody>
               {treactmentData.map((item, index) => (
                 <tr key={item.id} className="border-t">
-                  <td className="py-2 px-4 text-sm">{index + 1}</td>
-                  <td className="py-2 px-4 text-sm">{item.category}</td>
-                  <td className="py-2 px-4 text-sm">{item.region}</td>
-                  <td className="py-2 px-4 text-sm">{item.material}</td>
-                  <td className="py-2 px-4 text-sm">{item.job}</td>
-                  <td className="py-2 px-4 text-sm">{item.qty}</td>
-                  <td className="py-2 px-4 text-sm">{item.rate}</td>
-                  <td className="py-2 px-4 text-sm">{item.subtotal}</td>
-                  <td className="py-2 px-4">
+                  <td className="border border-gray-200 px-3 py-2">
+                    {index + 1}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2">
+                    {item.category}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2">
+                    {item.region}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2">
+                    {item.material}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2">
+                    {item.job}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2">
+                    {item.qty}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2">
+                    {item.rate}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2">
+                    {item.subtotal}
+                  </td>
+                  <td className="border border-gray-200 px-3 py-2">
                     <button
                       onClick={() => handleDelete(item.item_id)}
                       className="text-red-500 hover:text-red-700 text-sm"
@@ -460,7 +673,8 @@ function QuoteDetails() {
           </table>
         </div>
       </div>
-      <div className="p-6 bg-white rounded-lg shadow-md">
+
+      <div className="p-6 bg-white rounded-lg shadow-md mt-4">
         {/* Form Fields */}
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -469,8 +683,8 @@ function QuoteDetails() {
             </label>
             <input
               type="text"
-              name="projectType"
-              value={formData1.projectType}
+              name="project_type"
+              value={formData1.project_type}
               onChange={handleChange1}
               className="w-full border border-gray-300 px-3 py-2 rounded-md text-sm"
             />
@@ -526,8 +740,8 @@ function QuoteDetails() {
               onChange={handleChange1}
               className="w-full border border-gray-300 px-3 py-2 rounded-md text-sm"
             >
-              <option value="YES">YES</option>
               <option value="NO">NO</option>
+              <option value="YES">YES</option>
             </select>
           </div>
 
@@ -568,6 +782,8 @@ function QuoteDetails() {
           </button>
         </div>
       </div>
+
+      <QuoteFollwups id={id} />
     </div>
   );
 }

@@ -9,16 +9,16 @@ const sequelize = require("../../config/database");
 
 const EnquirySearch = async (req, res) => {
   try {
-    let { page, limit, search, fromDate, toDate, executive, city } = req.query;
+    let { page, limit, search, fromDate, toDate, executive, city, mobile } =
+      req.query;
 
-    // ✅ Convert pagination params to numbers
     page = parseInt(page) || 1;
     limit = parseInt(limit) || 10;
     const offset = (page - 1) * limit;
 
     const whereClause = {};
 
-    // ✅ Apply search filter (case-insensitive search)
+    // 🔍 Search filter (name, category, mobile)
     if (search) {
       whereClause[Op.or] = [
         { category: { [Op.iLike]: `%${search}%` } },
@@ -27,29 +27,28 @@ const EnquirySearch = async (req, res) => {
       ];
     }
 
-    // ✅ Convert date format to match database
-    if (fromDate && toDate) {
-      const formattedFromDate = moment(fromDate, "YYYY-MM-DD").format(
-        "YYYY-MM-DD"
-      );
-      const formattedToDate = moment(toDate, "YYYY-MM-DD").format("YYYY-MM-DD");
+    // ✅ Direct mobile filter if search is not used
+    if (mobile && !search) {
+      whereClause.mobile = { [Op.iLike]: `%${mobile}%` };
+    }
 
+    // 📅 Date filter
+    if (fromDate && toDate) {
       whereClause.date = {
-        [Op.between]: [formattedFromDate, formattedToDate],
+        [Op.between]: [fromDate, toDate],
       };
     }
 
-    // ✅ Filter by Executive
+    // 👤 Executive filter
     if (executive) {
       whereClause.executive = { [Op.iLike]: `%${executive}%` };
     }
 
-    // ✅ Filter by City
+    // 🌆 City filter
     if (city) {
       whereClause.city = { [Op.iLike]: `%${city}%` };
     }
 
-    // ✅ Fetch data with pagination
     const { rows, count } = await Enquiry.findAndCountAll({
       where: whereClause,
       limit,
@@ -66,9 +65,11 @@ const EnquirySearch = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching enquiries:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
 

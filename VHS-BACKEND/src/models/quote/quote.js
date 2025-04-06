@@ -9,14 +9,12 @@ const Quotation = sequelize.define(
       autoIncrement: true,
       primaryKey: true,
     },
-    enquiry_id: {
+    enquiryId: {
       type: DataTypes.INTEGER,
-      references: {
-        model: "Enquiries",
-        key: "enquiryId",
-      },
       allowNull: false,
+      field: "enquiry_id", // ✅ tells Sequelize the actual column name in DB
     },
+
     project_type: {
       type: DataTypes.STRING,
       allowNull: false,

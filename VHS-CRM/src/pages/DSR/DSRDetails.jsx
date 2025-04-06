@@ -19,7 +19,17 @@ const DSRDetails = () => {
   const [vendorType, setVendorType] = useState("");
   const [selectedVendorId, setSelectedVendorId] = useState(null);
   const [selectedVendorName, setSelectedVendorName] = useState("");
+  const [appoDate, setappoDate] = useState("");
   const [vendorData, setvendorData] = useState([]);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [rescheduleReason, setRescheduleReason] = useState("");
+  const [WhatsApp, setWhatsApp] = useState("YES");
+  const [assignedtemplateData, setassignedtemplateData] = useState([]);
+  const [CancelTemplateData, setCancelTemplateData] = useState([]);
+  const [rescheduleTemplateData, setrescheduleTemplateData] = useState([]);
+  const [completeTemplateData, setcompleteTemplateData] = useState([]);
+
+  console.log("details", details);
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -66,10 +76,27 @@ const DSRDetails = () => {
         `${config.API_BASE_URL}/bookingService/${id}`,
         form
       );
-      toast.success("Updated succesfully");
-      navigate(`/DSR/DSRList/2025-03-28/Cleaning`);
+
+      if (response.status === 200) {
+        toast.success("Updated successfully");
+
+        if (WhatsApp === "YES") {
+          if (form.job_complete === "CANCEL") {
+            await whatsappscancel();
+          } else if (form.job_complete === "NO" && selectedVendorName) {
+            await whatsapptectassign();
+          } else if (form.job_complete === "YES" && selectedVendorName) {
+            await whatsappscomplete();
+          }
+        }
+
+        navigate(
+          `/DSR/DSRList/${details?.service_date}/${details?.Booking?.category}`
+        );
+      }
     } catch (error) {
       console.error("Error updating service:", error);
+      toast.error("Something went wrong");
     } finally {
       setIsLoading(false);
     }
@@ -89,6 +116,46 @@ const DSRDetails = () => {
       // Optionally, redirect or show toast here
     } catch (error) {
       console.error("Error updating service:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChaneREschduled = async () => {
+    if (!rescheduleReason.trim()) {
+      toast.error("Please enter a reschedule reason");
+      return;
+    }
+
+    setIsLoading(true);
+
+    const formData = {
+      service_date: appoDate,
+      service_id: id,
+      techname: users?.displayname,
+      reason: rescheduleReason,
+      number: users?.contactno,
+    };
+
+    try {
+      // 1. Update booking service date
+      await axios.put(`${config.API_BASE_URL}/bookingService/${id}`, {
+        service_date: appoDate,
+      });
+
+      // 2. Log reschedule entry
+      await axios.post(`${config.API_BASE_URL}/reschedules`, formData);
+
+      // 3. Send WhatsApp only if enabled
+      if (WhatsApp === "YES") {
+        await whatsappreschedule();
+      }
+
+      toast.success("Service rescheduled successfully");
+      setShowRescheduleModal(false);
+    } catch (error) {
+      console.error("Error updating service:", error);
+      toast.error("Failed to reschedule");
     } finally {
       setIsLoading(false);
     }
@@ -123,12 +190,6 @@ const DSRDetails = () => {
         );
         const serviceData = response.data;
         setDetails(serviceData);
-        console.log("serviceData", serviceData);
-        console.log(
-          "serviceData?.Booking?.selected_slot_text ",
-          serviceData?.Booking?.selected_slot_text,
-          serviceData?.Booking?.city
-        );
 
         setForm1((prevData) => {
           console.log("Prev Form1 Data: ", prevData);
@@ -156,6 +217,8 @@ const DSRDetails = () => {
             tech_comment: serviceData.tech_comment,
             vendor_name: serviceData.vendor_name,
             cancel_reason: serviceData.cancel_reason,
+            start_date_time: serviceData.start_date_time,
+            end_date_time: serviceData.end_date_time,
           }));
           // Check if city is empty before setting it
         }
@@ -185,6 +248,244 @@ const DSRDetails = () => {
 
     fetchVendors();
   }, [id, details?.Booking?.city, details?.Booking?.category, vendorType]);
+
+  useEffect(() => {
+    getWhatsappTemplate();
+  }, []);
+
+  const getWhatsappTemplate = async () => {
+    const assign = "Tech assign";
+    const cancel = "Service cancel";
+    const reschedule = "Service reschedule";
+    const complete = "Service Completed";
+
+    try {
+      const [res1, res2, res3, res4] = await Promise.all([
+        axios.get(
+          `${config.API_BASE_URL}/whatsapp-templates/get-template/${assign}`
+        ),
+        axios.get(
+          `${config.API_BASE_URL}/whatsapp-templates/get-template/${cancel}`
+        ),
+        axios.get(
+          `${config.API_BASE_URL}/whatsapp-templates/get-template/${reschedule}`
+        ),
+        axios.get(
+          `${config.API_BASE_URL}/whatsapp-templates/get-template/${complete}`
+        ),
+      ]);
+
+      if (res1.status === 200) {
+        setassignedtemplateData(res1.data?.content || "");
+      }
+
+      if (res2.status === 200) {
+        setCancelTemplateData(res2.data?.content || "");
+      }
+
+      if (res3.status === 200) {
+        setrescheduleTemplateData(res3.data?.content || "");
+      }
+
+      if (res4.status === 200) {
+        setcompleteTemplateData(res4.data?.content || "");
+      }
+    } catch (error) {
+      console.error("Error fetching WhatsApp templates:", error);
+    }
+  };
+
+  const whatsapptectassign = async () => {
+    const contentTemplate = assignedtemplateData || "";
+
+    if (!contentTemplate) {
+      console.error("Content template is empty. Cannot proceed.");
+      return;
+    }
+
+    const invoiceLink = contentTemplate
+      .replace(/\{Customer_name\}/g, details?.Booking?.customer?.customerName)
+      .replace(/\{Job_type\}/g, details?.Booking.description)
+      .replace(/\{Service_amount\}/g, details?.service_charge)
+      .replace(/\{Call_date\}/g, details?.service_date)
+      .replace(/\{Slot_timing\}/g, details?.Booking.selected_slot_text)
+      .replace(/\{Staff_name\}/g, users.displayname)
+      .replace(/\{Service_date\}/g, details?.service_date)
+      .replace(/\{Staff_contact\}/g, users.contactno)
+      .replace(/\{Technician_name\}/g, selectedVendorName)
+      .replace(/\{Technician_experiance\}/g, "2")
+      .replace(/\{Technician_languages_known\}/g, "kannada,hindi");
+
+    // Replace <p> with line breaks and remove HTML tags
+    const convertedText = invoiceLink
+      .replace(/<p>/g, "\n")
+      .replace(/<\/p>/g, "")
+      .replace(/<br>/g, "\n")
+      .replace(/&nbsp;/g, "")
+      .replace(/<strong>(.*?)<\/strong>/g, "<b>$1</b>")
+      .replace(/<[^>]*>/g, "");
+
+    try {
+      const response = await axios.post(
+        `${config.API_BASE_URL}/whats-msg/send-message`,
+        {
+          mobile: "91" + details?.Booking?.customer?.mainContact,
+          msg: convertedText,
+        }
+      );
+
+      if (response.status === 200) {
+        toast.success("whatsapptectassign sent succesful");
+        // window.location.assign(`/dsrcallist/${data1}/${data.category}`);
+      } else {
+        console.error("API call unsuccessful. Status code:", response.status);
+      }
+    } catch (error) {
+      console.error("Error making API call:", error);
+      window.location.assign(`/dsrcallist/${data1}/${data.category}`);
+    }
+  };
+
+  const whatsappscomplete = async () => {
+    const contentTemplate = completeTemplateData || "";
+
+    if (!contentTemplate) {
+      console.error("Content template is empty. Cannot proceed.");
+      return;
+    }
+
+    const googleform =
+      "https://docs.google.com/forms/d/e/1FAIpQLSeldzBperWqrReLAA5AV6gVEftCOT3vUglibWScSWdzDAPjkA/viewform";
+
+    const invoiceLink = contentTemplate
+      .replace(/\{Customer_name\}/g, details?.Booking?.customer?.customerName)
+      .replace(/\{Service_name\}/g, details?.service_name)
+      .replace(/\{Service_amount\}/g, details?.service_chargel)
+      // .replace(/\{Invoice_link\}/g, data?.dividedDates[0]?.date)
+      .replace(/\{google_Form\}/g, googleform);
+
+    // Replace <p> with line breaks and remove HTML tags
+    const convertedText = invoiceLink
+      .replace(/<p>/g, "\n")
+      .replace(/<\/p>/g, "")
+      .replace(/<br>/g, "\n")
+      .replace(/&nbsp;/g, "")
+      .replace(/<strong>(.*?)<\/strong>/g, "<b>$1</b>")
+      .replace(/<[^>]*>/g, "");
+
+    try {
+      const response = await axios.post(
+        `${config.API_BASE_URL}/whats-msg/send-message`,
+        {
+          mobile: "91" + details?.Booking?.customer?.mainContact,
+          msg: convertedText,
+        }
+      );
+
+      if (response.status === 200) {
+        // window.location.assign(`/dsrcallist/${data1}/${data.category}`);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const whatsappscancel = async () => {
+    const contentTemplate = CancelTemplateData || "";
+
+    if (!contentTemplate) {
+      console.error("Content template is empty. Cannot proceed.");
+      return;
+    }
+
+    const googleform =
+      "https://docs.google.com/forms/d/e/1FAIpQLSdZjDyG7QsnwVnCnhkrFEHguWP5vNxTi03KZWgap0xXd5_geQ/viewform";
+
+    const invoiceLink = contentTemplate
+      .replace(/\{Customer_name\}/g, details?.Booking?.customer?.customerName)
+      .replace(/\{Service_name\}/g, details?.service_name)
+      .replace(/\{Service_date\}/g, details?.service_date)
+
+      .replace(/\{google Form\}/g, googleform);
+
+    // Replace <p> with line breaks and remove HTML tags
+    const convertedText = invoiceLink
+      .replace(/<p>/g, "\n")
+      .replace(/<\/p>/g, "")
+      .replace(/<br>/g, "\n")
+      .replace(/&nbsp;/g, "")
+      .replace(/<strong>(.*?)<\/strong>/g, "<b>$1</b>")
+      .replace(/<[^>]*>/g, "");
+
+    try {
+      const response = await axios.post(
+        `${config.API_BASE_URL}/whats-msg/send-message`,
+        {
+          mobile: "91" + details?.Booking?.customer?.mainContact,
+          msg: convertedText,
+        }
+      );
+
+      if (response.status === 200) {
+        toast.success("service cancel msg sent sucessful");
+
+        // window.location.assign(`/dsrcallist/${data1}/${data.category}`);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const whatsappreschedule = async () => {
+    const contentTemplate = rescheduleTemplateData || "";
+
+    console.log("contentTemplate", contentTemplate);
+
+    if (!contentTemplate) {
+      console.error("Content template is empty. Cannot proceed.");
+      return;
+    }
+    const invoiceLink = contentTemplate
+      .replace(/\{Customer_name\}/g, details?.Booking?.customer?.customerName)
+      .replace(/\{Service_name\}/g, details?.service_name)
+      .replace(/\{Service_date\}/g, details?.service_date)
+      .replace(/\{reschedule_service_date\}/g, appoDate);
+
+    // Replace <p> with line breaks and remove HTML tags
+    const convertedText = invoiceLink
+      .replace(/<p>/g, "\n")
+      .replace(/<\/p>/g, "")
+      .replace(/<br>/g, "\n")
+      .replace(/&nbsp;/g, "")
+      .replace(/<strong>(.*?)<\/strong>/g, "<b>$1</b>")
+      .replace(/<[^>]*>/g, "");
+
+    try {
+      const response = await axios.post(
+        `${config.API_BASE_URL}/whats-msg/send-message`,
+        {
+          mobile: "91" + details?.Booking?.customer?.mainContact,
+          msg: convertedText,
+        }
+      );
+
+      if (response.status === 200) {
+        toast.success("whats app msg sent Successfully ");
+        // window.location.assign(`/dsrcallist/${data1}/${data.category}`);
+
+        // window.location.reload("");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  const formatDateForInput = (isoString) => {
+    if (!isoString) return "";
+    const date = new Date(isoString);
+    const offset = date.getTimezoneOffset();
+    date.setMinutes(date.getMinutes() - offset); // convert to local time
+    return date.toISOString().slice(0, 16); // "YYYY-MM-DDTHH:mm"
+  };
 
   return (
     <div className="p-6  min-h-screen">
@@ -221,9 +522,15 @@ const DSRDetails = () => {
                 type="date"
                 className="mt-1"
                 value={details?.service_date}
+                onChange={() => setappoDate(e.target.value)}
               />
               {userRoles?.Reschedule ? (
-                <Button className="mt-3 bg-orange-500">Reschedule</Button>
+                <Button
+                  className="mt-3 bg-orange-500"
+                  onClick={() => setShowRescheduleModal(true)}
+                >
+                  Reschedule
+                </Button>
               ) : (
                 ""
               )}
@@ -533,16 +840,21 @@ const DSRDetails = () => {
                       id="whatsapp_yes"
                       name="whatsapp"
                       value="YES"
+                      checked={WhatsApp === "YES"}
+                      onChange={(e) => setWhatsApp(e.target.value)}
                       className="mr-2"
                     />
                     <label htmlFor="whatsapp_yes" className="mr-4">
                       YES
                     </label>
+
                     <input
                       type="radio"
                       id="whatsapp_no"
                       name="whatsapp"
                       value="NO"
+                      checked={WhatsApp === "NO"}
+                      onChange={(e) => setWhatsApp(e.target.value)}
                       className="mr-2"
                     />
                     <label htmlFor="whatsapp_no">NO</label>
@@ -583,9 +895,10 @@ const DSRDetails = () => {
                     IN Sign Date & Time:
                   </label>
                   <input
-                    value={details?.start_date_time}
                     type="datetime-local"
+                    value={formatDateForInput(details?.start_date_time)}
                     className="bg-gray-100 p-1 rounded mt-1 w-full"
+                    readOnly // Remove if you want it editable
                   />
                 </div>
 
@@ -594,7 +907,7 @@ const DSRDetails = () => {
                     OUT Sign Date & Time:
                   </label>
                   <input
-                    value={details?.end_date_time}
+                    value={formatDateForInput(details?.end_date_time)}
                     type="datetime-local"
                     className="bg-gray-100 p-1 rounded mt-1 w-full"
                   />
@@ -714,6 +1027,49 @@ const DSRDetails = () => {
             placeholder="Please specify the reason for cancellation"
             className=" border bg-white p-1 rounded mt-1 min-h-[32px] w-full"
           />
+        </div>
+      )}
+
+      {showRescheduleModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-xl">
+            <h2 className="text-lg font-bold mb-4">Reschedule Service</h2>
+            <label className="block text-sm font-medium mb-1">
+              Reschedule Date
+            </label>
+
+            <Input
+              type="date"
+              className="mt-1"
+              name="appoDate"
+              value={appoDate}
+              onChange={(e) => setappoDate(e.target.value)}
+            />
+            <label className="block text-sm font-medium mb-1">Reason</label>
+            <textarea
+              value={rescheduleReason}
+              onChange={(e) => setRescheduleReason(e.target.value)}
+              className="w-full border border-gray-300 rounded-md p-2 text-sm"
+              rows={3}
+              placeholder="Enter reason for rescheduling..."
+            />
+
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                onClick={() => setShowRescheduleModal(false)}
+                className="px-4 py-2 border rounded-md text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleChaneREschduled}
+                className="px-4 py-2 bg-orange-500 text-white rounded-md text-sm"
+                disabled={isLoading || !rescheduleReason}
+              >
+                {isLoading ? "Rescheduling..." : "Submit"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

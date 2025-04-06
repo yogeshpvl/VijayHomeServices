@@ -8,15 +8,19 @@ import { useLocation } from "react-router-dom";
 
 function Add() {
   const { state } = useLocation();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const enquiryId = queryParams.get("enquiry");
 
   const users = JSON.parse(localStorage.getItem("user"));
 
   const [customertypedata, setcustomertypedata] = useState([]);
   const [referecetypedata, setreferecetypedata] = useState([]);
+  const [latestCardNo, setLatestCardNo] = useState(1);
 
   const [form, setForm] = useState({
     customerName: state?.name || "",
-    contactPerson: state?.name || "", // Assuming contact person = name
+    contactPerson: state?.name || "",
     mainContact: state?.mobile || "",
     alternateContact: "",
     email: state?.email || "",
@@ -30,8 +34,6 @@ function Add() {
     customerType: "",
     approach: "",
   });
-
-  const [latestCardNo, setLatestCardNo] = useState(1);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -106,6 +108,7 @@ function Add() {
           : null,
       pinCode:
         form.pinCode && !isNaN(form.pinCode) ? Number(form.pinCode) : null,
+      enquiryId: enquiryId,
     };
 
     try {

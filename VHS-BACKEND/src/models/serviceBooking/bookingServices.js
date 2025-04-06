@@ -15,7 +15,21 @@ const BookingService = sequelize.define(
     service_id: { type: DataTypes.STRING, allowNull: false },
     service_charge: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
     service_date: { type: DataTypes.DATE, allowNull: false },
+    amt_date: { type: DataTypes.DATE, allowNull: false },
+
     customer_feedback: {
+      type: DataTypes.TEXT,
+    },
+    start_date_time: {
+      type: DataTypes.TEXT,
+    },
+    end_date_time: {
+      type: DataTypes.TEXT,
+    },
+    before_service_img: {
+      type: DataTypes.TEXT,
+    },
+    after_service_img: {
       type: DataTypes.TEXT,
     },
     worker_names: {
@@ -42,7 +56,7 @@ const BookingService = sequelize.define(
     cancel_reason: {
       type: DataTypes.STRING,
     },
-    status: { type: DataTypes.STRING, defaultValue: "Pending" },
+    status: { type: DataTypes.STRING, defaultValue: "NOT ASSIGNED" },
     created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   },
   { tableName: "booking_services", timestamps: false }

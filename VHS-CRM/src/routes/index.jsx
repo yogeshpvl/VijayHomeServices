@@ -88,6 +88,16 @@ import CustomerList from "../pages/Customer/CustomerList";
 import EnquiryEdit from "../pages/Enquiry/EnquiryEdit";
 import EFollwupDateTable from "../pages/Enquiry_Followup/EFollwupDateTable";
 import SurveyDetails from "../pages/Survey/SurveyDetails";
+import QuoteView from "../pages/Quote/QuoteView";
+import Payments from "../pages/Projects/Payments";
+import Painting from "../pages/Projects/Painting";
+import Communitylayout from "../pages/Community/Communitylayout";
+import Communityadd from "../pages/Community/Communityadd";
+import Communitylist from "../pages/Community/Communitylist";
+import Reports from "../pages/Reports/Reports";
+import ReportCategory from "../pages/Reports/RepostCategory";
+
+import RepostDSR from "../pages/Reports/RepostDSR";
 
 const AppContent = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
@@ -160,7 +170,18 @@ const AppContent = () => {
               />
               <Route path="SurveyCancelled" element={<SurveyCancelled />} />
             </Route>
+            {/* Community */}
+            <Route path="Community" element={<Communitylayout />}>
+              <Route index element={<Communityadd />} /> {/* Default route */}
+              <Route path="Communityadd" element={<Communityadd />} />
+              <Route path="Communitylist" element={<Communitylist />} />
+            </Route>
 
+            {/* Reports */}
+
+            <Route path="Reports" element={<Reports />}></Route>
+            <Route path="category" element={<ReportCategory />}></Route>
+            <Route path="reportdsr" element={<RepostDSR />}></Route>
             {/* Master Section with Nested Routes */}
             <Route path="master" element={<MasterLayout />}>
               <Route index element={<User />} /> {/* Default to User */}
@@ -272,10 +293,10 @@ const AppContent = () => {
             <Route path="payment-reports" element={<PRLayout />}>
               <Route index element={<PRCalendar />} />
               <Route path="PRCalendar" element={<PRCalendar />} />
-              <Route path="PaymentCollect" element={<PaymentCollect />} />
-              <Route path="PRInvoice" element={<PRInvoice />} />
+              <Route path="PaymentCollect/:id" element={<PaymentCollect />} />
+              <Route path="PRInvoice/:id" element={<PRInvoice />} />
 
-              <Route path="PRList" element={<PRList />} />
+              <Route path="PRList/:date" element={<PRList />} />
             </Route>
 
             {/* EnquiryFollowup Section with Nested Routes */}
@@ -318,8 +339,12 @@ const AppContent = () => {
               <Route path="B2BSendTemp" element={<B2BSendTemp />} />
               <Route path="B2BTodaySch" element={<B2BTodaySch />} />
             </Route>
+            <Route path="Payments" element={<Payments />} />
+            <Route path="Painting" element={<Painting />} />
           </Route>
         )}
+
+        <Route path="/quoteview" element={<QuoteView />} />
       </Routes>
     </>
   );

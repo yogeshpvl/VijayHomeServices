@@ -14,7 +14,6 @@ const TableReuse = ({
 
   const totalPages = Math.ceil(data.length / itemsPerPage);
 
-  console.log("searchFilters", searchFilters);
   // Handle search filter change
   const handleFilterChange = (e, accessor) => {
     setSearchFilters((prevFilters) => ({

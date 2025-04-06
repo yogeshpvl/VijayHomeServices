@@ -20,6 +20,9 @@ const DSRList = () => {
   const [selectedDescription, setSelectedDescription] = useState(""); // Added for Description filter
   const [selectedReference, setSelectedReference] = useState(""); // Added for Reference filter
   const [currentPage, setCurrentPage] = useState(1);
+  const [vendorData, setvendorData] = useState([]);
+
+  console.log("vendorData", vendorData);
 
   const itemsPerPage = 5;
   const [totalPages, setTotalPages] = useState(0);
@@ -29,11 +32,13 @@ const DSRList = () => {
   const paginatedData = data.slice(startIndex, endIndex);
   console.log("data", data);
 
+  console.log(":selectedName", selectedName);
+  console.log(":selectedContactNo", selectedContactNo);
+
   // Fetch data from the backend
 
   const fetchData = async () => {
     try {
-      const cityList = users.city.map((user) => user.name).join(",");
       const response = await axios.get(
         `${config.API_BASE_URL}/bookingService/dailydata`,
         {
@@ -46,7 +51,7 @@ const DSRList = () => {
             jobAmount: selectedJobAmount,
             description: selectedDescription,
             reference: selectedReference,
-            city: cityList,
+            city: selectedCity || users.city.map((user) => user.name).join(","), // ✅ use selectedCity
             category: selectedCategory,
             technician: selectedTechnician,
             paymentMode: selectedPaymentMode,
@@ -55,8 +60,10 @@ const DSRList = () => {
           },
         }
       );
+
       setData(response.data.data);
       setTotalPages(response.data.totalPages);
+      setvendorData(response.data.vendorNames);
     } catch (error) {
       console.error("Error fetching data", error);
     }
@@ -84,232 +91,235 @@ const DSRList = () => {
   const handleRowClick = (id) => {
     navigate(`/DSR/DSRDetails/${id}`);
   };
+  const columns = [
+    { label: "Sr.No." },
+    { label: "Date" },
+    { label: "Time", key: "time" },
+    { label: "Name", key: "name" },
+    {
+      label: "City",
+      key: "city",
+      type: "dropdown",
+      options: users?.city.map((c) => c.name),
+    },
+    { label: "Address", key: "address" },
+    { label: "Contact No.", key: "contactno" },
+    {
+      label: "Technician",
+      key: "technician",
+      type: "dropdown",
+      options: vendorData?.map((v) => v.vendor_name),
+    },
+    { label: "Job Type", key: "jobtype" },
+    { label: "Job Amount", key: "jobamount" },
+    { label: "Payment Mode", key: "paymentmode" },
+    { label: "Description", key: "description" },
+    { label: "Reference", key: "reference" },
+  ];
 
-  const handleFilterChange = (e, field) => {
-    const value = e.target.value;
-    switch (field) {
-      case "category":
-        setSelectedCategory(value);
-        break;
-      case "city":
-        setSelectedCity(value);
-        break;
-      case "technician":
-        setSelectedTechnician(value);
-        break;
-      case "jobType":
-        setSelectedJobType(value);
-        break;
-      case "paymentMode":
-        setSelectedPaymentMode(value);
-        break;
+  const getFilterValue = (key) => {
+    switch (key) {
       case "name":
-        setSelectedName(value);
-        break;
+        return selectedName;
+      case "city":
+        return selectedCity;
+      case "technician":
+        return selectedTechnician;
+      case "jobtype":
+        return selectedJobType;
+      case "paymentmode":
+        return selectedPaymentMode;
       case "address":
-        setSelectedAddress(value);
-        break;
-      case "contactNo":
-        setSelectedContactNo(value);
-        break;
-      case "jobAmount":
-        setSelectedJobAmount(value);
-        break;
+        return selectedAddress;
+      case "contactno":
+        return selectedContactNo;
+      case "jobamount":
+        return selectedJobAmount;
       case "description":
-        setSelectedDescription(value);
-        break;
+        return selectedDescription;
       case "reference":
-        setSelectedReference(value);
-        break;
+        return selectedReference;
+      case "time":
+        return ""; // Optional
       default:
-        break;
+        return "";
+    }
+  };
+
+  const handleFilterChange = (e, field, type = "input") => {
+    const value = e.target.value;
+
+    const setterMap = {
+      category: setSelectedCategory,
+      city: setSelectedCity,
+      technician: setSelectedTechnician,
+      jobtype: setSelectedJobType,
+      paymentmode: setSelectedPaymentMode,
+      name: setSelectedName,
+      address: setSelectedAddress,
+      contactno: setSelectedContactNo,
+      jobamount: setSelectedJobAmount,
+      description: setSelectedDescription,
+      reference: setSelectedReference,
+    };
+
+    if (setterMap[field]) {
+      setterMap[field](value);
+
+      // Run fetch immediately if dropdown
+      if (type === "dropdown") {
+        setCurrentPage(1);
+        fetchData();
+      }
     }
   };
 
   return (
-    <div className="rounded-lg shadow-lg p-4 bg-white">
-      <div className="flex justify-end">
-        <div className="shadow-sm border border-gray-300">
-          {/* Status filters */}
-          <div className="px-1 py-1 border-b border-gray-300 cursor-pointer">
-            NOT ASSIGNED
-          </div>
-          <div className="px-1 py-1 bg-gray-300 cursor-pointer">
-            ASSIGNED FOR TECHNICIAN
-          </div>
-          <div className="px-1 py-1 bg-yellow-300 cursor-pointer">
-            SERVICE STARTED
-          </div>
-          <div className="px-1 py-1 bg-green-300 cursor-pointer">
-            SERVICE COMPLETED
-          </div>
-          <div className="px-1 py-1 bg-red-300 cursor-pointer">
-            SERVICE CANCELLED
-          </div>
-          <div className="px-1 py-1 bg-blue-300 cursor-pointer">
-            SERVICE DELAYED
-          </div>
-          <div className="px-1 py-1 bg-purple-300 cursor-pointer">
-            CLOSED OPERATION MANAGER
-          </div>
-        </div>
-      </div>
+    <div className="p-2 bg-white">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">
           Daily Service Report -{category}
         </h2>
       </div>
+      <div className="mt-4 mb-6 text-sm flex flex-wrap gap-4">
+        <p>
+          <span className="inline-block w-4 h-4 border bg-white mr-2"></span>
+          NOT ASSIGNED
+        </p>
+        <p>
+          <span className="inline-block w-4 h-4 bg-gray-300 mr-2"></span>
+          ASSIGNED FOR TECHNICIAN
+        </p>
+        <p>
+          <span className="inline-block w-4 h-4 bg-yellow-300 mr-2"></span>
+          SERVICE STARTED
+        </p>
+        <p>
+          <span className="inline-block w-4 h-4 bg-green-300 mr-2"></span>
+          SERVICE COMPLETED
+        </p>
+        <p>
+          <span className="inline-block w-4 h-4 bg-red-300  mr-2"></span>
+          SERVICE CANCELLED
+        </p>
+        <p>
+          <span className="inline-block w-4 h-4 bg-blue-300  mr-2"></span>
+          SERVICE DELAYED
+        </p>
+        <p>
+          <span className="inline-block w-4 h-4 bg-purple-300 mr-2"></span>
+          CLOSED OPERATION MANAGER
+        </p>
+      </div>
 
       {/* Table for displaying data */}
-      <div className="overflow-x-auto mt-4">
-        <table className="min-w-full table-auto border-collapse text-sm">
-          <thead className="bg-red-100 text-pink-800">
+      <div className="overflow-x-auto mt-8">
+        <table className="min-w-full bg-white border border-gray-200 text-sm shadow-sm">
+          <thead className="bg-gray-50 text-gray-800">
             <tr>
-              <th className="px-4 py-3 text-left font-semibold border-b border-gray-300">
-                Sr.No.
-              </th>
-              <th className="px-4 py-3 text-left font-semibold border-b border-gray-300">
-                Date
-              </th>
-              <th className="px-4 py-3 text-left font-semibold border-b border-gray-300">
-                Time
-                <input
-                  type="text"
-                  // value={selectedCity}
-                  onChange={(e) => handleFilterChange(e, "time")}
-                  className="mt-1 px-2 py-1 border border-gray-300 rounded-md w-full bg-white"
-                />
-              </th>
-              <th className="px-4 py-3 text-left font-semibold border-b border-gray-300">
-                Name
-                <input
-                  type="text"
-                  value={selectedName}
-                  onChange={(e) => handleFilterChange(e, "name")}
-                  className="mt-1 px-2 py-1 border border-gray-300 rounded-md w-full bg-white"
-                />
-              </th>
-              <th className="px-4 py-3 text-left font-semibold border-b border-gray-300">
-                City
-                <select
-                  value={selectedCity}
-                  onChange={(e) => handleFilterChange(e, "city")}
-                  className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
+              {columns.map((col, idx) => (
+                <th
+                  key={idx}
+                  className="border border-gray-200 px-4 py-3 text-xs font-semibold text-left bg-gray-100 text-gray-800"
                 >
-                  <option value="">--Select--</option>
-                  {users?.city?.map((city) => (
-                    <option value={city.name} key={city.name}>
-                      {city.name}
-                    </option>
-                  ))}
-                </select>
-              </th>
-              <th className="px-4 py-3 text-left font-semibold border-b border-gray-300">
-                Address
-                <input
-                  type="text"
-                  value={selectedAddress}
-                  onChange={(e) => handleFilterChange(e, "address")}
-                  className="mt-1 px-2 py-1 border border-gray-300 rounded-md w-full bg-white"
-                />
-              </th>
-              <th className="px-4 py-3 text-left font-semibold border-b border-gray-300">
-                Contact No.
-                <input
-                  type="text"
-                  value={selectedContactNo}
-                  onChange={(e) => handleFilterChange(e, "contactNo")}
-                  className="mt-1 px-2 py-1 border border-gray-300 rounded-md w-full bg-white"
-                />
-              </th>
-              <th className="px-4 py-3 text-left font-semibold border-b border-gray-300">
-                Technician
-                <select
-                  value={selectedTechnician}
-                  onChange={(e) => handleFilterChange(e, "technician")}
-                  className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
-                >
-                  <option value="">--Select--</option>
-                  {/* Populate technician options */}
-                </select>
-              </th>
-              <th className="px-4 py-3 text-left font-semibold border-b border-gray-300">
-                Job Type
-                <input
-                  type="text"
-                  value={selectedJobType}
-                  onChange={(e) => handleFilterChange(e, "jobType")}
-                  className="mt-1 px-2 py-1 border border-gray-300 rounded-md w-full bg-white"
-                />
-              </th>
-              <th className="px-4 py-3 text-left font-semibold border-b border-gray-300">
-                Job Amount
-                <input
-                  type="text"
-                  value={selectedJobAmount}
-                  onChange={(e) => handleFilterChange(e, "jobAmount")}
-                  className="mt-1 px-2 py-1 border border-gray-300 rounded-md w-full bg-white"
-                />
-              </th>
-              <th className="px-4 py-3 text-left font-semibold border-b border-gray-300">
-                Payment Mode
-                <input
-                  type="text"
-                  value={selectedPaymentMode}
-                  onChange={(e) => handleFilterChange(e, "paymentMode")}
-                  className="mt-1 px-2 py-1 border border-gray-300 rounded-md w-full bg-white"
-                />
-              </th>
-              <th className="px-4 py-3 text-left font-semibold border-b border-gray-300">
-                Description
-                <input
-                  type="text"
-                  value={selectedDescription}
-                  onChange={(e) => handleFilterChange(e, "description")}
-                  className="mt-1 px-2 py-1 border border-gray-300 rounded-md w-full bg-white"
-                />
-              </th>
-              <th className="px-4 py-3 text-left font-semibold border-b border-gray-300">
-                Reference
-                <input
-                  type="text"
-                  value={selectedReference}
-                  onChange={(e) => handleFilterChange(e, "reference")}
-                  className="mt-1 px-2 py-1 border border-gray-300 rounded-md w-full bg-white"
-                />
-              </th>
+                  {col.label}
+                  {col.key &&
+                    (col.type === "dropdown" ? (
+                      <select
+                        value={getFilterValue(col.key)}
+                        onChange={(e) =>
+                          handleFilterChange(e, col.key, "dropdown")
+                        }
+                        className="mt-1 w-full border border-gray-300 px-2 py-1 rounded text-xs bg-white"
+                      >
+                        <option value="">--Select--</option>
+                        {col.options?.map((opt, i) => (
+                          <option key={i} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={col.key === "contactno" ? "tel" : "text"}
+                        value={getFilterValue(col.key)}
+                        onChange={(e) => handleFilterChange(e, col.key)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            setCurrentPage(1);
+                            fetchData();
+                          }
+                        }}
+                        className="mt-1 w-full border border-gray-300 px-2 py-1 rounded text-xs bg-white"
+                      />
+                    ))}
+                </th>
+              ))}
             </tr>
           </thead>
+
           <tbody>
             {paginatedData.map((row, index) => (
               <tr
                 key={row.id}
                 onClick={() => handleRowClick(row.id)}
-                className="border-b border-gray-300 bg-white hover:bg-pink-50 cursor-pointer transition"
+                className={`border-b transition cursor-pointer ${
+                  row.status === "NOT ASSIGNED"
+                    ? "bg-white"
+                    : row.status === "ASSIGNED FOR TECHNICIAN"
+                    ? "bg-gray-200"
+                    : row.status === "SERVICE STARTED"
+                    ? "bg-yellow-200"
+                    : row.status === "SERVICE COMPLETED"
+                    ? "bg-green-200"
+                    : row.status === "SERVICE CANCELLED"
+                    ? "bg-red-200"
+                    : row.status === "SERVICE DELAYED"
+                    ? "bg-blue-200"
+                    : row.status === "CLOSED OPERATION MANAGER"
+                    ? "bg-purple-200"
+                    : "bg-white"
+                }`}
               >
-                <td className="px-4 py-3 text-xs">{startIndex + index + 1}</td>
-                <td className="px-4 py-3 text-xs">{row.service_date}</td>
-                <td className="px-4 py-3 text-xs">
+                <td className="border border-gray-200 px-3 py-2 text-xs">
+                  {startIndex + index + 1}
+                </td>
+                <td className="border border-gray-200 px-3 py-2 text-xs">
+                  {row.service_date}
+                </td>
+                <td className="border border-gray-200 px-3 py-2 text-xs">
                   {row.Booking.selected_slot_text}
                 </td>
-                <td className="px-4 py-3 text-xs">
+                <td className="border border-gray-200 px-3 py-2 text-xs">
                   {row.Booking.customer.customerName}
                 </td>
-                <td className="px-4 py-3 text-xs">{row.Booking.city}</td>
-                <td className="px-4 py-3 text-xs">
-                  {row.Booking.delivery_address}
+                <td className="border border-gray-200 px-3 py-2 text-xs">
+                  {row.Booking.city}
                 </td>
-                <td className="px-4 py-3 text-xs">
+                <td className="border border-gray-200 px-3 py-2 text-xs">
+                  {row.Booking.delivery_address?.address}
+                </td>
+                <td className="border border-gray-200 px-3 py-2 text-xs">
                   {row.Booking.customer.mainContact}
                 </td>
-                <td className="px-4 py-3 text-xs">{row.vendor_name}</td>
-                <td className="px-4 py-3 text-xs">{row.service_name}</td>
-                <td className="px-4 py-3 text-xs">{row.service_charge}</td>
-                <td className="px-4 py-3 text-xs">
+                <td className="border border-gray-200 px-3 py-2 text-xs">
+                  {row.vendor_name}
+                </td>
+                <td className="border border-gray-200 px-3 py-2 text-xs">
+                  {row.service_name}
+                </td>
+                <td className="border border-gray-200 px-3 py-2 text-xs">
+                  {row.service_charge}
+                </td>
+                <td className="border border-gray-200 px-3 py-2 text-xs">
                   {row.Booking.payment_mode}
                 </td>
-                <td className="px-4 py-3 text-xs">{row.Booking.description}</td>
-                <td className="px-4 py-3 text-xs">{row.Booking.type}</td>
+                <td className="border border-gray-200 px-3 py-2 text-xs">
+                  {row.Booking.description}
+                </td>
+                <td className="border border-gray-200 px-3 py-2 text-xs">
+                  {row.Booking.type}
+                </td>
               </tr>
             ))}
           </tbody>

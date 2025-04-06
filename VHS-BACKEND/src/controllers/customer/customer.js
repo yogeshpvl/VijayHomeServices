@@ -21,6 +21,7 @@ exports.create = async (req, res) => {
       pinCode,
       customerType,
       approach,
+      enquiryId,
     } = req.body;
 
     // Check if mainContact already exists
@@ -46,6 +47,7 @@ exports.create = async (req, res) => {
       pinCode: sanitizeNumber(pinCode),
       customerType,
       approach,
+      enquiryId,
     });
 
     res.status(201).json({ user: newCustomer });
@@ -187,6 +189,25 @@ exports.getOne = async (req, res) => {
     if (!customer) return res.status(404).json({ message: "Not found" });
     res.json(customer);
   } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getOneByContact = async (req, res) => {
+  try {
+    const { contact } = req.params;
+
+    const customer = await Customer.findOne({
+      where: { mainContact: contact },
+    });
+
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    res.json(customer);
+  } catch (err) {
+    console.error("Error fetching customer by contact:", err);
     res.status(500).json({ message: err.message });
   }
 };

@@ -7,7 +7,7 @@ const MainLayout = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-auto">
       {/* Sidebar */}
       <Sidebar
         isCollapsed={isSidebarCollapsed}

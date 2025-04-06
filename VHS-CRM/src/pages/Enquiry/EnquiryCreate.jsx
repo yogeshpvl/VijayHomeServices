@@ -9,6 +9,17 @@ import { config } from "../../services/config";
 
 const EnquiryCreate = () => {
   const users = JSON.parse(localStorage.getItem("user"));
+  const [reference, setReference] = useState([]);
+
+  useEffect(() => {
+    fetchReference();
+  }, []);
+
+  const fetchReference = async () => {
+    const response = await fetch(`${config.API_BASE_URL}/reference`);
+    const data = await response.json();
+    setReference(data);
+  };
 
   const [formData, setFormData] = useState({
     name: "",
@@ -316,6 +327,50 @@ const EnquiryCreate = () => {
           </select>
         </div>
 
+        <div>
+          <label className="block text-gray-700 text-sm font-medium mb-1">
+            Reference *
+          </label>
+          <select
+            name="reference1"
+            value={formData.reference1}
+            onChange={handleChange}
+            required
+            className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
+          >
+            <option value="">--Select--</option>
+            {reference?.map((reference) => (
+              <option value={reference.reference}>{reference.reference}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-gray-700 text-sm font-medium mb-1">
+            Reference2
+          </label>
+          <Input
+            type="text"
+            name="reference2"
+            value={formData.reference2}
+            onChange={handleChange}
+            required
+            className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
+          />
+        </div>
+        <div>
+          <label className="block text-gray-700 text-sm font-medium mb-1">
+            Reference3
+          </label>
+          <Input
+            type="text"
+            name="reference3"
+            value={formData.reference3}
+            onChange={handleChange}
+            required
+            className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
+          />
+        </div>
         {/* Interested For */}
         <div>
           <label className="block text-gray-700 text-sm font-medium mb-1">

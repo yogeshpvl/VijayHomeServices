@@ -4,10 +4,7 @@ const BookingController = require("../../controllers/serviceBooking/bookings");
 
 // Create a new booking
 
-router.get(
-  "/bookings/running/project",
-  BookingController.getRunningProjectWithFilter
-);
+router.get("/running/project", BookingController.getRunningProjectWithFilter);
 
 router.post("/create", BookingController.createBooking);
 

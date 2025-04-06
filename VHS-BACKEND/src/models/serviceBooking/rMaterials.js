@@ -1,7 +1,21 @@
-work_date;
-work_mile_stone;
-work_material_use;
-work_details;
-work_remark;
-customer_id;
-service_id;
+const { DataTypes } = require("sequelize");
+const sequelize = require("../../config/database");
+
+const RMaterial = sequelize.define(
+  "RMaterial",
+  {
+    work_date: DataTypes.DATEONLY,
+    work_mile_stone: DataTypes.TEXT,
+    work_material_use: DataTypes.TEXT,
+    work_details: DataTypes.TEXT,
+    work_remark: DataTypes.TEXT,
+    customer_id: DataTypes.INTEGER,
+    service_id: DataTypes.INTEGER,
+  },
+  {
+    tableName: "rmaterial",
+    timestamps: false,
+  }
+);
+
+module.exports = RMaterial;

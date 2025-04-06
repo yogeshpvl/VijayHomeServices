@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import axios from "axios";
 import { config } from "../../services/config";
 import { Input } from "../../components/ui/Input";
@@ -8,32 +8,42 @@ import { toast } from "react-toastify";
 
 function CustomerDetailsPage() {
   const { id } = useParams();
+
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const enquiryId = queryParams.get("enquiry");
+
+  console.log("customer details enquiryId", enquiryId);
+
   const users = JSON.parse(localStorage.getItem("user"));
   const [customer, setCustomer] = useState({});
+  const [CustomerAddressData, setCustomerAddressData] = useState([]);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState(null);
   const [treatments, setTreatments] = useState([]);
   const [pastServices, setPastServices] = useState([]);
   const [futureServices, setFutureServices] = useState([]);
   const [allServices, setAllServices] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
 
-  console.log("treatments", treatments);
-
+  console.log("customer", customer);
   const [form, setForm] = useState({
     category: "",
     contract_type: "",
     service: "",
-    service_frequency: "",
+    serviceFrequency: "",
     service_charge: "",
     start_date: "",
     expiry_date: "",
     community: "",
-    amountFrequency: "",
+    amt_frequency: "",
+    amtstart_date: "",
     amtexpiry_date: "",
-    amtPaidDate: "",
     selected_slot_text: "",
     latitude: 0,
     longitude: 0,
     description: "",
+    service_id: "",
   });
 
   console.log("form", form);
@@ -43,11 +53,18 @@ function CustomerDetailsPage() {
     fetchPastServices();
     fetchFutureServices();
     fetchAllServicesByUser();
+    fetchCustomerAddress();
   }, [id]);
 
   const fetchCustomer = async () => {
     const res = await axios.get(`${config.API_BASE_URL}/customers/${id}`);
     setCustomer(res.data);
+  };
+  const fetchCustomerAddress = async () => {
+    const res = await axios.get(
+      `${config.API_BASE_URL}/customer-address/address/user${id}`
+    );
+    setCustomerAddressData(res.data);
   };
 
   const fetchTreatments = async () => {
@@ -75,13 +92,34 @@ function CustomerDetailsPage() {
   };
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    // Validation for serviceFrequency
+    if (name === "serviceFrequency") {
+      const num = Number(value);
+
+      // Allow empty input for typing
+      if (value === "") {
+        setForm((prev) => ({ ...prev, [name]: "" }));
+        return;
+      }
+
+      // Allow only numbers between 1 and 6
+      if (num < 1 || num > 6) return;
+    }
+
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleAddItem = async () => {
     if (!customer.city) {
       toast.error(
         "Please add the city for this customer! please click the edit customer update the city then come back"
+      );
+    }
+    if (!customer.lnf) {
+      toast.error(
+        "Please add the  address this customer! please click the edit customer update the address then come back"
       );
     }
     try {
@@ -92,6 +130,16 @@ function CustomerDetailsPage() {
         city: customer.city,
         type: customer.approach,
         backoffice_executive: users.displayname,
+        amt_frequency: form.serviceFrequency,
+        amtstart_date: form.start_date,
+        amtexpiry_date: form.expiry_date,
+        enquiryId: enquiryId || customer?.enquiryId,
+        delivery_address: {
+          address: customer.lnf,
+          save_as: customer.mainArea,
+          landmark: customer.rbhf,
+          platno: customer.cnap,
+        },
         expiry_date:
           form.contract_type === "AMC" ? form.expiry_date : form.start_date,
       };
@@ -102,14 +150,14 @@ function CustomerDetailsPage() {
         category: "",
         contract_type: "",
         service: "",
-        service_frequency: "",
+        serviceFrequency: "",
         service_charge: "",
         start_date: "",
         expiry_date: "",
         community: "",
-        amountFrequency: "",
+        amt_frequency: "",
+        amtstart_date: "",
         amtexpiry_date: "",
-        amtPaidDate: "",
         selected_slot_text: "",
         latitude: 0,
         longitude: 0,
@@ -125,6 +173,35 @@ function CustomerDetailsPage() {
   const handleEdit = (index) => {
     setForm(treatments[index]);
     setEditIndex(index);
+  };
+
+  const [serviceDetails, setserviceDetails] = useState([]);
+  useEffect(() => {
+    if (form.category) {
+      getServicebyCategory();
+    }
+  }, [form.category]);
+
+  const getServicebyCategory = async () => {
+    const category = form.category;
+    try {
+      const res = await axios.post(
+        `https://vijayhomeservicebangalore.in/api/userapp/getservicebycategory/`,
+        { category }
+      );
+
+      if (res.status === 200 && Array.isArray(res.data?.serviceData)) {
+        setserviceDetails(res.data.serviceData);
+      } else {
+        setserviceDetails([]); // fallback to empty
+      }
+    } catch (error) {
+      console.warn(
+        "Silent API error (category fetch)",
+        error?.message || error
+      );
+      setserviceDetails([]); // fallback to empty
+    }
   };
 
   return (
@@ -218,25 +295,40 @@ function CustomerDetailsPage() {
               className="w-full border border-gray-300 p-1.5 rounded"
             >
               <option>--select--</option>
-              <option>Bathroom Manual Cleaning</option>
+              {serviceDetails.map((item) => (
+                <option value={item.serviceName}>{item.serviceName}</option>
+              ))}
             </select>
           </div>
 
-          {/* AMC Specific Fields */}
-          {form.contract_type === "AMC" && (
+          {form.contract_type === "AMC" ? (
             <>
               <div>
                 <label className="block font-medium mb-1">
                   Service Frequency <span className="text-red-800">*</span>
                 </label>
                 <Input
-                  name="service_frequency"
-                  value={form.service_frequency}
+                  type="number"
+                  name="serviceFrequency"
+                  value={form.serviceFrequency}
+                  onChange={handleChange}
+                  min={1}
+                  max={6}
+                  className="w-full border border-gray-300 p-1.5 rounded"
+                />
+              </div>
+              <div>
+                <label className="block font-medium mb-1">
+                  1st Service Date
+                </label>
+                <Input
+                  type="date"
+                  name="start_date"
+                  value={form.start_date}
                   onChange={handleChange}
                   className="w-full border border-gray-300 p-1.5 rounded"
                 />
               </div>
-
               <div>
                 <label className="block font-medium mb-1">Expiry Date</label>
                 <Input
@@ -247,61 +339,126 @@ function CustomerDetailsPage() {
                   className="w-full border border-gray-300 p-1.5 rounded"
                 />
               </div>
-              {/* Amount Paid Date */}
+
+              {/* Service Charge */}
               <div>
                 <label className="block font-medium mb-1">
-                  Amount Paid Date
+                  Service Charge <span className="text-red-800">*</span>
                 </label>
                 <Input
-                  type="date"
-                  name="amtPaidDate"
-                  value={form.amtPaidDate}
+                  name="service_charge"
+                  value={form.service_charge}
                   onChange={handleChange}
                   className="w-full border border-gray-300 p-1.5 rounded"
                 />
               </div>
+
+              {/* Contract Type */}
+              <div>
+                <label className="block font-medium mb-1">
+                  1Community <span className="text-red-800">*</span>
+                </label>
+                <select
+                  name="community"
+                  value={form.community}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 p-1.5 rounded"
+                >
+                  <option>--select--</option>
+                  <option>comunit</option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-medium mb-1">
+                  Amount Frequency
+                </label>
+                <Input
+                  name="amt_frequency"
+                  value={form.serviceFrequency}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 p-1.5 rounded bg-gray-200"
+                />
+              </div>
+              {/* Amount Paid Date */}
+              <div>
+                <label className="block font-medium mb-1">
+                  1st Service Amt Date
+                </label>
+                <Input
+                  type="date"
+                  name="amtstart_date"
+                  value={form.start_date}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 p-1.5 rounded bg-gray-200"
+                />
+              </div>
+              {/* Amount Paid Date */}
+              <div>
+                <label className="block font-medium mb-1">
+                  Amt Expiry Date
+                </label>
+                <Input
+                  type="date"
+                  name="amtexpiry_date"
+                  value={form.expiry_date}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 p-1.5 rounded bg-gray-200"
+                />
+              </div>
+              {/* Description */}
+              <div>
+                <label className="block font-medium mb-1">Description</label>
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 p-1.5 rounded"
+                  rows={2}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Service Charge */}
+              <div>
+                <label className="block font-medium mb-1">
+                  Service Charge <span className="text-red-800">*</span>
+                </label>
+                <Input
+                  name="service_charge"
+                  value={form.service_charge}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 p-1.5 rounded"
+                />
+              </div>
+              <div>
+                <label className="block font-medium mb-1">Service Date</label>
+                <Input
+                  type="date"
+                  name="start_date"
+                  value={form.start_date}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 p-1.5 rounded"
+                />
+              </div>
+              {/* Description */}
+              <div>
+                <label className="block font-medium mb-1">Description</label>
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 p-1.5 rounded"
+                  rows={2}
+                />
+              </div>
             </>
           )}
-          <div>
-            <label className="block font-medium mb-1">1st Service Date</label>
-            <Input
-              type="date"
-              name="start_date"
-              value={form.start_date}
-              onChange={handleChange}
-              className="w-full border border-gray-300 p-1.5 rounded"
-            />
-          </div>
-
-          {/* Service Charge */}
-          <div>
-            <label className="block font-medium mb-1">
-              Service Charge <span className="text-red-800">*</span>
-            </label>
-            <Input
-              name="service_charge"
-              value={form.service_charge}
-              onChange={handleChange}
-              className="w-full border border-gray-300 p-1.5 rounded"
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block font-medium mb-1">Description</label>
-            <textarea
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              className="w-full border border-gray-300 p-1.5 rounded"
-              rows={2}
-            />
-          </div>
 
           {/* selected_slot_text */}
           <div>
             <label className="block font-medium mb-1">
-              selected_slot_text <span className="text-red-800">*</span>
+              Slot <span className="text-red-800">*</span>
             </label>
 
             <select
@@ -415,7 +572,7 @@ function CustomerDetailsPage() {
                     {treat.service}
                   </td>
                   <td className="border  border-gray-200 px-3 py-2">
-                    {treat.service_frequency}
+                    {treat.serviceFrequency}
                   </td>
                   <td className="border  border-gray-200 px-3 py-2">
                     {moment(treat.start_date).format("DD MMM YYYY")} -{" "}
@@ -433,15 +590,15 @@ function CustomerDetailsPage() {
                     {treat.description}
                   </td>
                   <td className="border border-gray-200 px-3 py-2 space-x-2">
-                    <button
+                    {/* <button
                       onClick={() => handleEdit(index)}
                       className="text-blue-600 hover:underline text-xs"
                     >
                       Edit
-                    </button>
+                    </button> */}
                     <button
                       onClick={() => window.open(`/bill/${treat.id}`, "_blank")}
-                      className="text-green-600 hover:underline text-xs"
+                      className="text-green-600 hover:underline text-base"
                     >
                       Bill
                     </button>
@@ -452,6 +609,53 @@ function CustomerDetailsPage() {
           </table>
         </div>
       </div>
+
+      {/* {showAddressModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+            <h2 className="text-lg font-bold mb-4">Select Address</h2>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {CustomerAddressData.map((addr, index) => (
+                <label
+                  key={index}
+                  className="block border p-2 rounded cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name="selectedAddress"
+                    value={index}
+                    checked={selectedAddress?.id === addr.id}
+                    onChange={() => setSelectedAddress(addr)}
+                    className="mr-2"
+                  />
+                  {addr.save_as} - {addr.address}, {addr.landmark}
+                </label>
+              ))}
+            </div>
+
+            <div className="mt-4 flex justify-end space-x-2">
+              <button
+                className="bg-gray-300 px-4 py-1 rounded"
+                onClick={() => setShowAddressModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="bg-red-800 text-white px-4 py-1 rounded"
+                onClick={() => {
+                  // do something with selectedAddress
+                  // e.g., update state or call update API
+                  console.log("Selected Address:", selectedAddress);
+                  setShowAddressModal(false);
+                }}
+                disabled={!selectedAddress}
+              >
+                {editIndex !== null ? "Update Address" : "Add Address"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )} */}
     </div>
   );
 }
