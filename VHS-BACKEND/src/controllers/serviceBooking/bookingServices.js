@@ -4,6 +4,7 @@ const { Op, Sequelize } = require("sequelize");
 const Booking = require("../../models/serviceBooking/bookings");
 const User = require("../../models/customer/customer");
 const Payment = require("../../models/payments/payments");
+const ExcelJS = require("exceljs");
 
 // ✅ Create a new booking service entry
 exports.createBookingService = async (req, res) => {
@@ -736,10 +737,11 @@ exports.getDSRReportFilter = async (req, res) => {
       city,
       category,
       technician,
+      backoffice,
       jobType,
-      paymentMode,
-      description,
       reference,
+      paymentMode,
+      jobComplete,
       page = 1,
       limit = 25,
     } = req.query;
@@ -748,22 +750,18 @@ exports.getDSRReportFilter = async (req, res) => {
     const pageLimit = parseInt(limit, 10);
     const offset = (pageNumber - 1) * pageLimit;
 
-    const cityList = city?.split(",").map((c) => c.trim()) || [];
-
     // Filters for Booking
     const bookingFilters = {
       [Op.and]: [
         category ? { category } : {},
-        cityList.length ? { city: { [Op.in]: cityList } } : {},
+        city ? { city: { [Op.in]: city } } : {},
         paymentMode ? { payment_mode: paymentMode } : {},
-        description ? { description: { [Op.like]: `%${description}%` } } : {},
+        jobType ? { service: jobType } : {},
+        backoffice ? { backoffice_executive: backoffice } : {},
+
         reference ? { type: { [Op.like]: `%${reference}%` } } : {},
       ],
     };
-
-    // Filters for Customer (User)
-    const customerFilter = {};
-    // Add name/contact filters here if needed
 
     // Filters for BookingService
     const serviceFilters = {
@@ -779,6 +777,8 @@ exports.getDSRReportFilter = async (req, res) => {
             }
           : {},
         jobType ? { service_name: { [Op.iLike]: `%${jobType}%` } } : {},
+        jobComplete ? { job_complete: { [Op.in]: jobComplete } } : {},
+
         technician ? { vendor_name: { [Op.iLike]: `%${technician}%` } } : {},
       ],
     };
@@ -796,6 +796,7 @@ exports.getDSRReportFilter = async (req, res) => {
       include: [
         {
           model: Booking,
+          where: bookingFilters,
           required: true,
           attributes: [
             "category",
@@ -863,5 +864,342 @@ exports.getDSRReportFilter = async (req, res) => {
   } catch (error) {
     console.error("Error fetching service data:", error);
     res.status(500).json({ error: "Server error, please try again later." });
+  }
+};
+
+exports.exportDSRReport = async (req, res) => {
+  const {
+    fromdate,
+    todate,
+    city,
+    category,
+    technician,
+    backoffice,
+    jobType,
+    reference,
+    paymentMode,
+    jobComplete,
+  } = req.query;
+
+  try {
+    // Build filters for BookingService
+    const serviceFilters = {
+      service_date: {
+        [Op.between]: [
+          new Date(fromdate),
+          new Date(new Date(todate).setHours(23, 59, 59)),
+        ],
+      },
+      ...(technician && { vendor_name: { [Op.iLike]: `%${technician}%` } }),
+      ...(jobType && { service_name: { [Op.iLike]: `%${jobType}%` } }),
+      ...(jobComplete && { job_complete: jobComplete }),
+    };
+
+    // Build filters for Booking
+    const bookingFilters = {
+      ...(category && { category }),
+      ...(city && { city }),
+      ...(paymentMode && { payment_mode: paymentMode }),
+      ...(backoffice && { backoffice_executive: backoffice }),
+      ...(reference && { type: { [Op.iLike]: `%${reference}%` } }),
+    };
+
+    // Fetch all matching data
+    const fullData = await BookingService.findAll({
+      where: serviceFilters,
+      include: [
+        {
+          model: Booking,
+          where: bookingFilters,
+          include: [
+            {
+              model: User,
+              as: "customer",
+            },
+          ],
+        },
+      ],
+    });
+
+    // Create Excel file
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("DSR Report");
+
+    sheet.columns = [
+      { header: "Date", key: "service_date", width: 20 },
+      { header: "Service", key: "service_name", width: 20 },
+      { header: "Customer", key: "customer", width: 25 },
+      { header: "Number", key: "mainContact", width: 20 },
+      { header: "City", key: "city", width: 15 },
+      { header: "Category", key: "category", width: 15 },
+      { header: "Service Charge", key: "service_charge", width: 18 },
+      { header: "Description", key: "description", width: 25 },
+      { header: "Backoffice", key: "backoffice", width: 20 },
+      { header: "Vendor", key: "vendor_name", width: 20 },
+      { header: "Job Complete", key: "job_complete", width: 15 },
+      { header: "Status", key: "status", width: 15 },
+    ];
+
+    // Add rows to the sheet
+    fullData.forEach((item) => {
+      sheet.addRow({
+        service_date: item.service_date,
+        service_name: item.service_name,
+        customer: item.Booking?.customer?.customerName || "",
+        mainContact: item.Booking?.customer?.mainContact || "",
+        city: item.Booking?.city || "",
+        category: item.Booking?.category || "",
+        service_charge: item.Booking?.service_charge || "",
+        description: item.Booking?.description || "",
+        backoffice: item.Booking?.backoffice_executive || "",
+        vendor_name: item.vendor_name || "",
+        job_complete: item.job_complete || "",
+        status: item.status || "",
+      });
+    });
+
+    // Set headers to download file
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=DSR_Report_${fromdate}_to_${todate}.xlsx`
+    );
+
+    // Write the Excel and end response
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Export Error:", error);
+    res.status(500).json({ error: "Export failed." });
+  }
+};
+
+exports.getPaymentsReportPAge = async (req, res) => {
+  try {
+    const {
+      fromdate,
+      todate,
+      city,
+      category,
+      technician,
+      backoffice,
+      jobType,
+      reference,
+      paymentMode,
+      jobComplete,
+      page = 1,
+      limit = 25,
+    } = req.query;
+
+    if (!fromdate) {
+      return res.status(400).json({ error: "date and city are required" });
+    }
+
+    const pageNumber = parseInt(page, 10);
+    const pageLimit = parseInt(limit, 10);
+    const offset = (pageNumber - 1) * pageLimit;
+
+    const bookingFilters = {
+      [Op.and]: [
+        category ? { category } : {},
+        city ? { city: { [Op.in]: Array.isArray(city) ? city : [city] } } : {},
+        paymentMode ? { payment_mode: paymentMode } : {},
+        jobType ? { service: jobType } : {},
+        backoffice ? { backoffice_executive: backoffice } : {},
+        reference ? { type: { [Op.like]: `%${reference}%` } } : {},
+      ],
+    };
+
+    const serviceFilters = {
+      [Op.and]: [
+        fromdate && todate
+          ? {
+              amt_date: {
+                [Op.between]: [
+                  new Date(fromdate),
+                  new Date(new Date(todate).setHours(23, 59, 59)),
+                ],
+              },
+            }
+          : {},
+        jobType ? { service_name: { [Op.iLike]: `%${jobType}%` } } : {},
+        jobComplete ? { job_complete: { [Op.in]: jobComplete } } : {},
+
+        technician ? { vendor_name: { [Op.iLike]: `%${technician}%` } } : {},
+      ],
+    };
+
+    // Main query with includes
+    const services = await BookingService.findAll({
+      where: serviceFilters,
+      attributes: [
+        "vendor_name",
+        "service_charge",
+        "service_name",
+        "service_date",
+        "status",
+        "id",
+        "amt_date",
+      ],
+      include: [
+        {
+          model: Booking,
+          required: true,
+          where: bookingFilters,
+          include: [
+            {
+              model: User,
+              as: "customer",
+
+              attributes: [
+                "id",
+                "customerName",
+                "email",
+                "mainContact",
+                "alternateContact",
+                "gst",
+              ],
+            },
+            {
+              model: Payment,
+              as: "payments",
+            },
+          ],
+        },
+      ],
+      offset,
+      limit: pageLimit,
+      order: [["amt_date", "ASC"]],
+    });
+
+    // Count query for pagination
+    const totalServicesCount = await BookingService.count({
+      where: serviceFilters,
+    });
+
+    const totalPages = Math.ceil(totalServicesCount / pageLimit);
+
+    res.status(200).json({
+      totalCount: totalServicesCount,
+      totalPages,
+      currentPage: pageNumber,
+      data: services,
+    });
+  } catch (error) {
+    console.error("Error fetching service data:", error);
+    res.status(500).json({ error: "Server error, please try again later." });
+  }
+};
+
+exports.exportPaymentReport = async (req, res) => {
+  const {
+    fromdate,
+    todate,
+    city,
+    category,
+    technician,
+    backoffice,
+    jobType,
+    reference,
+    paymentMode,
+    jobComplete,
+  } = req.query;
+
+  try {
+    // Build filters for BookingService
+    const serviceFilters = {
+      amt_date: {
+        [Op.between]: [
+          new Date(fromdate),
+          new Date(new Date(todate).setHours(23, 59, 59)),
+        ],
+      },
+      ...(technician && { vendor_name: { [Op.iLike]: `%${technician}%` } }),
+      ...(jobType && { service_name: { [Op.iLike]: `%${jobType}%` } }),
+      ...(jobComplete && { job_complete: jobComplete }),
+    };
+
+    // Build filters for Booking
+    const bookingFilters = {
+      ...(category && { category }),
+      ...(city && { city }),
+      ...(paymentMode && { payment_mode: paymentMode }),
+      ...(backoffice && { backoffice_executive: backoffice }),
+      ...(reference && { type: { [Op.iLike]: `%${reference}%` } }),
+    };
+
+    // Fetch all matching data
+    const fullData = await BookingService.findAll({
+      where: serviceFilters,
+      include: [
+        {
+          model: Booking,
+          where: bookingFilters,
+          include: [
+            {
+              model: User,
+              as: "customer",
+            },
+          ],
+        },
+      ],
+    });
+
+    // Create Excel file
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Payment Report");
+
+    sheet.columns = [
+      { header: "Date", key: "amt_date", width: 20 },
+      { header: "Service", key: "service_name", width: 20 },
+      { header: "Customer", key: "customer", width: 25 },
+      { header: "Number", key: "mainContact", width: 20 },
+      { header: "City", key: "city", width: 15 },
+      { header: "Category", key: "category", width: 15 },
+      { header: "Service Charge", key: "service_charge", width: 18 },
+      { header: "Description", key: "description", width: 25 },
+      { header: "Backoffice", key: "backoffice", width: 20 },
+      { header: "Vendor", key: "vendor_name", width: 20 },
+      { header: "Job Complete", key: "job_complete", width: 15 },
+      { header: "paymentMode", key: "payment_mode", width: 15 },
+    ];
+
+    // Add rows to the sheet
+    fullData.forEach((item) => {
+      sheet.addRow({
+        amt_date: item.amt_date,
+        service_name: item.service_name,
+        customer: item.Booking?.customer?.customerName || "",
+        mainContact: item.Booking?.customer?.mainContact || "",
+        city: item.Booking?.city || "",
+        category: item.Booking?.category || "",
+        service_charge: item.Booking?.service_charge || "",
+        description: item.Booking?.description || "",
+        backoffice: item.Booking?.backoffice_executive || "",
+        vendor_name: item.vendor_name || "",
+        job_complete: item.job_complete || "",
+        payment_mode: item.Booking?.payment_mode || "",
+      });
+    });
+
+    // Set headers to download file
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=DSR_Report_${fromdate}_to_${todate}.xlsx`
+    );
+
+    // Write the Excel and end response
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Export Error:", error);
+    res.status(500).json({ error: "Export failed." });
   }
 };

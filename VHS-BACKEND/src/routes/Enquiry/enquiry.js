@@ -11,6 +11,8 @@ const {
   getLastEnquiryId,
   getNewEnquiries,
   getOnlyResponseNewEnquiries,
+  getEnquiriesFoReporPage,
+  getEnquiriesFoReporPageDownload,
 } = require("../../controllers/enquiry/enquiry");
 const { protect, authorize } = require("../../middlewares/authMiddleware");
 
@@ -22,6 +24,8 @@ router.get("/today", protect, getTodaysEnquiries);
 router.get("/last-enquiry", getLastEnquiryId);
 router.get("/new-enquiry", getNewEnquiries);
 router.get("/new-response-enquiry", getOnlyResponseNewEnquiries);
+router.get("/getEnquiriesFoReporPage", getEnquiriesFoReporPage);
+router.get("/getEnquiriesFoReporPageDownload", getEnquiriesFoReporPageDownload);
 
 router.get("/:enquiryId", getEnquiryById);
 

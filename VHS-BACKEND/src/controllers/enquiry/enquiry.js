@@ -4,6 +4,7 @@ const redisClient = require("../../config/redis"); // Redis setup
 const { Op, QueryTypes } = require("sequelize");
 const moment = require("moment");
 const sequelize = require("../../config/database");
+const ExcelJS = require("exceljs");
 
 // ✅ Get all enquiries with pagination & search
 
@@ -546,6 +547,337 @@ const deleteEnquiry = async (req, res) => {
   }
 };
 
+const getEnquiriesFoReporPage = async (req, res) => {
+  try {
+    const today = moment().format("YYYY-MM-DD");
+
+    let {
+      page,
+      limit,
+      search,
+      sortBy,
+      sortOrder,
+      fromdate,
+      todate,
+      category,
+      city,
+      reference,
+      executive,
+      followupresponse,
+      jobType,
+      UTMSource,
+      UTMContent,
+      tag,
+    } = req.query;
+
+    console.log("followupresponse", followupresponse);
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 20;
+    sortBy = sortBy || "createdAt";
+    sortOrder = sortOrder === "asc" ? "ASC" : "DESC";
+
+    const offset = (page - 1) * limit;
+
+    let searchFilters = {};
+    if (search && typeof search === "string") {
+      try {
+        searchFilters = JSON.parse(search);
+      } catch (err) {
+        console.error("Invalid search query:", search);
+      }
+    }
+
+    // 🔍 Start building filter conditions
+    let filterClause = `WHERE e.date BETWEEN :fromdate AND :todate`;
+    const replacements = { limit, offset, today, fromdate, todate };
+
+    // Apply additional filters based on search
+    if (searchFilters.name) {
+      filterClause += ` AND LOWER(e.name) LIKE LOWER(:name)`;
+      replacements.name = `%${searchFilters.name}%`;
+    }
+    if (searchFilters.mobile) {
+      filterClause += ` AND e.mobile LIKE :mobile`;
+      replacements.mobile = `%${searchFilters.mobile}%`;
+    }
+    if (searchFilters.response) {
+      filterClause += ` AND LOWER(f.response) = LOWER(:response)`;
+      replacements.response = searchFilters.response;
+    }
+    if (searchFilters.description) {
+      filterClause += ` AND LOWER(f."description") LIKE LOWER(:description)`;
+      replacements.description = `%${searchFilters.description}%`;
+    }
+
+    // Apply other filters if they exist
+    if (category) {
+      filterClause += ` AND e.category = :category`;
+      replacements.category = category;
+    }
+    if (city) {
+      filterClause += ` AND e.city = :city`;
+      replacements.city = city;
+    }
+    if (reference) {
+      filterClause += ` AND e.reference1 = :reference`;
+      replacements.reference = reference;
+    }
+    if (executive) {
+      filterClause += ` AND e.executive = :executive`;
+      replacements.executive = executive;
+    }
+    if (followupresponse) {
+      filterClause += ` AND f.response = :followupresponse`;
+      replacements.followupresponse = followupresponse;
+    }
+    if (jobType) {
+      filterClause += ` AND e.jobType = :jobType`;
+      replacements.jobType = jobType;
+    }
+    if (UTMSource) {
+      filterClause += ` AND e.utm_source = :UTMSource`;
+      replacements.UTMSource = UTMSource;
+    }
+    if (UTMContent) {
+      filterClause += ` AND e.utm_content = :UTMContent`;
+      replacements.UTMContent = UTMContent;
+    }
+    if (tag) {
+      filterClause += ` AND e.tag = :tag`;
+      replacements.tag = tag;
+    }
+
+    // 🧠 Step 1: Fetch paginated data
+    const enquiries = await sequelize.query(
+      `
+      SELECT 
+        e.*,
+        f.response AS followup_response,
+        f."description" AS followup_description,
+        f."next_followup_date" AS followup_next_date,
+        f."createdAt" AS followup_createdAt
+      FROM enquiries e
+      LEFT JOIN LATERAL (
+        SELECT *
+        FROM followups f
+        WHERE f."enquiryId" = e."enquiryId"
+        ORDER BY f."createdAt" DESC
+        LIMIT 1
+      ) f ON true
+      ${filterClause}
+      ORDER BY e."${sortBy}" ${sortOrder}
+      LIMIT :limit OFFSET :offset
+      `,
+      {
+        replacements,
+        type: QueryTypes.SELECT,
+      }
+    );
+
+    // 🧠 Step 2: Count total
+    const countResult = await sequelize.query(
+      `
+      SELECT COUNT(*) as count
+      FROM enquiries e
+      LEFT JOIN LATERAL (
+        SELECT *
+        FROM followups f
+        WHERE f."enquiryId" = e."enquiryId"
+        ORDER BY f."createdAt" DESC
+        LIMIT 1
+      ) f ON true
+      ${filterClause}
+      `,
+      {
+        replacements,
+        type: QueryTypes.SELECT,
+      }
+    );
+
+    const totalCount = parseInt(countResult[0].count);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    res.status(200).json({
+      enquiries,
+      pagination: {
+        totalCount,
+        totalPages,
+        page,
+        limit,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getEnquiriesFoReporPage:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getEnquiriesFoReporPageDownload = async (req, res) => {
+  try {
+    let {
+      fromdate,
+      todate,
+      category,
+      city,
+      reference,
+      executive,
+      followupresponse,
+      jobType,
+      UTMSource,
+      UTMContent,
+      tag,
+    } = req.query;
+
+    let searchFilters = {};
+
+    // 🔍 Start building filter conditions
+    let filterClause = `WHERE e.date BETWEEN :fromdate AND :todate`;
+    const replacements = { fromdate, todate };
+
+    // Apply additional filters based on search
+    if (searchFilters.name) {
+      filterClause += ` AND LOWER(e.name) LIKE LOWER(:name)`;
+      replacements.name = `%${searchFilters.name}%`;
+    }
+    if (searchFilters.mobile) {
+      filterClause += ` AND e.mobile LIKE :mobile`;
+      replacements.mobile = `%${searchFilters.mobile}%`;
+    }
+    if (searchFilters.response) {
+      filterClause += ` AND LOWER(f.response) = LOWER(:response)`;
+      replacements.response = searchFilters.response;
+    }
+    if (searchFilters.description) {
+      filterClause += ` AND LOWER(f."description") LIKE LOWER(:description)`;
+      replacements.description = `%${searchFilters.description}%`;
+    }
+
+    // Apply other filters if they exist
+    if (category) {
+      filterClause += ` AND e.category = :category`;
+      replacements.category = category;
+    }
+    if (city) {
+      filterClause += ` AND e.city = :city`;
+      replacements.city = city;
+    }
+    if (reference) {
+      filterClause += ` AND e.reference1 = :reference`;
+      replacements.reference = reference;
+    }
+    if (executive) {
+      filterClause += ` AND e.executive = :executive`;
+      replacements.executive = executive;
+    }
+    if (followupresponse) {
+      filterClause += ` AND f.response = :followupresponse`;
+      replacements.followupresponse = followupresponse;
+    }
+    if (jobType) {
+      filterClause += ` AND e.jobType = :jobType`;
+      replacements.jobType = jobType;
+    }
+    if (UTMSource) {
+      filterClause += ` AND e.utm_source = :UTMSource`;
+      replacements.UTMSource = UTMSource;
+    }
+    if (UTMContent) {
+      filterClause += ` AND e.utm_content = :UTMContent`;
+      replacements.UTMContent = UTMContent;
+    }
+    if (tag) {
+      filterClause += ` AND e.tag = :tag`;
+      replacements.tag = tag;
+    }
+
+    // 🧠 Step 1: Fetch paginated data
+    const enquiries = await sequelize.query(
+      `
+      SELECT 
+        e.*,
+        f.response AS followup_response,
+        f."description" AS followup_description,
+        f."next_followup_date" AS followup_next_date,
+        f."createdAt" AS followup_createdAt
+      FROM enquiries e
+      LEFT JOIN LATERAL (
+        SELECT *
+        FROM followups f
+        WHERE f."enquiryId" = e."enquiryId"
+        ORDER BY f."createdAt" DESC
+        LIMIT 1
+      ) f ON true
+      ${filterClause}
+   
+      `,
+      {
+        replacements,
+        type: QueryTypes.SELECT,
+      }
+    );
+
+    // Create Excel file
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Enquiries Report");
+
+    sheet.columns = [
+      { header: "Enquiry ID", key: "enquiryId", width: 20 },
+      { header: "Name", key: "name", width: 25 },
+      { header: "Mobile", key: "mobile", width: 20 },
+      { header: "Follow-up Response", key: "followup_response", width: 25 },
+      {
+        header: "Follow-up Description",
+        key: "followup_description",
+        width: 30,
+      },
+      { header: "Next Follow-up Date", key: "followup_next_date", width: 20 },
+      { header: "Category", key: "category", width: 15 },
+      { header: "City", key: "city", width: 15 },
+      { header: "Executive", key: "executive", width: 20 },
+      { header: "Utm Source", key: "utmsource", width: 20 },
+
+      { header: "Utm content", key: "utmcontent", width: 20 },
+
+      { header: "Tag", key: "tag", width: 20 },
+    ];
+
+    // Add rows to the sheet
+    enquiries.forEach((item) => {
+      sheet.addRow({
+        enquiryId: item.enquiryId,
+        name: item.name,
+        mobile: item.mobile,
+        followup_response: item.followup_response || "",
+        followup_description: item.followup_description || "",
+        followup_next_date: item.followup_next_date || "",
+        category: item.category || "",
+        city: item.city || "",
+        executive: item.executive || "",
+        utmsource: item.utm_source || "",
+        utmcontent: item.utm_content || "",
+        tag: item.tag || "",
+      });
+    });
+
+    // Set headers for file download
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=Enquiries_Report_${fromdate}_to_${todate}.xlsx`
+    );
+
+    // Write the Excel file and end the response
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Error in getEnquiriesFoReporPage:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   EnquirySearch,
   getTodaysEnquiries,
@@ -558,4 +890,6 @@ module.exports = {
   getLastEnquiryId,
   getNewEnquiries,
   getOnlyResponseNewEnquiries,
+  getEnquiriesFoReporPage,
+  getEnquiriesFoReporPageDownload,
 };

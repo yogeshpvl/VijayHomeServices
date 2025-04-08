@@ -98,6 +98,11 @@ import Reports from "../pages/Reports/Reports";
 import ReportCategory from "../pages/Reports/RepostCategory";
 
 import RepostDSR from "../pages/Reports/RepostDSR";
+import PaymentReport from "../pages/Reports/PaymentReports";
+import EnquiryReport from "../pages/Reports/EnquiryReport";
+import SurveyReport from "../pages/Reports/SurveyReport";
+import QuoteReport from "../pages/Reports/QuoteReport";
+import RunningReport from "../pages/Reports/RunningReport";
 
 const AppContent = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
@@ -182,6 +187,16 @@ const AppContent = () => {
             <Route path="Reports" element={<Reports />}></Route>
             <Route path="category" element={<ReportCategory />}></Route>
             <Route path="reportdsr" element={<RepostDSR />}></Route>
+            <Route path="reportEnquiry" element={<EnquiryReport />}></Route>
+            <Route path="reportSurvey" element={<SurveyReport />}></Route>
+            <Route path="reportQuote" element={<QuoteReport />}></Route>
+            <Route path="RunningReport" element={<RunningReport />}></Route>
+
+            <Route
+              path="reportPaymentReport"
+              element={<PaymentReport />}
+            ></Route>
+
             {/* Master Section with Nested Routes */}
             <Route path="master" element={<MasterLayout />}>
               <Route index element={<User />} /> {/* Default to User */}

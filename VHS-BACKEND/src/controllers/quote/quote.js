@@ -4,6 +4,7 @@ const moment = require("moment");
 const db = require("../../models");
 const { Quotation, Enquiry, QuoteFollowup, QuotationItem } = db;
 const { Op, Sequelize } = require("sequelize");
+const ExcelJS = require("exceljs");
 
 // Create a new quotation
 const updateOrCreateQuotation = async (req, res) => {
@@ -303,6 +304,192 @@ const fetchQuotationswithItems = async (req, res) => {
   }
 };
 
+const fetchQuotationsReport = async (req, res) => {
+  try {
+    const {
+      fromdate,
+      todate,
+      page = 1,
+      limit = 25,
+      category,
+      city,
+      type,
+      name,
+      mobile,
+      service,
+      executive,
+      booked_by,
+    } = req.query;
+    console.log("executive", executive);
+
+    const offset = (page - 1) * limit;
+
+    const enquiryFilter = {};
+    if (category) enquiryFilter.category = category;
+    if (city) enquiryFilter.city = city;
+    if (name) enquiryFilter.name = { [Op.iLike]: `%${name}%` };
+    if (mobile) enquiryFilter.mobile = { [Op.iLike]: `%${mobile}%` };
+    if (service) enquiryFilter.interested_for = { [Op.iLike]: `%${service}%` };
+    if (executive) enquiryFilter.executive = { [Op.iLike]: `%${executive}%` };
+
+    const quotationFilter = {};
+    if (type) quotationFilter.type = type;
+    if (booked_by) quotationFilter.booked_by = { [Op.iLike]: `%${booked_by}%` };
+
+    // Add date range filters if fromdate and todate are provided
+    if (fromdate && todate) {
+      quotationFilter.quotation_date = {
+        [Op.between]: [new Date(fromdate), new Date(todate)],
+      };
+    }
+
+    // Fetch quotations with the applied filters
+    const { rows, count } = await Quotation.findAndCountAll({
+      include: [
+        {
+          model: Enquiry,
+          as: "enquiry",
+          where: enquiryFilter,
+        },
+        {
+          model: QuoteFollowup,
+          as: "QuoteFollowups",
+          separate: true,
+          limit: 1,
+          order: [["id", "DESC"]],
+        },
+      ],
+      where: quotationFilter,
+      limit: Number(limit),
+      offset: Number(offset),
+      order: [["quotation_date", "DESC"]],
+    });
+
+    res.status(200).json({
+      data: rows,
+      totalCount: count, // Use the total count of filtered records for pagination
+      totalPages: Math.ceil(count / limit), // Calculate total pages
+      currentPage: page,
+    });
+  } catch (error) {
+    console.error("ERROR:", error);
+    res.status(500).json({ message: "Error fetching quotations", error });
+  }
+};
+
+const fetchQuotationsReportDownload = async (req, res) => {
+  try {
+    const {
+      fromdate,
+      todate,
+      category,
+      city,
+      type,
+      name,
+      mobile,
+      service,
+      executive,
+      booked_by,
+    } = req.query;
+
+    const enquiryFilter = {};
+    if (category) enquiryFilter.category = category;
+    if (city) enquiryFilter.city = city;
+    if (name) enquiryFilter.name = { [Op.iLike]: `%${name}%` };
+    if (mobile) enquiryFilter.mobile = { [Op.iLike]: `%${mobile}%` };
+    if (service) enquiryFilter.interested_for = { [Op.iLike]: `%${service}%` };
+    if (executive) enquiryFilter.executive = { [Op.iLike]: `%${executive}%` };
+
+    const quotationFilter = {};
+    if (type) quotationFilter.type = type;
+    if (booked_by) quotationFilter.booked_by = { [Op.iLike]: `%${booked_by}%` };
+
+    // Add date range filters if fromdate and todate are provided
+    if (fromdate && todate) {
+      quotationFilter.quotation_date = {
+        [Op.between]: [new Date(fromdate), new Date(todate)],
+      };
+    }
+
+    // Fetch quotations with the applied filters
+    const { rows } = await Quotation.findAndCountAll({
+      include: [
+        {
+          model: Enquiry,
+          as: "enquiry",
+          where: enquiryFilter,
+        },
+        {
+          model: QuoteFollowup,
+          as: "QuoteFollowups",
+          separate: true,
+          limit: 1,
+          order: [["id", "DESC"]],
+        },
+      ],
+      where: quotationFilter,
+      order: [["quotation_date", "DESC"]],
+    });
+
+    // Create Excel file using ExcelJS
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Quotations Report");
+
+    // Define the columns for the Excel sheet
+    sheet.columns = [
+      { header: "Quotation ID", key: "quotation_id", width: 20 },
+      { header: "Name", key: "name", width: 25 },
+      { header: "Mobile", key: "mobile", width: 20 },
+      { header: "Category", key: "category", width: 15 },
+      { header: "City", key: "city", width: 15 },
+      { header: "Executive", key: "executive", width: 20 },
+      { header: "Service", key: "interested_for", width: 20 },
+      { header: "Booked By", key: "booked_by", width: 20 },
+      { header: "Quotation Date", key: "quotation_date", width: 20 },
+      { header: "Quote Amount", key: "quote_amount", width: 20 },
+      { header: "Follow-up Response", key: "followup_response", width: 25 },
+      { header: "Next Follow-up Date", key: "next_followup_date", width: 20 },
+      { header: "Type", key: "type", width: 20 },
+    ];
+
+    // Add rows to the Excel sheet
+    rows.forEach((item) => {
+      sheet.addRow({
+        quotation_id: item.quotation_id,
+        name: item.enquiry?.name,
+        mobile: item.enquiry?.mobile,
+        category: item.enquiry?.category,
+        city: item.enquiry?.city,
+        executive: item.enquiry?.executive,
+        interested_for: item.enquiry?.interested_for,
+        booked_by: item.booked_by,
+        quotation_date: item.quotation_date,
+        quote_amount: item.grand_total,
+        followup_response: item.QuoteFollowups[0]?.response || "",
+        next_followup_date: item.QuoteFollowups[0]?.nxtfoll || "",
+        type: item.type || "",
+      });
+    });
+
+    // Set headers for file download
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=Quotations_Report_${fromdate}_to_${todate}.xlsx`
+    );
+
+    // Write the Excel file and end the response
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Error in fetchQuotationsReportDownload:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   updateOrCreateQuotation,
   editQuotation,
@@ -311,4 +498,6 @@ module.exports = {
   deleteQuotation,
   sendquoteinwhatsapp,
   fetchQuotationswithItems,
+  fetchQuotationsReport,
+  fetchQuotationsReportDownload,
 };

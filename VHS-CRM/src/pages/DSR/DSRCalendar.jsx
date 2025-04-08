@@ -16,8 +16,7 @@ function DSRCalendar() {
   const [currentRange, setCurrentRange] = useState({
     start: moment().startOf("month").format("YYYY-MM-DD"),
     end: moment().endOf("month").format("YYYY-MM-DD"),
-  }); // Store current month range
-  const navigate = useNavigate();
+  });
 
   useEffect(() => {
     if (category) {
@@ -41,8 +40,6 @@ function DSRCalendar() {
           },
         }
       );
-
-      console.log("API Response:", res.data);
 
       // Now the response contains a data array with days and service counts
       const dailyCounts = res.data.data; // Access the array of daily counts

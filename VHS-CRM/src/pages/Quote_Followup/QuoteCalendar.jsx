@@ -6,13 +6,6 @@ import { useNavigate } from "react-router-dom";
 
 const localizer = momentLocalizer(moment);
 
-const sampleCategories = [
-  { name: "Business" },
-  { name: "Personal" },
-  { name: "Meetings" },
-  { name: "Events" },
-];
-
 const sampleEvents = [
   {
     title: "Followups",
@@ -27,6 +20,7 @@ const sampleEvents = [
 ];
 
 function QuoteCalendar() {
+  const users = JSON.parse(localStorage.getItem("user"));
   const [category, setCategory] = useState("");
   const [totalCount, setTotalCount] = useState(sampleEvents.length);
   const navigate = useNavigate();
@@ -73,9 +67,9 @@ function QuoteCalendar() {
                 value={category}
               >
                 <option value="">-select-</option>
-                {sampleCategories.map((cat, index) => (
-                  <option key={index} value={cat.name}>
-                    {cat.name}
+                {users?.category?.map((category, index) => (
+                  <option key={index} value={category.name}>
+                    {category.name}
                   </option>
                 ))}
               </select>

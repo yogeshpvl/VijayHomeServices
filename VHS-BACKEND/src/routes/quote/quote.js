@@ -18,6 +18,12 @@ router.put("/quotations/:quotation_id", QuotationController.editQuotation);
 
 // Fetch all quotations
 router.get("/quotations", QuotationController.fetchQuotations);
+router.get("/fetchQuotationsReport", QuotationController.fetchQuotationsReport);
+router.get(
+  "/fetchQuotationsReportDownload",
+  QuotationController.fetchQuotationsReportDownload
+);
+
 router.get("/fetch-with-items", QuotationController.fetchQuotationswithItems);
 
 // Fetch quotation by enquiry_id

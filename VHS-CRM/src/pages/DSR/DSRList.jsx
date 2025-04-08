@@ -5,7 +5,7 @@ import { config } from "../../services/config";
 
 const DSRList = () => {
   const navigate = useNavigate();
-  const { date, category } = useParams(); // Get the date and category from URL params
+  const { date, category } = useParams();
   const users = JSON.parse(localStorage.getItem("user"));
   const [data, setData] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(category || "");
@@ -13,29 +13,21 @@ const DSRList = () => {
   const [selectedTechnician, setSelectedTechnician] = useState("");
   const [selectedJobType, setSelectedJobType] = useState("");
   const [selectedPaymentMode, setSelectedPaymentMode] = useState("");
-  const [selectedName, setSelectedName] = useState(""); // Added for Name filter
-  const [selectedAddress, setSelectedAddress] = useState(""); // Added for Address filter
-  const [selectedContactNo, setSelectedContactNo] = useState(""); // Added for Contact No filter
-  const [selectedJobAmount, setSelectedJobAmount] = useState(""); // Added for Job Amount filter
-  const [selectedDescription, setSelectedDescription] = useState(""); // Added for Description filter
-  const [selectedReference, setSelectedReference] = useState(""); // Added for Reference filter
+  const [selectedName, setSelectedName] = useState("");
+  const [selectedAddress, setSelectedAddress] = useState("");
+  const [selectedContactNo, setSelectedContactNo] = useState("");
+  const [selectedJobAmount, setSelectedJobAmount] = useState("");
+  const [selectedDescription, setSelectedDescription] = useState("");
+  const [selectedReference, setSelectedReference] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [vendorData, setvendorData] = useState([]);
 
-  console.log("vendorData", vendorData);
-
-  const itemsPerPage = 5;
+  const itemsPerPage = 25;
   const [totalPages, setTotalPages] = useState(0);
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedData = data.slice(startIndex, endIndex);
-  console.log("data", data);
-
-  console.log(":selectedName", selectedName);
-  console.log(":selectedContactNo", selectedContactNo);
-
-  // Fetch data from the backend
 
   const fetchData = async () => {
     try {
@@ -51,7 +43,7 @@ const DSRList = () => {
             jobAmount: selectedJobAmount,
             description: selectedDescription,
             reference: selectedReference,
-            city: selectedCity || users.city.map((user) => user.name).join(","), // ✅ use selectedCity
+            city: selectedCity || users.city.map((user) => user.name).join(","),
             category: selectedCategory,
             technician: selectedTechnician,
             paymentMode: selectedPaymentMode,
@@ -88,9 +80,11 @@ const DSRList = () => {
   ]);
 
   // Handle row click to navigate to details page
+
   const handleRowClick = (id) => {
     navigate(`/DSR/DSRDetails/${id}`);
   };
+
   const columns = [
     { label: "Sr.No." },
     { label: "Date" },

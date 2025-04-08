@@ -40,6 +40,7 @@ const BookingService = sequelize.define(
     },
     job_complete: {
       type: DataTypes.STRING,
+      defaultValue: "NO",
     },
     tech_comment: {
       type: DataTypes.TEXT,

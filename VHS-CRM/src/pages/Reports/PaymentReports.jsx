@@ -4,7 +4,7 @@ import moment from "moment";
 import axios from "axios";
 import { config } from "../../services/config";
 
-function RepostDSR() {
+function PaymentReport() {
   const users = JSON.parse(localStorage.getItem("user"));
   const [fromDate, setFromDate] = useState(moment().format("YYYY-MM-DD"));
   const [toDate, setToDate] = useState(moment().format("YYYY-MM-DD"));
@@ -26,13 +26,14 @@ function RepostDSR() {
 
   const [currentPage, setCurrentPage] = useState(1);
 
-  const itemsPerPage = 25;
+  const itemsPerPage = 5;
   const [totalPages, setTotalPages] = useState(0);
 
   const columns = [
     { label: "Sr.No." },
-    { label: "Date" },
-    { label: "Time", key: "time" },
+    { label: "Category" },
+    { label: "Payment Date" },
+
     { label: "Name", key: "name" },
     {
       label: "City",
@@ -49,11 +50,14 @@ function RepostDSR() {
       options: vendorData?.map((v) => v.vendor_name),
     },
     { label: "Job Type", key: "jobtype" },
+    { label: "Description", key: "description" },
+
     { label: "Job Amount", key: "jobamount" },
     { label: "Payment Mode", key: "paymentmode" },
-    { label: "Description", key: "description" },
-    { label: "Reference", key: "reference" },
-    { label: "Job Complete" },
+    { label: "Reference" },
+
+    { label: "Status" },
+    { label: "Payment details" },
   ];
 
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -132,7 +136,7 @@ function RepostDSR() {
     setLoading(true);
     try {
       const response = await axios.get(
-        `${config.API_BASE_URL}/bookingService/getDSRREportFilter`,
+        `${config.API_BASE_URL}/bookingService/getPaymentReportFilter`,
         {
           params: {
             fromdate: fromDate,
@@ -146,14 +150,12 @@ function RepostDSR() {
             paymentMode,
             jobComplete,
             page: currentPage,
-            limit: itemsPerPage,
+            limit: 25,
           },
         }
       );
 
       setDsrData(response.data?.data);
-      setTotalPages(response.data?.totalPages);
-      // setTotalCount(response.data?.totalCount);
       setShowTable(true);
     } catch (err) {
       console.error("Error fetching DSR:", err);
@@ -177,28 +179,24 @@ function RepostDSR() {
     });
 
     const response = await fetch(
-      `${config.API_BASE_URL}/bookingService/exportDSRReport?${params}`
+      `${config.API_BASE_URL}/bookingService/exportPAYMMENTReport?${params}`
     );
     const blob = await response.blob();
 
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `DSR_Report_${fromDate}_to_${toDate}.xlsx`;
+    a.download = `Payment_Report_${fromDate}_to_${toDate}.xlsx`;
     a.click();
   };
 
-  const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
-    handleShow(); // Make the API call with the updated page number
-  };
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
       <div className="mx-auto bg-white p-6 rounded-lg shadow">
         {/* Filter Section */}
         <div className="bg-white max-w-4xl mx-auto p-6">
           <h2 className="text-xl font-bold text-red-800 text-center mb-6">
-            DSR Report – Filter
+            Payment Report – Filter
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -375,118 +373,194 @@ function RepostDSR() {
 
         {/* Data Table */}
         {showTable && (
-          <>
-            <div className="overflow-x-auto mt-8">
-              <table className="min-w-full bg-white border border-gray-200 text-sm shadow-sm">
-                <thead className="bg-gray-50 text-gray-800">
-                  <tr>
-                    {columns.map((col, idx) => (
-                      <th
-                        key={idx}
-                        className="border border-gray-200 px-4 py-3 text-xs font-semibold text-left bg-gray-100 text-gray-800"
-                      >
-                        {col.label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {paginatedData.map((row, index) => (
-                    <tr
-                      key={row.id}
-                      onClick={() => handleRowClick(row.id)}
-                      className={`border-b transition cursor-pointer ${
-                        row.status === "NOT ASSIGNED"
-                          ? "bg-white"
-                          : row.status === "ASSIGNED FOR TECHNICIAN"
-                          ? "bg-gray-200"
-                          : row.status === "SERVICE STARTED"
-                          ? "bg-yellow-200"
-                          : row.status === "SERVICE COMPLETED"
-                          ? "bg-green-200"
-                          : row.status === "SERVICE CANCELLED"
-                          ? "bg-red-200"
-                          : row.status === "SERVICE DELAYED"
-                          ? "bg-blue-200"
-                          : row.status === "CLOSED OPERATION MANAGER"
-                          ? "bg-purple-200"
-                          : "bg-white"
-                      }`}
+          <div className="overflow-x-auto mt-8">
+            <table className="min-w-full bg-white border border-gray-200 text-sm shadow-sm">
+              <thead className="bg-gray-50 text-gray-800">
+                <tr>
+                  {columns.map((col, idx) => (
+                    <th
+                      key={idx}
+                      className="border border-gray-200 px-4 py-3 text-xs font-semibold text-left bg-gray-100 text-gray-800"
                     >
-                      <td className="border border-gray-200 px-3 py-2 text-xs">
-                        {index + 1}
-                      </td>
-                      <td className="border border-gray-200 px-3 py-2 text-xs">
-                        {row.service_date}
-                      </td>
-                      <td className="border border-gray-200 px-3 py-2 text-xs">
-                        {row.Booking?.selected_slot_text}
-                      </td>
-                      <td className="border border-gray-200 px-3 py-2 text-xs">
-                        {row.Booking?.customer.customerName}
-                      </td>
-                      <td className="border border-gray-200 px-3 py-2 text-xs">
-                        {row.Booking?.city}
-                      </td>
-                      <td className="border border-gray-200 px-3 py-2 text-xs">
-                        {row.Booking?.delivery_address?.address}
-                      </td>
-                      <td className="border border-gray-200 px-3 py-2 text-xs">
-                        {row.Booking?.customer.mainContact}
-                      </td>
-                      <td className="border border-gray-200 px-3 py-2 text-xs">
-                        {row.vendor_name}
-                      </td>
-                      <td className="border border-gray-200 px-3 py-2 text-xs">
-                        {row.service_name}
-                      </td>
-                      <td className="border border-gray-200 px-3 py-2 text-xs">
-                        {row.service_charge}
-                      </td>
-                      <td className="border border-gray-200 px-3 py-2 text-xs">
-                        {row.Booking?.payment_mode}
-                      </td>
-                      <td className="border border-gray-200 px-3 py-2 text-xs">
-                        {row.Booking?.description}
-                      </td>
-                      <td className="border border-gray-200 px-3 py-2 text-xs">
-                        {row.Booking?.type}
-                      </td>
-
-                      <td className="border border-gray-200 px-3 py-2 text-xs">
-                        {row.job_complete}
-                      </td>
-                    </tr>
+                      {col.label}
+                    </th>
                   ))}
-                </tbody>
-              </table>
-            </div>
-            {/* Pagination Controls */}
-            <div className="flex justify-between items-center mt-4 p-4">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => handlePageChange(currentPage - 1)}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <span className="text-gray-700">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => handlePageChange(currentPage + 1)}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>{" "}
-          </>
+                </tr>
+              </thead>
+
+              <tbody>
+                {paginatedData.map((row, index) => (
+                  <tr
+                    key={row.id}
+                    className={`border-b transition cursor-pointer ${
+                      row.status === "NOT ASSIGNED"
+                        ? "bg-white"
+                        : row.status === "ASSIGNED FOR TECHNICIAN"
+                        ? "bg-gray-200"
+                        : row.status === "SERVICE STARTED"
+                        ? "bg-yellow-200"
+                        : row.status === "SERVICE COMPLETED"
+                        ? "bg-green-200"
+                        : row.status === "SERVICE CANCELLED"
+                        ? "bg-red-200"
+                        : row.status === "SERVICE DELAYED"
+                        ? "bg-blue-200"
+                        : row.status === "CLOSED OPERATION MANAGER"
+                        ? "bg-purple-200"
+                        : "bg-white"
+                    }`}
+                  >
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {startIndex + index + 1}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.Booking.category}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.amt_date}
+                    </td>
+
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.Booking.customer.customerName}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.Booking.city}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.Booking.delivery_address?.address}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.Booking.customer.mainContact}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.vendor_name}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.service_name}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.Booking.description}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.service_charge}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.Booking.payment_mode}
+                    </td>
+
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.Booking.type}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.Booking.payment_mode === "Online"
+                        ? "Payment Collected"
+                        : ""}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs text-black">
+                      {(() => {
+                        const customerPayments = row.Booking?.payments?.filter(
+                          (p) => p.paymen_type === "Customer"
+                        );
+
+                        const total = customerPayments?.reduce(
+                          (sum, p) => sum + parseFloat(p.amount || 0),
+                          0
+                        );
+
+                        const serviceCharge = parseFloat(
+                          row?.service_charge || 0
+                        );
+                        const pending = serviceCharge - total;
+
+                        return (
+                          <div className="space-y-1">
+                            {customerPayments.map((p) => (
+                              <div key={p.id}>
+                                ({moment(p.payment_date).format("DD/MM/YYYY")})
+                                ₹{p.amount} ({p.payment_mode})
+                              </div>
+                            ))}
+
+                            {customerPayments.length > 0 && (
+                              <>
+                                <div className="font-bold mt-1">
+                                  Total: {total.toFixed(2)}
+                                </div>
+                                <div className="font-bold">
+                                  Pending: {pending.toFixed(2)}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-gray-100 font-semibold text-sm text-black">
+                  <td colSpan={10} className="px-4 py-3 text-right">
+                    Totals:
+                  </td>
+                  <td className="px-3 py-2">
+                    ₹
+                    {paginatedData
+                      .reduce(
+                        (sum, row) =>
+                          sum + parseFloat(row?.service_charge || 0),
+                        0
+                      )
+                      .toFixed(2)}
+                  </td>
+                  <td colSpan={3}></td>
+                  <td className="px-3 py-2 text-xs text-black">
+                    {(() => {
+                      const allCustomerPayments = paginatedData.flatMap(
+                        (row) =>
+                          row?.Booking?.payments?.filter(
+                            (p) => p.paymen_type === "Customer"
+                          ) || []
+                      );
+
+                      const modeTotals = allCustomerPayments.reduce(
+                        (acc, curr) => {
+                          const mode = curr.payment_mode || "Unknown";
+                          const amount = parseFloat(curr.amount || 0);
+                          acc[mode] = (acc[mode] || 0) + amount;
+                          acc.counts[mode] = (acc.counts[mode] || 0) + 1;
+                          return acc;
+                        },
+                        { counts: {} }
+                      );
+
+                      const total = Object.values(modeTotals)
+                        .filter((v) => typeof v === "number")
+                        .reduce((sum, amt) => sum + amt, 0);
+
+                      return (
+                        <div className="space-y-1 font-bold">
+                          {Object.entries(modeTotals)
+                            .filter(([key]) => key !== "counts")
+                            .map(([mode, amt]) => (
+                              <div key={mode}>
+                                {mode} ({modeTotals.counts[mode] || 0}):{" "}
+                                {amt.toFixed(2)}
+                              </div>
+                            ))}
+                          <div>Total: {total.toFixed(2)}</div>
+                        </div>
+                      );
+                    })()}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-export default RepostDSR;
+export default PaymentReport;

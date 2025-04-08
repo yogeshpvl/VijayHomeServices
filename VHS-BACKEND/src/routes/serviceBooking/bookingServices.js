@@ -15,7 +15,18 @@ router.get(
   bookingServiceController.getPaymentsReportDailyServiceData
 );
 
+//reporst page apis
+router.get(
+  "/getPaymentReportFilter",
+  bookingServiceController.getPaymentsReportPAge
+);
+// router.get("/exportDSRReport", bookingServiceController.exportDSRReport);
 router.get("/getDSRREportFilter", bookingServiceController.getDSRReportFilter);
+router.get("/exportDSRReport", bookingServiceController.exportDSRReport);
+router.get(
+  "/exportPAYMMENTReport",
+  bookingServiceController.exportPaymentReport
+);
 
 router.get("/service/:id", bookingServiceController.getServiceById);
 

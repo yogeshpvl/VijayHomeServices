@@ -5,6 +5,7 @@ const vendorController = require("../../controllers/master/vendors");
 router.post("/register", vendorController.register);
 router.post("/bulkRegister", vendorController.bulkRegister);
 router.get("/filter", vendorController.getByCityAndCategory); // ?city=Bangalore&category=Cleaning
+router.get("/filterForDSR", vendorController.getByCityAndCategoryForDSRReport); // ?city=Bangalore&category=Cleaning
 
 router.post("/login", vendorController.login);
 router.get("/", vendorController.getAll);

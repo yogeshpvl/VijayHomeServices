@@ -66,6 +66,18 @@ const Enquiry = sequelize.define(
     service_id: {
       type: DataTypes.STRING,
     },
+    utm_source: {
+      type: DataTypes.STRING,
+    },
+    utm_campaign: {
+      type: DataTypes.STRING,
+    },
+    utm_content: {
+      type: DataTypes.STRING,
+    },
+    tag: {
+      type: DataTypes.STRING,
+    },
   },
   {
     timestamps: true,

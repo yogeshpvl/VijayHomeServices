@@ -13,3 +13,10 @@ CREATE INDEX idx_booking_delivery_address_address ON bookings USING GIN ((delive
 
 CREATE INDEX idx_service_service_date ON booking_services(service_date);
 CREATE INDEX idx_service_service_name ON booking_services(service_name);
+
+
+ALTER TABLE enquiries
+ADD COLUMN UTM_source VARCHAR(255),
+ADD COLUMN UTM_campaign VARCHAR(255),
+ADD COLUMN UTM_content VARCHAR(255),
+ADD COLUMN Tag VARCHAR(255);

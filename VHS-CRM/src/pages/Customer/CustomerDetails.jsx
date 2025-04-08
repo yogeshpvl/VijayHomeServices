@@ -13,8 +13,6 @@ function CustomerDetailsPage() {
   const queryParams = new URLSearchParams(location.search);
   const enquiryId = queryParams.get("enquiry");
 
-  console.log("customer details enquiryId", enquiryId);
-
   const users = JSON.parse(localStorage.getItem("user"));
   const [customer, setCustomer] = useState({});
   const [CustomerAddressData, setCustomerAddressData] = useState([]);

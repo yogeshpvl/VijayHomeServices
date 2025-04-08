@@ -178,6 +178,34 @@ const EnquiryForm = () => {
     }
   };
 
+  const [serviceDetails, setserviceDetails] = useState([]);
+  useEffect(() => {
+    if (formData.category) {
+      getServicebyCategory();
+    }
+  }, [formData.category]);
+
+  const getServicebyCategory = async () => {
+    const category = formData.category;
+    try {
+      const res = await axios.post(
+        `https://vijayhomeservicebangalore.in/api/userapp/getservicebycategory/`,
+        { category }
+      );
+      if (res.status === 200 && Array.isArray(res.data?.serviceData)) {
+        setserviceDetails(res.data.serviceData);
+      } else {
+        setserviceDetails([]);
+      }
+    } catch (error) {
+      console.warn(
+        "Silent API error (category fetch)",
+        error?.message || error
+      );
+      setserviceDetails([]);
+    }
+  };
+
   return (
     <div className="mx-auto p-6 bg-white shadow-md rounded-md">
       <h2 className="text-lg font-semibold text-gray-800 mb-6">New Enquiry</h2>
@@ -378,14 +406,17 @@ const EnquiryForm = () => {
           <label className="block text-gray-700 text-sm font-medium mb-1">
             Interested For *
           </label>
-          <Input
-            type="text"
+          <select
             name="interested_for"
             value={formData.interested_for}
             onChange={handleChange}
-            required
-            className="w-full border bg-white border-gray-300 px-3 py-1 rounded-md"
-          />
+            className="w-full border border-gray-300 px-3 py-2 rounded-md text-sm"
+          >
+            <option value="">-- Select --</option>
+            {serviceDetails.map((item) => (
+              <option value={item.serviceName}>{item.serviceName}</option>
+            ))}
+          </select>
         </div>
 
         {/* Comment */}

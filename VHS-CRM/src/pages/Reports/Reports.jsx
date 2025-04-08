@@ -15,14 +15,24 @@ function Reports() {
         <Link to="/reportdsr">
           <div className={cardClass}>DSR</div>
         </Link>
+        <Link to="/reportEnquiry">
+          <div className={cardClass}>Enquiry Report</div>{" "}
+        </Link>
 
-        <div className={cardClass}>Enquiry Report</div>
-        <div className={cardClass}>Survey</div>
-        <div className={cardClass}>Quotation</div>
-        <div className={cardClass}>Running Projects</div>
+        <Link to="/reportSurvey">
+          <div className={cardClass}>Survey</div>{" "}
+        </Link>
+        <Link to="/reportQuote">
+          <div className={cardClass}>Quotation</div>
+        </Link>
+        <Link to="/RunningReport">
+          <div className={cardClass}>Running Projects</div>{" "}
+        </Link>
         <div className={cardClass}>Closed Projects</div>
         <div className={cardClass}>B2B</div>
-        <div className={cardClass}>Payment Reports</div>
+        <Link to="/reportPaymentReport">
+          <div className={cardClass}>Payment Reports</div>{" "}
+        </Link>
       </div>
     </div>
   );

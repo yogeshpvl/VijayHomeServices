@@ -23,18 +23,12 @@ const PRList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [vendorData, setvendorData] = useState([]);
 
-  console.log("vendorData", vendorData);
-
-  const itemsPerPage = 5;
+  const itemsPerPage = 25;
   const [totalPages, setTotalPages] = useState(0);
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedData = data.slice(startIndex, endIndex);
-  console.log("data", data);
-
-  console.log(":selectedName", selectedName);
-  console.log(":selectedContactNo", selectedContactNo);
 
   // Fetch data from the backend
 

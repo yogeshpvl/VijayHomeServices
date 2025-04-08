@@ -191,6 +191,32 @@ exports.getByCityAndCategory = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getByCityAndCategoryForDSRReport = async (req, res) => {
+  const { city, category } = req.query;
+
+  try {
+    const list = await Vendor.findAll({
+      where: {
+        city,
+        category: {
+          [Op.contains]: [{ name: category }],
+        },
+        type: {
+          [Op.ne]: "Executive", // Exclude 'Executive'
+        },
+      },
+      attributes: ["vhsname", "smsname", "type", "id"],
+      order: [["vhsname", "ASC"]], // Alphabetical order by name
+    });
+
+    res.json(list);
+  } catch (error) {
+    console.error("Error fetching vendors:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 exports.edit = async (req, res) => {
   try {
     const vendor = await Vendor.update(req.body, {

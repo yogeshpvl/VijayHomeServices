@@ -12,6 +12,11 @@ router.get(
 );
 router.get("/datewise", followupController.getCallLaterDateWiseFollowups);
 router.get("/datewiseSurveys", followupController.getSurveyDateWiseFollowups);
+router.get("/getSurveyReportpage", followupController.getSurveyReportpage);
+router.get(
+  "/getSurveyReportpageDownload",
+  followupController.getSurveyReportpageDownload
+);
 
 router.get("/call-later", followupController.getFollowupsByResponse);
 router.put(

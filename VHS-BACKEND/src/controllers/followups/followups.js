@@ -3,6 +3,7 @@ const Followup = require("../../models/followups/followups");
 const { Op, Sequelize, QueryTypes } = require("sequelize");
 const sequelize = require("../../config/database");
 const moment = require("moment");
+const ExcelJS = require("exceljs");
 
 exports.getLatestFollowupsByDateAndResponse = async (req, res) => {
   try {
@@ -446,111 +447,6 @@ exports.getFollowupsByenquiryId = async (req, res) => {
   }
 };
 
-// exports.getCallLaterFollowups = async (req, res) => {
-//   try {
-//     const { page = 1, limit = 20, search = "{}", dateRange = "" } = req.query;
-
-//     const offset = (page - 1) * limit;
-//     const filters = JSON.parse(search);
-
-//     // Dynamic Date Logic
-//     const today = moment().format("YYYY-MM-DD");
-//     const tomorrow = moment().add(1, "days").format("YYYY-MM-DD");
-//     const yesterday = moment().subtract(1, "days").format("YYYY-MM-DD");
-
-//     const thisWeek = [
-//       moment().startOf("week").format("YYYY-MM-DD"),
-//       moment().endOf("week").format("YYYY-MM-DD"),
-//     ];
-
-//     const lastWeek = [
-//       moment().subtract(1, "weeks").startOf("week").format("YYYY-MM-DD"),
-//       moment().subtract(1, "weeks").endOf("week").format("YYYY-MM-DD"),
-//     ];
-
-//     const thisMonth = [
-//       moment().startOf("month").format("YYYY-MM-DD"),
-//       moment().endOf("month").format("YYYY-MM-DD"),
-//     ];
-
-//     let dateFilter = "";
-
-//     switch (dateRange) {
-//       case "today":
-//         dateFilter = `AND f."next_followup_date" = '${today}'`;
-//         break;
-//       case "tomorrow":
-//         dateFilter = `AND f."next_followup_date" = '${tomorrow}'`;
-//         break;
-//       case "yesterday":
-//         dateFilter = `AND f."next_followup_date" = '${yesterday}'`;
-//         break;
-//       case "this_week":
-//         dateFilter = `AND f."next_followup_date" BETWEEN '${thisWeek[0]}' AND '${thisWeek[1]}'`;
-//         break;
-//       case "last_week":
-//         dateFilter = `AND f."next_followup_date" BETWEEN '${lastWeek[0]}' AND '${lastWeek[1]}'`;
-//         break;
-//       case "this_month":
-//         dateFilter = `AND f."next_followup_date" BETWEEN '${thisMonth[0]}' AND '${thisMonth[1]}'`;
-//         break;
-//     }
-
-//     // Dynamic search filters
-//     let searchQuery = "";
-//     if (filters.name) {
-//       searchQuery += ` AND LOWER(e.name) LIKE LOWER('%${filters.name}%')`;
-//     }
-//     if (filters.mobile) {
-//       searchQuery += ` AND e.mobile LIKE '%${filters.mobile}%'`;
-//     }
-//     if (filters.city) {
-//       searchQuery += ` AND LOWER(e.city) LIKE LOWER('%${filters.city}%')`;
-//     }
-//     if (filters.response) {
-//       searchQuery += ` AND LOWER(f.response) = LOWER('${filters.response}')`;
-//     }
-
-//     const results = await sequelize.query(
-//       `
-//       SELECT
-//         e.*,
-//         f.response AS followup_response,
-//         f.description AS followup_description,
-//         f.date AS followup_date,
-//         f.next_followup_date,
-//         f.staff,
-//         f."createdAt" AS followup_createdAt
-//       FROM enquiries e
-//       JOIN (
-//         SELECT f1.*
-//         FROM followups f1
-//         INNER JOIN (
-//           SELECT "enquiryId", MAX("createdAt") AS max_created
-//           FROM followups
-//           GROUP BY "enquiryId"
-//         ) f2 ON f1."enquiryId" = f2."enquiryId" AND f1."createdAt" = f2.max_created
-//         WHERE f1.response = 'Call Later'
-//       ) f ON f."enquiryId" = e."enquiryId"
-//       WHERE 1=1
-//       ${searchQuery}
-//       ${dateFilter}
-//       ORDER BY f."createdAt" DESC
-//       LIMIT :limit OFFSET :offset
-//       `,
-//       {
-//         replacements: { limit, offset },
-//         type: QueryTypes.SELECT,
-//       }
-//     );
-
-//     res.status(200).json({ data: results });
-//   } catch (error) {
-//     console.error("Error fetching Call Later followups:", error);
-//     res.status(500).json({ error: error.message });
-//   }
-// };
-
 exports.getFollowupsByResponse = async (req, res) => {
   try {
     const {
@@ -715,5 +611,286 @@ exports.updateFollowupSurveyCancel = async (req, res) => {
   } catch (error) {
     console.error("❌ Error updating followup:", error);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+exports.getSurveyReportpage = async (req, res) => {
+  try {
+    const {
+      fromdate,
+      todate,
+      category,
+      city,
+      reference,
+      executive,
+      executive_name,
+      jobType,
+      page,
+      limit, // Increase limit for testing
+    } = req.query;
+
+    // Convert page and limit to integers
+    const currentPage = parseInt(page);
+    const itemsPerPage = parseInt(limit);
+    const fromDate = new Date(fromdate).toISOString();
+    const toDate = new Date(todate).toISOString();
+    const response = "Survey";
+
+    // Calculate the offset based on the page
+    const offset = (currentPage - 1) * itemsPerPage;
+
+    // Define where conditions for date range and response
+    const whereConditions = {
+      next_followup_date: {
+        [Op.gte]: fromDate, // Greater than or equal to fromdate
+        [Op.lte]: toDate, // Less than or equal to todate
+      },
+      response: response ? { [Op.eq]: response } : { [Op.ne]: null },
+    };
+
+    // Add executive_name filter condition
+    if (executive_name) {
+      whereConditions.executive_name = { [Op.eq]: executive_name };
+    } else {
+      whereConditions.executive_name = {
+        [Op.or]: [{ [Op.is]: null }, { [Op.ne]: null }],
+      };
+    }
+
+    // Prepare EnquiryFilter with additional filters
+    const EnquiryFilter = {};
+    if (category) {
+      EnquiryFilter.category = { [Op.eq]: category }; // Filter by category
+    }
+    if (city) {
+      EnquiryFilter.city = { [Op.eq]: city }; // Filter by city
+    }
+    if (reference) {
+      EnquiryFilter.reference1 = { [Op.eq]: reference }; // Filter by reference
+    }
+    if (executive) {
+      EnquiryFilter.executive = { [Op.eq]: executive }; // Filter by executive
+    }
+    if (jobType) {
+      EnquiryFilter.interested_for = { [Op.eq]: jobType }; // Filter by jobType
+    }
+
+    // Log EnquiryFilter for debugging
+    console.log("EnquiryFilter:", EnquiryFilter);
+
+    // Count the total number of records to calculate total pages
+    const totalRecords = await Followup.count({
+      where: whereConditions,
+      include: [
+        {
+          model: Enquiry,
+          as: "Enquiry", // Join with Enquiry table
+          where: EnquiryFilter, // Apply EnquiryFilter conditions
+          attributes: [
+            "enquiryId",
+            "name",
+            "mobile",
+            "category",
+            "city",
+            "date",
+            "time",
+            "executive",
+            "address",
+            "reference1",
+            "interested_for",
+            "comment",
+          ],
+        },
+      ],
+    });
+
+    // Fetch followups with enquiry details joined
+    const followups = await Followup.findAll({
+      where: whereConditions,
+      include: [
+        {
+          model: Enquiry,
+          as: "Enquiry", // Join with Enquiry table
+          where: EnquiryFilter, // Apply EnquiryFilter conditions
+          attributes: [
+            "enquiryId",
+            "name",
+            "mobile",
+            "category",
+            "city",
+            "date",
+            "time",
+            "executive",
+            "address",
+            "reference1",
+            "interested_for",
+            "comment",
+          ],
+        },
+      ],
+      order: [["next_followup_date", "ASC"]], // Order by next_followup_date
+      limit: itemsPerPage, // Paginate results
+      offset: offset, // Apply offset for pagination
+    });
+
+    // Calculate total number of pages
+    const totalPages = Math.ceil(totalRecords / itemsPerPage);
+
+    // Return followups with pagination info
+    return res.json({
+      followups,
+      pagination: {
+        currentPage,
+        totalPages,
+        totalRecords,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error fetching next follow-ups:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+exports.getSurveyReportpageDownload = async (req, res) => {
+  try {
+    const {
+      fromdate,
+      todate,
+      category,
+      city,
+      reference,
+      executive,
+      executive_name,
+      jobType,
+    } = req.query;
+
+    // Convert fromdate and todate to ISO format
+    const fromDate = new Date(fromdate).toISOString();
+    const toDate = new Date(todate).toISOString();
+    const response = "Survey"; // Assume this filter is always "Survey" for follow-ups
+
+    // Define where conditions for date range and response
+    const whereConditions = {
+      next_followup_date: {
+        [Op.gte]: fromDate, // Greater than or equal to fromdate
+        [Op.lte]: toDate, // Less than or equal to todate
+      },
+      response: { [Op.eq]: response },
+    };
+
+    // Apply filters for executive_name, category, city, etc.
+    if (executive_name) {
+      whereConditions.executive_name = { [Op.eq]: executive_name };
+    } else {
+      whereConditions.executive_name = {
+        [Op.or]: [{ [Op.is]: null }, { [Op.ne]: null }],
+      };
+    }
+
+    const EnquiryFilter = {};
+    if (category) {
+      EnquiryFilter.category = { [Op.eq]: category }; // Filter by category
+    }
+    if (city) {
+      EnquiryFilter.city = { [Op.eq]: city }; // Filter by city
+    }
+    if (reference) {
+      EnquiryFilter.reference1 = { [Op.eq]: reference }; // Filter by reference
+    }
+    if (executive) {
+      EnquiryFilter.executive = { [Op.eq]: executive }; // Filter by executive
+    }
+    if (jobType) {
+      EnquiryFilter.interested_for = { [Op.eq]: jobType }; // Filter by jobType
+    }
+
+    // Fetch followups with enquiry details
+    const followups = await Followup.findAll({
+      where: whereConditions,
+      include: [
+        {
+          model: Enquiry,
+          as: "Enquiry", // Join with Enquiry table
+          where: EnquiryFilter, // Apply EnquiryFilter conditions
+          attributes: [
+            "enquiryId",
+            "name",
+            "mobile",
+            "category",
+            "city",
+            "date",
+            "time",
+            "executive",
+            "address",
+            "reference1",
+            "interested_for",
+            "comment",
+          ],
+        },
+      ],
+    });
+
+    // Create Excel file using ExcelJS
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Survey Report");
+
+    // Define the columns for the Excel sheet
+    sheet.columns = [
+      { header: "Enquiry ID", key: "enquiryId", width: 20 },
+      { header: "Name", key: "name", width: 25 },
+      { header: "Mobile", key: "mobile", width: 20 },
+      { header: "Category", key: "category", width: 15 },
+      { header: "City", key: "city", width: 15 },
+      { header: "Executive", key: "executive", width: 20 },
+      { header: "Address", key: "address", width: 25 },
+      { header: "Reference", key: "reference1", width: 20 },
+      { header: "Interested For", key: "interested_for", width: 20 },
+      { header: "Comment", key: "comment", width: 30 },
+      { header: "Follow-up Response", key: "followup_response", width: 25 },
+      {
+        header: "Follow-up Description",
+        key: "followup_description",
+        width: 30,
+      },
+      { header: "Next Follow-up Date", key: "followup_next_date", width: 20 },
+      { header: "Created At", key: "followup_createdAt", width: 20 },
+    ];
+
+    // Add rows to the Excel sheet
+    followups.forEach((item) => {
+      sheet.addRow({
+        enquiryId: item.Enquiry.enquiryId,
+        name: item.Enquiry.name,
+        mobile: item.Enquiry.mobile,
+        category: item.Enquiry.category,
+        city: item.Enquiry.city,
+        executive: item.Enquiry.executive,
+        address: item.Enquiry.address,
+        reference1: item.Enquiry.reference1,
+        interested_for: item.Enquiry.interested_for,
+        comment: item.Enquiry.comment,
+        followup_response: item.followup_response || "",
+        followup_description: item.followup_description || "",
+        followup_next_date: item.followup_next_date || "",
+        followup_createdAt: item.followup_createdAt || "",
+      });
+    });
+
+    // Set headers for file download
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=Survey_Report_${fromdate}_to_${todate}.xlsx`
+    );
+
+    // Write the Excel file and end the response
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Error in getSurveyReportpageDownload:", error);
+    res.status(500).json({ error: error.message });
   }
 };

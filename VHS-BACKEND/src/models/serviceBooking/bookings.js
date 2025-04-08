@@ -31,7 +31,7 @@ const Booking = sequelize.define(
     backoffice_executive: { type: DataTypes.STRING },
     one_community: { type: DataTypes.STRING },
     type: { type: DataTypes.STRING(50) },
-    payment_mode: { type: DataTypes.STRING(50) },
+    payment_mode: { type: DataTypes.STRING(50), defaultValue: "cash" },
     grand_total: { type: DataTypes.STRING(50) },
     add_ons: { type: DataTypes.JSONB },
     discount_amount: { type: DataTypes.STRING(50) },

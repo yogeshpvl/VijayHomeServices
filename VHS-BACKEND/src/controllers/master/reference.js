@@ -1,8 +1,15 @@
 const referenceModel = require("../../models/master/reference");
 
 exports.getAll = async (req, res) => {
-  const types = await referenceModel.findAll({ order: [["id", "ASC"]] });
-  res.json(types);
+  try {
+    const types = await referenceModel.findAll({
+      order: [["reference", "ASC"]], // Alphabetical order
+    });
+    res.json(types);
+  } catch (error) {
+    console.error("Error fetching references:", error);
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
 exports.create = async (req, res) => {
