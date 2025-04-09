@@ -129,6 +129,18 @@ exports.getAll = async (req, res) => {
   }
 };
 
+exports.gettotalCounts = async (req, res) => {
+  try {
+    const { count } = await Customer.findAndCountAll();
+
+    res.json({
+      totalItems: count,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.searchCustomers = async (req, res) => {
   try {
     const {

@@ -19,8 +19,6 @@ function QuoteView() {
   const [filtcdata, setfiltcdata] = useState([]);
   const [filsecdata, setsec2data] = useState([]);
 
-  console.log("quoteData", quoteData);
-
   const selectedCategory = "Cleaning";
 
   useEffect(() => {

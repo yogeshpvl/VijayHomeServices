@@ -10,8 +10,8 @@ const App = () => {
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <Loader />
-        <ToastContainer position="top-right" autoClose={3000} />
+        {/* <Loader /> */}
+        <ToastContainer position="top-right" autoClose={2000} />
         <AppRoutes />
       </PersistGate>
     </Provider>

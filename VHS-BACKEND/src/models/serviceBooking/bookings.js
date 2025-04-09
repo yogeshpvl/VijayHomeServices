@@ -52,7 +52,6 @@ const Booking = sequelize.define(
       defaultValue: 0,
       validate: { isDecimal: true },
     },
-
     longitude: {
       type: DataTypes.DECIMAL(9, 6),
       defaultValue: 0,

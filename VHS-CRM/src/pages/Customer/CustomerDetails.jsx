@@ -5,9 +5,11 @@ import { config } from "../../services/config";
 import { Input } from "../../components/ui/Input";
 import moment from "moment";
 import { toast } from "react-toastify";
+import CustomerHistroy from "./CustomerHistroy";
 
 function CustomerDetailsPage() {
   const { id } = useParams();
+  const [loading, setLoading] = useState(false);
 
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -24,7 +26,6 @@ function CustomerDetailsPage() {
   const [allServices, setAllServices] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
 
-  console.log("customer", customer);
   const [form, setForm] = useState({
     category: "",
     contract_type: "",
@@ -73,12 +74,16 @@ function CustomerDetailsPage() {
   };
 
   const fetchPastServices = async () => {
-    const res = await axios.get(`${config.API_BASE_URL}/services/past/${id}`);
+    const res = await axios.get(
+      `${config.API_BASE_URL}/bookingService/past/${id}`
+    );
     setPastServices(res.data);
   };
 
   const fetchFutureServices = async () => {
-    const res = await axios.get(`${config.API_BASE_URL}/services/future/${id}`);
+    const res = await axios.get(
+      `${config.API_BASE_URL}/bookingService/future/${id}`
+    );
     setFutureServices(res.data);
   };
 
@@ -120,6 +125,7 @@ function CustomerDetailsPage() {
         "Please add the  address this customer! please click the edit customer update the address then come back"
       );
     }
+    setLoading(true);
     try {
       const payload = {
         ...form,
@@ -143,28 +149,12 @@ function CustomerDetailsPage() {
       };
 
       await axios.post(`${config.API_BASE_URL}/bookings/create`, payload);
-
-      setForm({
-        category: "",
-        contract_type: "",
-        service: "",
-        serviceFrequency: "",
-        service_charge: "",
-        start_date: "",
-        expiry_date: "",
-        community: "",
-        amt_frequency: "",
-        amtstart_date: "",
-        amtexpiry_date: "",
-        selected_slot_text: "",
-        latitude: 0,
-        longitude: 0,
-        description: "",
-      });
-
+      bookingWhatsAppMsg();
       fetchTreatments();
     } catch (error) {
-      console.error("Error while adding booking", error);
+      toast.error("Error while adding booking", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -202,6 +192,97 @@ function CustomerDetailsPage() {
     }
   };
 
+  const [whatsappdata, setWhatsappData] = useState(null);
+  const [templateName, setTemplateName] = useState("Service confirmed");
+
+  useEffect(() => {
+    getWhatsappTemplate();
+  }, [templateName]);
+
+  const getWhatsappTemplate = async () => {
+    try {
+      const res = await axios.get(
+        `${config.API_BASE_URL}/whatsapp-templates/get-template/${templateName}`
+      );
+
+      if (res.status === 200) {
+        setWhatsappData(res.data?.content);
+      }
+    } catch (error) {
+      console.error("Error fetching WhatsApp template:", error);
+    }
+  };
+
+  const bookingWhatsAppMsg = async (selectedResponse, contactNumber) => {
+    const contentTemplate = whatsappdata || "";
+
+    if (!contentTemplate) {
+      console.error("Content template is empty. Cannot proceed.");
+      return;
+    }
+
+    const content = contentTemplate.replace(
+      /\{Customer_name\}/g,
+      customer?.customerName
+    );
+    const serviceName = content.replace(
+      /\{Service_name\}/g,
+      form.contract_type
+    );
+    const slotTiming = serviceName.replace(/\{Slot_timing\}/g, "");
+    const serivePrice = slotTiming.replace(
+      /\{Service_amount\}/g,
+      form?.service_charge
+    );
+    const serviceDate = serivePrice.replace(
+      /\{Service_date\}/g,
+      form.start_date
+    );
+    const serviceVideoLink = serviceDate.replace(/\{Video_link\}/g, "");
+
+    // Replace <p> with line breaks and remove HTML tags
+    const convertedText = serviceVideoLink
+      .replace(/<p>/g, "\n")
+      .replace(/<\/p>/g, "")
+      .replace(/<br>/g, "\n")
+      .replace(/&nbsp;/g, "")
+      .replace(/<strong>(.*?)<\/strong>/g, "<b>$1</b>")
+      .replace(/<[^>]*>/g, "");
+
+    try {
+      const response = await axios.post(
+        `${config.API_BASE_URL}/whats-msg/send-message`,
+        {
+          mobile: "91" + customer?.mainContact,
+          msg: convertedText,
+        }
+      );
+
+      if (response.status === 200) {
+        toast.success("service cancel msg sent sucessful");
+        setForm({
+          category: "",
+          contract_type: "",
+          service: "",
+          serviceFrequency: "",
+          service_charge: "",
+          start_date: "",
+          expiry_date: "",
+          community: "",
+          amt_frequency: "",
+          amtstart_date: "",
+          amtexpiry_date: "",
+          selected_slot_text: "",
+          latitude: 0,
+          longitude: 0,
+          description: "",
+        });
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <div className="p-4 space-y-6">
       {/* Header */}
@@ -219,25 +300,25 @@ function CustomerDetailsPage() {
           <div>
             <label className="font-medium">Customer Name:</label>
             <div className="bg-gray-100 p-1 rounded mt-1 min-h-[32px]">
-              {customer.customerName || "-"}
+              {customer?.customerName || "-"}
             </div>
           </div>
           <div>
             <label className="font-medium">Mobile No:</label>
             <div className="bg-gray-100 p-1 rounded mt-1 min-h-[32px]">
-              {customer.mainContact || "-"}
+              {customer?.mainContact || "-"}
             </div>
           </div>
           <div>
             <label className="font-medium">Email:</label>
             <div className="bg-gray-100 p-1 rounded mt-1 min-h-[32px]">
-              {customer.email || "-"}
+              {customer?.email || "-"}
             </div>
           </div>
           <div>
             <label className="font-medium">Address:</label>
             <div className="bg-gray-100 p-1 rounded mt-1 min-h-[32px]">
-              {customer.lnf || "-"}
+              {customer?.lnf || "-"}
             </div>
           </div>
         </div>
@@ -505,8 +586,15 @@ function CustomerDetailsPage() {
         <button
           onClick={handleAddItem}
           className="mt-4 bg-red-800 text-white px-4 py-1.5 rounded"
+          disabled={loading}
         >
-          {editIndex !== null ? "Update Item" : "Add Item"}
+          {loading ? (
+            <span>Loading...</span>
+          ) : editIndex !== null ? (
+            "Update Item"
+          ) : (
+            "Add Item"
+          )}
         </button>
       </div>
       {/* Treatment Details Table */}
@@ -595,7 +683,9 @@ function CustomerDetailsPage() {
                       Edit
                     </button> */}
                     <button
-                      onClick={() => window.open(`/bill/${treat.id}`, "_blank")}
+                      onClick={() =>
+                        window.open(`/bill?id=${treat.id}`, "_blank")
+                      }
                       className="text-green-600 hover:underline text-base"
                     >
                       Bill
@@ -608,6 +698,10 @@ function CustomerDetailsPage() {
         </div>
       </div>
 
+      <CustomerHistroy
+        pastServices={pastServices}
+        futureServices={futureServices}
+      />
       {/* {showAddressModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-md w-full">

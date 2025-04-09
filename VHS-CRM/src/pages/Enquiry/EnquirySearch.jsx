@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import EnquiryService from "../../services/enquiryService";
 import { useNavigate } from "react-router-dom";
 
 const EnquirySearch = () => {
+  const users = JSON.parse(localStorage.getItem("user"));
   const [filters, setFilters] = useState({
     name: "",
     mobile: "",
@@ -15,6 +16,7 @@ const EnquirySearch = () => {
 
   const [enquiries, setEnquiries] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [userdata, setUserdata] = useState([]);
 
   // ✅ Handle Input Changes
   const handleChange = (e) => {
@@ -62,6 +64,34 @@ const EnquirySearch = () => {
     navigate(`/enquiry/enquiry-details/${id}`);
   };
 
+  useEffect(() => {
+    getUser();
+  }, []);
+
+  const getUser = async () => {
+    try {
+      const res = await axios.get(`${config.API_BASE_URL}/auth/users`);
+      if (res.status === 200) {
+        setUserdata(res.data);
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+  const columns = [
+    { label: "Sr.No." },
+    { label: "Date" },
+    { label: "Time" },
+    { label: "Category" },
+    { label: "Name" },
+    { label: "Contact No." },
+    { label: "City" },
+    { label: "Address" },
+
+    { label: "Interested For" },
+    { label: "Comment" },
+    { label: "Executive" },
+  ];
   return (
     <div className="mx-auto">
       <h2 className="text-lg font-semibold text-gray-700 mb-6">
@@ -138,9 +168,9 @@ const EnquirySearch = () => {
             className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:ring-2 focus:ring-blue-400"
           >
             <option value="">--select--</option>
-            <option value="Bangalore">Bangalore</option>
-            <option value="Mumbai">Mumbai</option>
-            <option value="Delhi">Delhi</option>
+            {users?.city?.map((city, index) => (
+              <option value={city.name}>{city.name}</option>
+            ))}
           </select>
         </div>
 
@@ -156,9 +186,9 @@ const EnquirySearch = () => {
             className="w-full border bg-white border-gray-300 px-2 py-1.5 rounded-md focus:ring-2 focus:ring-blue-400"
           >
             <option value="">--select--</option>
-            <option value="Pankaj">Pankaj</option>
-            <option value="Siva N">Siva N</option>
-            <option value="Jayashree">Jayashree</option>
+            {userdata.map((item) => (
+              <option value={item.displayname}>{item.displayname}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -184,50 +214,66 @@ const EnquirySearch = () => {
         {loading ? (
           <p className="text-center text-gray-700">Loading...</p>
         ) : enquiries.length > 0 ? (
-          <table className="min-w-full bg-white border border-gray-200 text-sm shadow-sm">
-            <thead className="bg-gray-0 text-gray-700">
-              <tr className="bg-gray-200">
-                <th className="border border-gray-200 px-3 py-2">Enquiry ID</th>
-                <th className="border border-gray-200 px-3 py-2">Date</th>
-                <th className="border border-gray-200 px-3 py-2">Time</th>
-                <th className="border border-gray-200 px-3 py-2">Executive</th>
-                <th className="border border-gray-200 px-3 py-2">Name</th>
-                <th className="border border-gray-200 px-3 py-2">Mobile</th>
-                <th className="border border-gray-200 px-3 py-2">City</th>
-              </tr>
-            </thead>
-            <tbody>
-              {enquiries.map((enquiry) => (
-                <tr
-                  key={enquiry.enquiryId}
-                  className="text-center cursor-pointer"
-                  onClick={() => handleRowClick(enquiry.enquiryId)}
-                >
-                  <td className="border border-gray-200 px-3 py-2">
-                    {enquiry.enquiryId}
-                  </td>
-                  <td className="border border-gray-200 px-3 py-2">
-                    {enquiry.date}
-                  </td>
-                  <td className="border border-gray-200 px-3 py-2">
-                    {enquiry.time}
-                  </td>
-                  <td className="border border-gray-200 px-3 py-2">
-                    {enquiry.executive}
-                  </td>
-                  <td className="border border-gray-200 px-3 py-2">
-                    {enquiry.name}
-                  </td>
-                  <td className="border border-gray-200 px-3 py-2">
-                    {enquiry.mobile}
-                  </td>
-                  <td className="border border-gray-200 px-3 py-2">
-                    {enquiry.city}
-                  </td>
+          <div className="overflow-x-auto mt-8">
+            <table className="min-w-full bg-white border border-gray-200 text-sm shadow-sm">
+              <thead className="bg-gray-50 text-gray-800">
+                <tr>
+                  {columns.map((col, idx) => (
+                    <th
+                      key={idx}
+                      className="border border-gray-200 px-4 py-3 text-xs font-semibold text-left bg-gray-100 text-gray-800"
+                    >
+                      {col.label}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {enquiries?.map((row, index) => (
+                  <tr
+                    key={row.id}
+                    onClick={() => handleRowClick(row.enquiryId)}
+                  >
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {index + 1}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.date}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.time}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.category}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.name}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.mobile}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.city}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.address}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.reference1}
+                    </td>
+
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.interested_for}
+                    </td>
+
+                    <td className="border border-gray-200 px-3 py-2 text-xs">
+                      {row.executive}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <p className="text-center text-gray-700 mt-4">No records found</p>
         )}

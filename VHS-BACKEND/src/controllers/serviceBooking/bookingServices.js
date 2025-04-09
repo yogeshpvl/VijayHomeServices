@@ -30,6 +30,111 @@ exports.getServicesByBookingId = async (req, res) => {
   }
 };
 
+exports.getServicesByBookingServiceId = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Use Sequelize's `include` to join the `Booking` table and select specific attributes
+    const services = await BookingService.findAll({
+      where: { id },
+      include: [
+        {
+          model: Booking,
+          attributes: [
+            "category",
+            "id",
+
+            "service",
+            "delivery_address",
+            "description",
+            "service_charge",
+            "contract_type",
+          ],
+
+          include: [
+            {
+              model: User,
+              as: "customer",
+              attributes: [
+                "id",
+                "customerName",
+                "email",
+                "mainContact",
+                "alternateContact",
+                "lnf",
+                "city",
+              ],
+            },
+          ],
+        },
+      ],
+
+      attributes: [
+        "service_date",
+        "id",
+
+        "service_name",
+
+        "amt_date",
+        "service_charge",
+      ],
+    });
+
+    res.status(200).json(services);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getPastServicesByUserIdNext = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const services = await BookingService.findAll({
+      where: {
+        user_id,
+        job_complete: "YES",
+      },
+      attributes: [
+        "service_date",
+        "service_name",
+        "vendor_name",
+        "job_complete",
+        "amt_date",
+        "service_charge",
+      ],
+    });
+    res.status(200).json(services);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getFutureServicesByUserIdNext = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    // Filter for services that are either "NO" or "CANCEL" (not completed)
+    const services = await BookingService.findAll({
+      where: {
+        user_id,
+        job_complete: {
+          [Op.or]: ["NO", "CANCEL"], // Using Sequelize's Op.or to match either "NO" or "CANCEL"
+        },
+      },
+      attributes: [
+        "service_date",
+        "service_name",
+        "vendor_name",
+        "job_complete",
+        "amt_date",
+        "service_charge",
+      ],
+    });
+    res.status(200).json(services);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 exports.getServiceById = async (req, res) => {
   try {
     const { id } = req.params; // Get the `id` from URL params
@@ -754,7 +859,8 @@ exports.getDSRReportFilter = async (req, res) => {
     const bookingFilters = {
       [Op.and]: [
         category ? { category } : {},
-        city ? { city: { [Op.in]: city } } : {},
+        city ? { city: { [Op.in]: Array.isArray(city) ? city : [city] } } : {},
+
         paymentMode ? { payment_mode: paymentMode } : {},
         jobType ? { service: jobType } : {},
         backoffice ? { backoffice_executive: backoffice } : {},
@@ -777,9 +883,9 @@ exports.getDSRReportFilter = async (req, res) => {
             }
           : {},
         jobType ? { service_name: { [Op.iLike]: `%${jobType}%` } } : {},
-        jobComplete ? { job_complete: { [Op.in]: jobComplete } } : {},
+        jobComplete ? { job_complete: jobComplete } : {},
 
-        technician ? { vendor_name: { [Op.iLike]: `%${technician}%` } } : {},
+        technician ? { vendor_name: technician } : {},
       ],
     };
 
@@ -792,6 +898,7 @@ exports.getDSRReportFilter = async (req, res) => {
         "service_date",
         "status",
         "id",
+        "job_complete",
       ],
       include: [
         {
@@ -1201,5 +1308,44 @@ exports.exportPaymentReport = async (req, res) => {
   } catch (error) {
     console.error("Export Error:", error);
     res.status(500).json({ error: "Export failed." });
+  }
+};
+
+exports.getyearlyCounts = async (req, res) => {
+  try {
+    // Start and End of the Year (Assuming year starts on January 1st and ends on December 31st)
+    const startOfYear = new Date(new Date().getFullYear(), 0, 1); // January 1st of the current year
+    const endOfYear = new Date(new Date().getFullYear(), 11, 31); // December 31st of the current year
+
+    // Query to get the count for the current year, grouped by month
+    const bookingCounts = await BookingService.findAll({
+      attributes: [
+        [Sequelize.literal("EXTRACT(MONTH FROM service_date)"), "month"], // Use EXTRACT to get the month part from the date
+        [Sequelize.fn("COUNT", Sequelize.col("id")), "count"],
+      ],
+      where: {
+        service_date: {
+          [Op.gte]: startOfYear, // Greater than or equal to the start of the year
+          [Op.lte]: endOfYear, // Less than or equal to the end of the year
+        },
+      },
+      group: [Sequelize.literal("EXTRACT(MONTH FROM service_date)")], // Group by month
+      order: [[Sequelize.literal("EXTRACT(MONTH FROM service_date)"), "ASC"]], // Order by month
+    });
+
+    // Format the result to map months and booking count
+    const monthlyCounts = bookingCounts.map((item) => ({
+      month: new Date(0, item.dataValues.month - 1).toLocaleString("default", {
+        month: "short",
+      }), // Convert numeric month to short name (e.g., Jan, Feb)
+      bookings: item.dataValues.count,
+    }));
+
+    res.json({
+      monthlyCounts,
+    });
+  } catch (err) {
+    console.log("Error:", err.message);
+    res.status(500).json({ message: err.message });
   }
 };

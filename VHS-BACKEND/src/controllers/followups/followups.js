@@ -894,3 +894,67 @@ exports.getSurveyReportpageDownload = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.gettotalCounts = async (req, res) => {
+  try {
+    // Get the current date and format it properly (including time)
+    const todayStart = moment().startOf("day").format("YYYY-MM-DD HH:mm:ss");
+    const todayEnd = moment().endOf("day").format("YYYY-MM-DD HH:mm:ss");
+
+    // Get the start and end of the current week
+    const startOfWeek = moment().startOf("week").format("YYYY-MM-DD HH:mm:ss");
+    const endOfWeek = moment().endOf("week").format("YYYY-MM-DD HH:mm:ss");
+
+    // Get the follow-ups for today
+    const todayCounts = await Followup.findAll({
+      attributes: [
+        "response",
+        [sequelize.fn("COUNT", sequelize.col("response")), "count"],
+      ],
+      where: {
+        date: {
+          [Op.gte]: todayStart, // Ensure this matches the format in the database
+          [Op.lte]: todayEnd,
+        },
+      },
+      group: ["response"], // Group by response
+    });
+
+    // Get the follow-ups for this week
+    const weekCounts = await Followup.findAll({
+      attributes: [
+        "response",
+        [sequelize.fn("COUNT", sequelize.col("response")), "count"],
+      ],
+      where: {
+        date: {
+          [Op.gte]: startOfWeek,
+          [Op.lte]: endOfWeek,
+        },
+      },
+      group: ["response"], // Group by response
+    });
+
+    // Format the response data into a usable object
+    const todayData = todayCounts.reduce((acc, item) => {
+      const count = parseInt(item.dataValues.count, 10) || 0; // Ensure valid number
+      acc[item.response] = count;
+      return acc;
+    }, {});
+
+    const weekData = weekCounts.reduce((acc, item) => {
+      const count = parseInt(item.dataValues.count, 10) || 0; // Ensure valid number
+      acc[item.response] = count;
+      return acc;
+    }, {});
+
+    // Send the response back with formatted data
+    res.json({
+      todayData,
+      weekData,
+    });
+  } catch (err) {
+    console.error("❌ Error fetching follow-up counts:", err);
+    res.status(500).json({ message: err.message });
+  }
+};

@@ -28,6 +28,9 @@ const DSRDetails = () => {
   const [CancelTemplateData, setCancelTemplateData] = useState([]);
   const [rescheduleTemplateData, setrescheduleTemplateData] = useState([]);
   const [completeTemplateData, setcompleteTemplateData] = useState([]);
+  const [invoiceTemplateData, setinvoiceTemplateData] = useState([]);
+  const [vendorExp, setVendorExp] = useState("");
+  const [vendorLan, setVendorLan] = useState("");
 
   console.log("details", details);
   const navigate = useNavigate();
@@ -64,8 +67,8 @@ const DSRDetails = () => {
   };
 
   const handleSubmit = async () => {
-    if (form.job_complete === "CANCEL" && !form.cancel_reason.trim()) {
-      alert("Please provide a reason for cancellation.");
+    if (form.job_complete === "CANCEL" && !form?.cancel_reason?.trim()) {
+      toast.error("Please provide a reason for cancellation.");
       return;
     }
 
@@ -174,6 +177,8 @@ const DSRDetails = () => {
         vendor_id: vendorId,
         vendor_name: vendor.vhsname,
       }));
+      setVendorExp(vendor.experiance);
+      setVendorLan(vendor.languagesknow);
     }
   };
 
@@ -258,9 +263,10 @@ const DSRDetails = () => {
     const cancel = "Service cancel";
     const reschedule = "Service reschedule";
     const complete = "Service Completed";
+    const invoice = "Send Invoice Link";
 
     try {
-      const [res1, res2, res3, res4] = await Promise.all([
+      const [res1, res2, res3, res4, res5] = await Promise.all([
         axios.get(
           `${config.API_BASE_URL}/whatsapp-templates/get-template/${assign}`
         ),
@@ -272,6 +278,9 @@ const DSRDetails = () => {
         ),
         axios.get(
           `${config.API_BASE_URL}/whatsapp-templates/get-template/${complete}`
+        ),
+        axios.get(
+          `${config.API_BASE_URL}/whatsapp-templates/get-template/${invoice}`
         ),
       ]);
 
@@ -289,6 +298,9 @@ const DSRDetails = () => {
 
       if (res4.status === 200) {
         setcompleteTemplateData(res4.data?.content || "");
+      }
+      if (res4.status === 200) {
+        setinvoiceTemplateData(res4.data?.content || "");
       }
     } catch (error) {
       console.error("Error fetching WhatsApp templates:", error);
@@ -313,8 +325,8 @@ const DSRDetails = () => {
       .replace(/\{Service_date\}/g, details?.service_date)
       .replace(/\{Staff_contact\}/g, users.contactno)
       .replace(/\{Technician_name\}/g, selectedVendorName)
-      .replace(/\{Technician_experiance\}/g, "2")
-      .replace(/\{Technician_languages_known\}/g, "kannada,hindi");
+      .replace(/\{Technician_experiance\}/g, vendorExp || 2)
+      .replace(/\{Technician_languages_known\}/g, vendorLan || "kannada,hindi");
 
     // Replace <p> with line breaks and remove HTML tags
     const convertedText = invoiceLink
@@ -401,13 +413,15 @@ const DSRDetails = () => {
     const googleform =
       "https://docs.google.com/forms/d/e/1FAIpQLSdZjDyG7QsnwVnCnhkrFEHguWP5vNxTi03KZWgap0xXd5_geQ/viewform";
 
+    console.log("contentTemplate", contentTemplate);
+
     const invoiceLink = contentTemplate
       .replace(/\{Customer_name\}/g, details?.Booking?.customer?.customerName)
       .replace(/\{Service_name\}/g, details?.service_name)
       .replace(/\{Service_date\}/g, details?.service_date)
+      .replace(/\{google_Form\}/g, googleform);
 
-      .replace(/\{google Form\}/g, googleform);
-
+    console.log("invoiceLink", invoiceLink);
     // Replace <p> with line breaks and remove HTML tags
     const convertedText = invoiceLink
       .replace(/<p>/g, "\n")
@@ -479,6 +493,65 @@ const DSRDetails = () => {
       console.error(error);
     }
   };
+
+  const invoicewhatsbill = async () => {
+    const contentTemplate = invoiceTemplateData || "";
+
+    if (!contentTemplate) {
+      console.error("Content template is empty. Cannot proceed.");
+      return;
+    }
+
+    const content = contentTemplate.replace(
+      /\{Customer_name\}/g,
+      details?.Booking?.customer?.customerName
+    );
+    const serviceName = content.replace(
+      /\{Service_name\}/g,
+      details?.service_name
+    );
+    const serivePrice = serviceName.replace(
+      /\{Service_amount\}/g,
+      details.service_charge
+    );
+
+    const invoiceUrl = `https://crm.vijayhomeservicebengaluru.in/dsrinvoice?id=${id}`;
+    const googleform =
+      "https://docs.google.com/forms/d/e/1FAIpQLSdZjDyG7QsnwVnCnhkrFEHguWP5vNxTi03KZWgap0xXd5_geQ/viewform";
+    const invoiceLink = serivePrice.replace(
+      /\{Invoice_link\}/g,
+      `[Click to view invoice](${invoiceUrl})`
+    );
+
+    // Replace <p> with line breaks and remove HTML tags
+    const convertedText = invoiceLink
+      .replace(/<p>/g, "\n")
+      .replace(/<\/p>/g, "")
+      .replace(/<br>/g, "\n")
+      .replace(/&nbsp;/g, "")
+      .replace(/\{google_Form\}/g, googleform)
+      .replace(/<strong>(.*?)<\/strong>/g, "<b>$1</b>")
+      .replace(/<[^>]*>/g, "");
+
+    try {
+      const response = await axios.post(
+        `${config.API_BASE_URL}/whats-msg/send-message`,
+        {
+          mobile: "91" + details?.Booking?.customer?.mainContact,
+          msg: convertedText,
+        }
+      );
+
+      if (response.status === 200) {
+        toast.success("service cancel msg sent sucessful");
+
+        // window.location.assign(`/dsrcallist/${data1}/${data.category}`);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const formatDateForInput = (isoString) => {
     if (!isoString) return "";
     const date = new Date(isoString);
@@ -721,41 +794,53 @@ const DSRDetails = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left Column */}
             <div>
-              {/* Customer Feedback */}
-              <div className="mb-4 border border-gray-300 p-3 rounded-md">
-                <label className="font-bold block mb-1">
-                  Customer Feedback:
-                </label>
-                <textarea
-                  name="customer_feedback"
-                  value={form.customer_feedback}
-                  onChange={handleChange}
-                  className="bg-gray-100 p-1 rounded mt-1 min-h-[32px] w-full"
-                />
-              </div>
+              {details?.Booking?.category === "Painting" ||
+              details?.Booking?.category === "Appliance Services" ||
+              details?.Booking?.category === "Home Repair Services" ? (
+                <>
+                  {/* Customer Feedback */}
+                  <div className="mb-4 border border-gray-300 p-3 rounded-md">
+                    <label className="font-bold block mb-1">
+                      Customer Feedback:
+                    </label>
+                    <textarea
+                      name="customer_feedback"
+                      value={form.customer_feedback}
+                      onChange={handleChange}
+                      className="bg-gray-100 p-1 rounded mt-1 min-h-[32px] w-full"
+                    />
+                  </div>
 
-              {/* Worker Names */}
-              <div className="mb-4 border border-gray-300 p-3 rounded-md">
-                <label className="font-bold block mb-1">Worker Names:</label>
-                <textarea
-                  name="worker_names"
-                  value={form.worker_names}
-                  onChange={handleChange}
-                  className="bg-gray-100 p-1 rounded mt-1 min-h-[32px] w-full"
-                />
-              </div>
+                  {/* Worker Names */}
+                  <div className="mb-4 border border-gray-300 p-3 rounded-md">
+                    <label className="font-bold block mb-1">
+                      Worker Names:
+                    </label>
+                    <textarea
+                      name="worker_names"
+                      value={form.worker_names}
+                      onChange={handleChange}
+                      className="bg-gray-100 p-1 rounded mt-1 min-h-[32px] w-full"
+                    />
+                  </div>
 
-              {/* Day To Complete */}
-              <div className="mb-4 border border-gray-300 p-3 rounded-md">
-                <label className="font-bold block mb-1">Day To Complete:</label>
-                <input
-                  name="day_to_complete"
-                  value={form.day_to_complete}
-                  onChange={handleChange}
-                  type="date"
-                  className="bg-gray-100 p-1 rounded mt-1 w-full"
-                />
-              </div>
+                  {/* Day To Complete */}
+                  <div className="mb-4 border border-gray-300 p-3 rounded-md">
+                    <label className="font-bold block mb-1">
+                      Day To Complete:
+                    </label>
+                    <input
+                      name="day_to_complete"
+                      value={form.day_to_complete}
+                      onChange={handleChange}
+                      type="date"
+                      className="bg-gray-100 p-1 rounded mt-1 w-full"
+                    />
+                  </div>
+                </>
+              ) : (
+                <></>
+              )}
 
               {/* Logged User */}
               <div className="mb-4 border border-gray-300 p-3 rounded-md">
@@ -864,29 +949,39 @@ const DSRDetails = () => {
             </div>
             {/* Right Column */}
             <div>
-              {/* Technician Comment */}
-              <div className="mb-4 border border-gray-300 p-3 rounded-md">
-                <label className="font-bold block mb-1">
-                  Technician Comment:
-                </label>
-                <textarea
-                  name="tech_comment"
-                  value={form.tech_comment}
-                  onChange={handleChange}
-                  className="bg-gray-100 p-1 rounded mt-1 min-h-[32px] w-full"
-                />
-              </div>
+              {details?.Booking?.category === "Painting" ||
+              details?.Booking?.category === "Appliance Services" ||
+              details?.Booking?.category === "Home Repair Services" ? (
+                <>
+                  {/* Technician Comment */}
+                  <div className="mb-4 border border-gray-300 p-3 rounded-md">
+                    <label className="font-bold block mb-1">
+                      Technician Comment:
+                    </label>
+                    <textarea
+                      name="tech_comment"
+                      value={form.tech_comment}
+                      onChange={handleChange}
+                      className="bg-gray-100 p-1 rounded mt-1 min-h-[32px] w-full"
+                    />
+                  </div>
 
-              {/* Worker Amount */}
-              <div className="mb-4 border border-gray-300 p-3 rounded-md">
-                <label className="font-bold block mb-1">Worker Amount:</label>
-                <textarea
-                  name="worker_amount"
-                  value={form.worker_amount}
-                  onChange={handleChange}
-                  className="bg-gray-100 p-1 rounded mt-1 min-h-[32px] w-full"
-                />
-              </div>
+                  {/* Worker Amount */}
+                  <div className="mb-4 border border-gray-300 p-3 rounded-md">
+                    <label className="font-bold block mb-1">
+                      Worker Amount:
+                    </label>
+                    <textarea
+                      name="worker_amount"
+                      value={form.worker_amount}
+                      onChange={handleChange}
+                      className="bg-gray-100 p-1 rounded mt-1 min-h-[32px] w-full"
+                    />
+                  </div>
+                </>
+              ) : (
+                <></>
+              )}
 
               {/* IN and OUT Sign Date & Time */}
               <div className="grid grid-cols-2 gap-6">
@@ -989,7 +1084,7 @@ const DSRDetails = () => {
                 onClick={handleSubmit}
                 disabled={isLoading}
               >
-                {isLoading ? <div className="loader">Loading...</div> : "Save"}
+                {isLoading ? <div>Loading...</div> : "Save"}
               </button>
               {userRoles.Cancel ? (
                 <button className="bg-gray-500 text-white px-4 py-2 rounded-md">
@@ -999,10 +1094,16 @@ const DSRDetails = () => {
                 ""
               )}
 
-              <button className="bg-blue-500 text-white px-4 py-2 rounded-md">
+              <button
+                className="bg-blue-500 text-white px-4 py-2 rounded-md"
+                onClick={() => navigate(`/dsrinvoice?id=${details?.id}`)}
+              >
                 Invoice
               </button>
-              <button className="bg-green-500 text-white px-4 py-2 rounded-md">
+              <button
+                className="bg-green-500 text-white px-4 py-2 rounded-md"
+                onClick={invoicewhatsbill}
+              >
                 Bill Whatsapp
               </button>
             </div>

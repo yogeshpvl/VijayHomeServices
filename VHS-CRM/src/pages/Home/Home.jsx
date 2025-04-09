@@ -1,4 +1,5 @@
-import React from "react";
+import axios from "axios";
+import React, { useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -8,13 +9,119 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import { config } from "../../services/config";
 
 const Home = () => {
+  const [customer, setcustomer] = useState(0);
+  const [monthservice, setmonthservice] = useState(0);
+  const [TodayEnquiry, setTodayEnquiry] = useState(0);
+  const [ThisWeekEnquiry, setThisWeekEnquiry] = useState(0);
+  const [todayCallLater, setTodayCallLater] = useState(0);
+  const [thisWeekCallLater, setThisWeekCallLater] = useState(0);
+
+  const [todayNotInterested, setTodayNotInterested] = useState(0);
+  const [thisWeekNotInterested, setThisWeekNotInterested] = useState(0);
+
+  const [todayConfirmed, setTodayConfirmed] = useState(0);
+  const [thisWeekConfirmed, setThisWeekConfirmed] = useState(0);
+
+  const [todaySurvey, setTodaySurvey] = useState(0);
+  const [thisWeekSurvey, setThisWeekSurvey] = useState(0);
+
+  useEffect(() => {
+    fetchcustomer();
+    fetchservicemonthly();
+    fetchEnquirydata();
+    fetchData();
+    fetchserviceyearly();
+  }, []);
+
+  const fetchcustomer = async () => {
+    try {
+      const response = await axios.get(
+        `${config.API_BASE_URL}/customers/totalCounts`
+      );
+      setcustomer(response.data.totalItems);
+    } catch (error) {
+      console.error("Error fetching details", error);
+    }
+  };
+
+  const fetchservicemonthly = async () => {
+    try {
+      const response = await axios.get(
+        `${config.API_BASE_URL}/bookings/totalCounts`
+      );
+      setmonthservice(response.data.totalItems);
+    } catch (error) {
+      console.error("Error fetching details", error);
+    }
+  };
+
+  const [yearlyservice, setyearlyservice] = useState([]);
+  const fetchserviceyearly = async () => {
+    try {
+      const response = await axios.get(
+        `${config.API_BASE_URL}/bookingService/yearlyCounts`
+      );
+      console.log("yearlyservice", response.data);
+
+      // Mapping the fetched data to the structure needed for the chart
+      const mappedData = response.data.monthlyCounts.map((item) => ({
+        month: item.month,
+        bookings: item.bookings,
+      }));
+
+      setyearlyservice(mappedData); // Set the data to the state
+    } catch (error) {
+      console.error("Error fetching details", error);
+    }
+  };
+
+  const fetchEnquirydata = async () => {
+    try {
+      const response = await axios.get(
+        `${config.API_BASE_URL}/enquiries/totalCounts`
+      );
+
+      // Check if the response contains data and set totalItems
+      if (response.data && response.data.todayCount) {
+        setTodayEnquiry(response.data.todayCount);
+        setThisWeekEnquiry(response.data.weekCount);
+      }
+    } catch (error) {
+      console.error("Error fetching details", error);
+    }
+  };
+
+  const fetchData = async () => {
+    try {
+      const response = await axios.get(
+        `${config.API_BASE_URL}/followups/totalCounts`
+      );
+
+      // Check if todayData and weekData exist
+      setTodayCallLater(response.data.todayData["Call Later"] || 0);
+      setThisWeekCallLater(response.data.weekData["Call Later"] || 0);
+
+      setTodayNotInterested(response.data.todayData["Not Interested"] || 0);
+      setThisWeekNotInterested(response.data.weekData["Not Interested"] || 0);
+
+      setTodayConfirmed(response.data.todayData["Confirmed"] || 0);
+      setThisWeekConfirmed(response.data.weekData["Confirmed"] || 0);
+
+      setTodaySurvey(response.data.todayData["Survey"] || 0);
+      setThisWeekSurvey(response.data.weekData["Survey"] || 0);
+    } catch (error) {
+      console.error("Error fetching data", error);
+    }
+  };
+
   const stats = [
     {
       title: "Services Details",
       details: "This Month service booked:",
-      value: 2022,
+      value: monthservice,
     },
     {
       title: "Service Reminder Details",
@@ -23,48 +130,42 @@ const Home = () => {
       subDetails: "This Month:",
       subValue: 12,
     },
-    { title: "Customer", details: "Total Customers:", value: 89911 },
+    { title: "Customer", details: "Total Customers:", value: customer },
     {
-      title: "Expiry Details",
+      title: "Survey Details",
       details: "This Week:",
-      value: 3,
+      value: todaySurvey,
       subDetails: "This Month:",
-      subValue: 25,
+      subValue: todaySurvey,
     },
     {
       title: "Enquiry",
       details: "Today:",
-      value: 145,
+      value: TodayEnquiry,
       subDetails: "This Week:",
-      subValue: 1231,
+      subValue: ThisWeekEnquiry,
     },
-    // {
-    //   title: "Positive",
-    //   details: "Today:",
-    //   value: 5,
-    //   subDetails: "This Week:",
-    //   subValue: 5,
-    // },
+
     {
       title: "Call Later",
       details: "Today:",
-      value: 7292,
+      value: todayCallLater,
       subDetails: "This Week:",
-      subValue: 5,
+      subValue: thisWeekCallLater,
     },
     {
       title: "Not Interested",
       details: "Today:",
-      value: 0,
+      value: todayNotInterested,
       subDetails: "This Week:",
-      subValue: 5,
+      subValue: thisWeekNotInterested,
     },
     {
-      title: "Enquiry Followup",
+      title: "Confirmed",
       details: "Today:",
-      value: 0,
+      value: todayConfirmed,
       subDetails: "This Week:",
-      subValue: 18,
+      subValue: thisWeekConfirmed,
     },
   ];
 
@@ -118,7 +219,7 @@ const Home = () => {
           Service Bookings Analytics
         </h2>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={bookingData}>
+          <BarChart data={yearlyservice}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />

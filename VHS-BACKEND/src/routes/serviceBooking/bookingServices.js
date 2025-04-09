@@ -9,7 +9,9 @@ router.get(
   bookingServiceController.getMonthlyPaymentsServiceCounts
 );
 
+router.get("/yearlyCounts", bookingServiceController.getyearlyCounts);
 router.get("/dailydata", bookingServiceController.getDailyServiceData);
+
 router.get(
   "/paymentsdailydata",
   bookingServiceController.getPaymentsReportDailyServiceData
@@ -34,6 +36,21 @@ router.get("/service/:id", bookingServiceController.getServiceById);
 router.get(
   "/booking/:booking_id",
   bookingServiceController.getServicesByBookingId
+);
+
+router.get(
+  "/booking-sevice/:id",
+  bookingServiceController.getServicesByBookingServiceId
+);
+
+router.get(
+  "/past/:user_id",
+  bookingServiceController.getPastServicesByUserIdNext
+);
+
+router.get(
+  "/future/:user_id",
+  bookingServiceController.getFutureServicesByUserIdNext
 );
 
 // ✅ Create a booking service entry

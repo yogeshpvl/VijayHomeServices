@@ -10,8 +10,17 @@ const ExcelJS = require("exceljs");
 
 const EnquirySearch = async (req, res) => {
   try {
-    let { page, limit, search, fromDate, toDate, executive, city, mobile } =
-      req.query;
+    let {
+      page,
+      limit,
+      search,
+      fromDate,
+      toDate,
+      executive,
+      city,
+      mobile,
+      name,
+    } = req.query;
 
     page = parseInt(page) || 1;
     limit = parseInt(limit) || 10;
@@ -31,6 +40,10 @@ const EnquirySearch = async (req, res) => {
     // ✅ Direct mobile filter if search is not used
     if (mobile && !search) {
       whereClause.mobile = { [Op.iLike]: `%${mobile}%` };
+    }
+
+    if (name && !search) {
+      whereClause.name = { [Op.iLike]: `%${name}%` };
     }
 
     // 📅 Date filter
@@ -878,6 +891,45 @@ const getEnquiriesFoReporPageDownload = async (req, res) => {
   }
 };
 
+const gettotalCounts = async (req, res) => {
+  try {
+    // Current Date for Today
+    const todayStart = moment().startOf("day").toDate(); // Start of the day
+    const todayEnd = moment().endOf("day").toDate(); // End of the day
+
+    // Start and End of This Week (Assuming week starts on Sunday)
+    const startOfWeek = moment().startOf("week").toDate(); // Start of the week
+    const endOfWeek = moment().endOf("week").toDate(); // End of the week
+
+    // Get count for today
+    const todayCount = await Enquiry.count({
+      where: {
+        date: {
+          [Op.gte]: todayStart, // Greater than or equal to today's start
+          [Op.lte]: todayEnd, // Less than or equal to today's end
+        },
+      },
+    });
+
+    // Get count for this week
+    const weekCount = await Enquiry.count({
+      where: {
+        date: {
+          [Op.gte]: startOfWeek, // Greater than or equal to the start of the week
+          [Op.lte]: endOfWeek, // Less than or equal to the end of the week
+        },
+      },
+    });
+
+    // Send response
+    res.json({
+      todayCount,
+      weekCount,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 module.exports = {
   EnquirySearch,
   getTodaysEnquiries,
@@ -892,4 +944,5 @@ module.exports = {
   getOnlyResponseNewEnquiries,
   getEnquiriesFoReporPage,
   getEnquiriesFoReporPageDownload,
+  gettotalCounts,
 };

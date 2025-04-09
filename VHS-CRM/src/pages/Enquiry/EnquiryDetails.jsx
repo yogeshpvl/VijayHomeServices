@@ -35,8 +35,6 @@ const EnquiryDetail = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  console.log("formData", formData);
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -161,6 +159,7 @@ const EnquiryDetail = () => {
     const contentTemplate = selectedResponse?.template || "";
 
     if (!contentTemplate) {
+      fetchfollowupsData();
       console.error("Content template is empty. Cannot proceed.");
       return;
     }
@@ -189,18 +188,17 @@ const EnquiryDetail = () => {
       .replace(/<strong>(.*?)<\/strong>/g, "<b>$1</b>")
       .replace(/<[^>]*>/g, "");
 
-    console.log("convertedText===", convertedText);
-
     try {
       const response = await axios.post(
         `${config.API_BASE_URL}/whats-msg/send-message`,
         {
-          mobile: contactNumber,
+          mobile: "+91" + contactNumber,
           msg: convertedText,
         }
       );
 
       if (response.status === 200) {
+        fetchfollowupsData();
         window.location.reload(``);
       }
     } catch (error) {

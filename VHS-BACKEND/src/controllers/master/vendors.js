@@ -182,7 +182,14 @@ exports.getByCityAndCategory = async (req, res) => {
           [Op.contains]: [{ name: category }],
         },
       },
-      attributes: ["vhsname", "smsname", "type", "id"],
+      attributes: [
+        "vhsname",
+        "smsname",
+        "type",
+        "id",
+        "languagesknow",
+        "experiance",
+      ],
     });
 
     res.json(list);

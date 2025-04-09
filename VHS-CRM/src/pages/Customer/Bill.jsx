@@ -6,14 +6,14 @@ import { useLocation } from "react-router-dom";
 import { toWords } from "number-to-words";
 import { config } from "../../services/config";
 
-function DSR_Invoice() {
+function Bill() {
   const [tcdata, settcdata] = useState([]);
   const [headerimgdata, setHeaderImages] = useState([]);
   const [footerimgdata, setFooterImages] = useState([]);
   const [bankdata, setBankData] = useState([]);
   const location = useLocation();
   const getURLDATA = new URLSearchParams(location.search)?.get("id");
-  const [treatmentData, settreatmentData] = useState([]);
+  const [treatmentData, settreatmentData] = useState({});
 
   useEffect(() => {
     fetchTerms1();
@@ -61,9 +61,10 @@ function DSR_Invoice() {
   const getServiceData = async () => {
     try {
       let res = await axios.get(
-        `${config.API_BASE_URL}/bookingService/booking-sevice/${getURLDATA}`
+        `${config.API_BASE_URL}/bookings/${getURLDATA}`
       );
       if (res.status === 200) {
+        console.log("settreatmentData", res.data);
         settreatmentData(res.data);
       } else {
         settreatmentData([]);
@@ -77,7 +78,7 @@ function DSR_Invoice() {
     getServiceData();
   }, [getURLDATA]);
 
-  const convertingAmount = Number(treatmentData[0]?.service_charge);
+  const convertingAmount = Number(treatmentData?.service_charge);
 
   let netTotalInWords = "";
 
@@ -156,7 +157,7 @@ function DSR_Invoice() {
   console.log("treatmentData", treatmentData);
   const [words, setWords] = useState("");
   useEffect(() => {
-    setWords(inWords(Number(treatmentData[0]?.service_charge)));
+    setWords(inWords(Number(treatmentData?.service_charge)));
   }, [treatmentData]);
 
   return (
@@ -185,10 +186,10 @@ function DSR_Invoice() {
                 <p>Original For Recipient</p>
                 <p>
                   <b>
-                    Invoice No: VHS-000{treatmentData[0]?.id} <br />
+                    Invoice No: VHS-000{treatmentData?.id} <br />
                     Date :
                   </b>{" "}
-                  {treatmentData[0]?.service_date}
+                  {treatmentData?.service_date}
                 </p>
               </div>
             </div>
@@ -206,13 +207,13 @@ function DSR_Invoice() {
                 </div>
                 <div className="w-1/2 p-2 bg-red-50 rounded-lg">
                   <div className="font-bold text-lg">BILLED TO</div>
-                  <h5>{treatmentData[0]?.Booking?.customer?.customerName}</h5>
+                  <h5>{treatmentData?.customer?.customerName}</h5>
                   <p>
-                    {treatmentData[0]?.Booking?.delivery_address.platno},{" "}
-                    {treatmentData[0]?.Booking?.delivery_address.address},{" "}
-                    {treatmentData[0]?.Booking?.delivery_address.landmark}
+                    {treatmentData?.delivery_address?.platno},{" "}
+                    {treatmentData?.delivery_address?.address},{" "}
+                    {treatmentData?.delivery_address?.landmark}
                   </p>
-                  <p>{treatmentData[0]?.Booking?.customer?.mainContact}</p>
+                  <p>{treatmentData?.customer?.mainContact}</p>
                 </div>
               </div>
 
@@ -238,28 +239,24 @@ function DSR_Invoice() {
                       </tr>
                     </thead>
                     <tbody>
-                      {treatmentData.map((data, index) => (
-                        <tr key={index}>
-                          <td className="text-center border px-4 py-2">
-                            {index + 1}
-                          </td>
-                          <td className="text-center border px-4 py-2">
-                            {data.Booking?.category}
-                          </td>
-                          <td className="text-center border px-4 py-2">
-                            {data.Booking?.description}
-                          </td>
-                          <td className="text-center border px-4 py-2">
-                            {data?.Booking?.contract_type}
-                          </td>
-                          <td className="text-center border px-4 py-2">
-                            {data?.service_date}
-                          </td>
-                          <td className="text-center border px-4 py-2">
-                            {data?.service_charge}
-                          </td>
-                        </tr>
-                      ))}
+                      <tr>
+                        <td className="text-center border px-4 py-2">{1}</td>
+                        <td className="text-center border px-4 py-2">
+                          {treatmentData.category}
+                        </td>
+                        <td className="text-center border px-4 py-2">
+                          {treatmentData.description}
+                        </td>
+                        <td className="text-center border px-4 py-2">
+                          {treatmentData?.contract_type}
+                        </td>
+                        <td className="text-center border px-4 py-2">
+                          {treatmentData?.start_date}
+                        </td>
+                        <td className="text-center border px-4 py-2">
+                          {treatmentData?.service_charge}
+                        </td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
@@ -301,11 +298,11 @@ function DSR_Invoice() {
                   <h6>
                     GST(5%):{" "}
                     {(
-                      treatmentData[0]?.service_charge -
-                      (treatmentData[0]?.service_charge / 105) * 100
+                      treatmentData?.service_charge -
+                      (treatmentData?.service_charge / 105) * 100
                     ).toFixed(2)}
                   </h6>
-                  <h5>Total: {treatmentData[0]?.service_charge}</h5>
+                  <h5>Total: {treatmentData?.service_charge}</h5>
                   <h5>
                     Amount In Words:{" "}
                     <span className="font-normal">{words}</span>
@@ -350,4 +347,4 @@ function DSR_Invoice() {
   );
 }
 
-export default DSR_Invoice;
+export default Bill;

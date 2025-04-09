@@ -7,7 +7,7 @@ const BookingController = require("../../controllers/serviceBooking/bookings");
 router.get("/running/project", BookingController.getRunningProjectWithFilter);
 
 router.post("/create", BookingController.createBooking);
-
+router.get("/totalCounts", BookingController.gettotalCounts);
 // Get all bookings
 router.get("/all", BookingController.getAllBookings);
 router.get("/by-customer/:user_id", BookingController.getBookingsByUserId);

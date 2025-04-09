@@ -103,6 +103,8 @@ import EnquiryReport from "../pages/Reports/EnquiryReport";
 import SurveyReport from "../pages/Reports/SurveyReport";
 import QuoteReport from "../pages/Reports/QuoteReport";
 import RunningReport from "../pages/Reports/RunningReport";
+import DSR_Invoice from "../pages/DSR/Invoice";
+import Bill from "../pages/Customer/Bill";
 
 const AppContent = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
@@ -130,7 +132,7 @@ const AppContent = () => {
       }
     }
 
-    setTimeout(() => dispatch(setLoading(false)), 500); // Simulate loading
+    setTimeout(() => dispatch(setLoading(false)), 300); // Simulate loading
   }, [location.pathname, dispatch, navigate]);
 
   return (
@@ -360,6 +362,9 @@ const AppContent = () => {
         )}
 
         <Route path="/quoteview" element={<QuoteView />} />
+        <Route path="/bill" element={<Bill />} />
+
+        <Route path="/dsrinvoice" element={<DSR_Invoice />} />
       </Routes>
     </>
   );

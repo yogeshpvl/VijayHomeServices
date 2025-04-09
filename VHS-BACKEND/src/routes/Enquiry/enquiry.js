@@ -13,6 +13,7 @@ const {
   getOnlyResponseNewEnquiries,
   getEnquiriesFoReporPage,
   getEnquiriesFoReporPageDownload,
+  gettotalCounts,
 } = require("../../controllers/enquiry/enquiry");
 const { protect, authorize } = require("../../middlewares/authMiddleware");
 
@@ -23,6 +24,7 @@ router.get("/search", EnquirySearch);
 router.get("/today", protect, getTodaysEnquiries);
 router.get("/last-enquiry", getLastEnquiryId);
 router.get("/new-enquiry", getNewEnquiries);
+router.get("/totalCounts", gettotalCounts);
 router.get("/new-response-enquiry", getOnlyResponseNewEnquiries);
 router.get("/getEnquiriesFoReporPage", getEnquiriesFoReporPage);
 router.get("/getEnquiriesFoReporPageDownload", getEnquiriesFoReporPageDownload);

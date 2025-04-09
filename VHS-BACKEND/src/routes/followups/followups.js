@@ -10,6 +10,7 @@ router.get(
   "/monthlyCounts",
   followupController.getMonthlyFollowupCountsByDateAndResponse
 );
+router.get("/totalCounts", followupController.gettotalCounts);
 router.get("/datewise", followupController.getCallLaterDateWiseFollowups);
 router.get("/datewiseSurveys", followupController.getSurveyDateWiseFollowups);
 router.get("/getSurveyReportpage", followupController.getSurveyReportpage);

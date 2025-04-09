@@ -8,6 +8,7 @@ router.post("/register", customerController.register);
 router.post("/login", customerController.login);
 router.get("/last-cardno", customerController.getLastCardNo);
 router.get("/search", customerController.searchCustomers);
+router.get("/totalCounts", customerController.gettotalCounts);
 
 router.get("/", customerController.getAll);
 router.get("/:id", customerController.getOne);

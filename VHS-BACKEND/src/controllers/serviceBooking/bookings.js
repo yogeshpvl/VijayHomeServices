@@ -8,43 +8,56 @@ exports.getRunningProjectWithFilter = async (req, res) => {
       page = 1,
       limit = 25,
       name,
-      address,
+      city,
       contactNo,
       jobAmount,
       description,
       reference,
-
       technician,
+      sales_executive,
     } = req.query;
-    const city = "Bangalore";
-    const category = "Cleaning";
-    const contract_type = "One Time";
+
+    // Ensure city is split and defined correctly
+    const cityList = city ? city.split(",") : [];
+    const category = "Painting";
+    const contract_type = "AMC";
+
+    console.log(
+      `Filters received - Name: ${name}, City: ${city}, Contact No: ${contactNo}, Job Amount: ${jobAmount}, Description: ${description}, Reference: ${reference}, Technician: ${technician}`
+    );
 
     // Convert page & limit to numbers
     const pageNumber = parseInt(page, 10);
     const limitNumber = parseInt(limit, 10);
     const offset = (pageNumber - 1) * limitNumber;
 
+    // Customer filters
     const customerFilters = {};
     if (name) customerFilters.customerName = { [Op.iLike]: `%${name}%` };
-    if (contactNo)
-      customerFilters.mainContact = { [Op.iLike]: `%${contactNo}%` };
+
+    if (contactNo) customerFilters.mainContact = { [Op.eq]: contactNo }; // Use exact match if it's numeric
+
     if (reference) customerFilters.reference = { [Op.iLike]: `%${reference}%` };
 
+    // Quotation filters
     const quotationFilters = {};
-    if (technician)
-      quotationFilters.sales_executive = { [Op.iLike]: `%${technician}%` };
+    if (sales_executive)
+      quotationFilters.sales_executive = { [Op.eq]: sales_executive };
 
+    // Booking service filters
     const bookingServiceFilters = {};
     if (jobAmount)
       bookingServiceFilters.worker_amount = { [Op.iLike]: `%${jobAmount}%` };
     if (description)
       bookingServiceFilters.tech_comment = { [Op.iLike]: `%${description}%` };
 
+    if (technician)
+      bookingServiceFilters.vendor_name = { [Op.iLike]: `%${technician}%` };
+    // Building the query dynamically based on filters
     const bookings = await Booking.findAndCountAll({
       where: {
         category,
-        city,
+        city: { [Op.in]: cityList }, // Apply city filter
         contract_type,
       },
       attributes: [
@@ -58,7 +71,6 @@ exports.getRunningProjectWithFilter = async (req, res) => {
       limit: limitNumber,
       offset: offset,
       order: [["id", "DESC"]],
-
       include: [
         {
           model: BookingService,
@@ -72,6 +84,7 @@ exports.getRunningProjectWithFilter = async (req, res) => {
             "worker_amount",
             "vendor_name",
           ],
+          where: bookingServiceFilters, // Apply jobAmount and description filter
         },
         {
           model: User,
@@ -87,6 +100,7 @@ exports.getRunningProjectWithFilter = async (req, res) => {
             "approach",
             "reference",
           ],
+          where: customerFilters, // Apply customer-related filters
         },
         {
           model: db.Quotation,
@@ -100,6 +114,7 @@ exports.getRunningProjectWithFilter = async (req, res) => {
             "booked_by",
             "sales_executive",
           ],
+          where: quotationFilters, // Apply technician filter
         },
         {
           model: db.Payment,
@@ -139,6 +154,7 @@ exports.createBooking = async (req, res) => {
       amtstart_date,
       amtexpiry_date,
       enquiryId,
+      user_id,
     } = req.body;
 
     const service_id = "121";
@@ -208,7 +224,7 @@ exports.createBooking = async (req, res) => {
         service_charge: dividedAmount,
         service_date: serviceDates[i] || serviceDates[serviceDates.length - 1],
         amt_date: amtDates[i] || amtDates[amtDates.length - 1],
-        status: "Pending",
+        user_id,
       }));
 
       await BookingService.bulkCreate(serviceEntries);
@@ -220,10 +236,10 @@ exports.createBooking = async (req, res) => {
         booking_id: newBooking.id,
         service_name: service,
         service_id,
+        user_id,
         service_charge,
         service_date: safeDate(start_date),
         amt_date: safeDate(start_date),
-        status: "Pending",
       });
     }
 
@@ -250,10 +266,36 @@ exports.getAllBookings = async (req, res) => {
 // ✅ Get a single booking by ID
 exports.getBookingById = async (req, res) => {
   try {
-    const booking = await Booking.findByPk(req.params.id);
-    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    // Find booking by primary key (ID) and include associated customer data
+    const booking = await Booking.findByPk(req.params.id, {
+      include: [
+        {
+          model: User,
+          as: "customer",
+          attributes: [
+            "id",
+            "customerName",
+            "email",
+            "mainContact",
+            "alternateContact",
+            "lnf",
+            "city",
+            "approach",
+            "reference",
+          ],
+        },
+      ],
+    });
+
+    // Check if booking was found
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Return the booking along with associated customer data
     res.status(200).json(booking);
   } catch (error) {
+    // Handle any errors that occur during the process
     res.status(500).json({ error: error.message });
   }
 };
@@ -370,5 +412,34 @@ exports.getBookingsWithFilter = async (req, res) => {
   } catch (error) {
     console.error("Error fetching bookings:", error);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+exports.gettotalCounts = async (req, res) => {
+  try {
+    const currentMonthStart = new Date();
+    currentMonthStart.setDate(1);
+    currentMonthStart.setHours(0, 0, 0, 0);
+
+    const currentMonthEnd = new Date(currentMonthStart);
+    currentMonthEnd.setMonth(currentMonthEnd.getMonth() + 1);
+    currentMonthEnd.setMilliseconds(-1);
+
+    // Query the total count for the current month
+    const { count } = await Booking.findAndCountAll({
+      where: {
+        createdAt: {
+          [Op.gte]: currentMonthStart, // Greater than or equal to the first day of the current month
+          [Op.lte]: currentMonthEnd, // Less than or equal to the last day of the current month
+        },
+      },
+    });
+
+    // Return the count of items created in the current month
+    res.json({
+      totalItems: count,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };

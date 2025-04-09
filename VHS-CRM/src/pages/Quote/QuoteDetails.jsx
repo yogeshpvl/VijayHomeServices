@@ -157,6 +157,26 @@ function QuoteDetails() {
     }
   };
 
+  const [whatsappdata, setWhatsappData] = useState(null);
+  const [templateName, setTemplateName] = useState("Send Quotation");
+
+  useEffect(() => {
+    getWhatsappTemplate();
+  }, [templateName]);
+
+  const getWhatsappTemplate = async () => {
+    try {
+      const res = await axios.get(
+        `${config.API_BASE_URL}/whatsapp-templates/get-template/${templateName}`
+      );
+
+      if (res.status === 200) {
+        setWhatsappData(res.data?.content);
+      }
+    } catch (error) {
+      console.error("Error fetching WhatsApp template:", error);
+    }
+  };
   // Fetch regions, materials, and jobs based on category and material
   useEffect(() => {
     const fetchRegions = async () => {
@@ -294,8 +314,8 @@ function QuoteDetails() {
           headers: { "Content-Type": "application/json" },
         }
       );
-
-      if (!response.ok) {
+      console.log("response", response);
+      if (!response.status) {
         console.error("Failed to update follow-up status");
         return;
       }
@@ -307,7 +327,7 @@ function QuoteDetails() {
   };
 
   const SendWhatsQuoteMSG = async () => {
-    const contentTemplate = selectedResponse?.template || "";
+    const contentTemplate = whatsappdata || "";
 
     if (!contentTemplate) {
       console.error("Content template is empty. Cannot proceed.");
@@ -327,7 +347,7 @@ function QuoteDetails() {
         users?.displayname || ""
       );
 
-      const invoiceUrl = `https://vijayhomeservicebengaluru.in/quotations?id=${id}`;
+      const invoiceUrl = `https://crm.vijayhomeservicebengaluru.in/quoteview?id=${id}`;
       content = content.replace(
         /\{Quote_link\}/g,
         `Click to view quotation: ${invoiceUrl}`

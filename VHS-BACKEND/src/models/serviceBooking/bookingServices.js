@@ -51,12 +51,32 @@ const BookingService = sequelize.define(
     vendor_id: {
       type: DataTypes.STRING,
     },
+
     vendor_name: {
       type: DataTypes.STRING,
     },
     cancel_reason: {
       type: DataTypes.STRING,
     },
+    user_id: {
+      type: DataTypes.STRING,
+    },
+    vendor_status: {
+      type: DataTypes.STRING,
+      defaultValue: "PENDING", // ACCEPTED / REJECTED / PENDING
+    },
+    wallet_deducted: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    wallet_txn_id: {
+      type: DataTypes.STRING,
+    },
+    reassigned_count: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+
     status: { type: DataTypes.STRING, defaultValue: "NOT ASSIGNED" },
     created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   },

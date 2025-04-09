@@ -19,7 +19,7 @@ const RunningProjects = () => {
   const [selectedContactNo, setSelectedContactNo] = useState("");
   const [selectedJobAmount, setSelectedJobAmount] = useState("");
   const [selectedDescription, setSelectedDescription] = useState("");
-  const [selectedReference, setSelectedReference] = useState("");
+  const [sales_executive, setsales_executive] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [vendorData, setvendorData] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -34,6 +34,8 @@ const RunningProjects = () => {
 
   // Fetch data from the backend
 
+  console.log("selectedName", selectedName);
+
   const fetchData = async () => {
     try {
       const response = await axios.get(
@@ -46,11 +48,12 @@ const RunningProjects = () => {
             jobType: selectedJobType,
             jobAmount: selectedJobAmount,
             description: selectedDescription,
-            reference: selectedReference,
+
             city: selectedCity || users.city.map((user) => user.name).join(","),
             category: selectedCategory,
             technician: selectedTechnician,
             paymentMode: selectedPaymentMode,
+            sales_executive,
             page: currentPage,
             limit: itemsPerPage,
           },
@@ -79,7 +82,7 @@ const RunningProjects = () => {
     selectedContactNo,
     selectedJobAmount,
     selectedDescription,
-    selectedReference,
+
     currentPage,
   ]);
 
@@ -87,98 +90,41 @@ const RunningProjects = () => {
   const handleRowClick = (id) => {
     navigate(`/DSR/DSRDetails/${id}`);
   };
-  const columns = [
-    { label: "Sr.No." },
-    { label: "Date", key: "createdAt" },
-    { label: "category", key: "category", filterable: false },
-    { label: "Project Manager", key: "quotation.booked_by", type: "dropdown" },
-    {
-      label: "Sales Executive",
-      key: "quotation.sales_executive",
-      type: "dropdown",
-    },
-    { label: "Customer", key: "customer.customerName" },
-    { label: "Contact No.", key: "customer.mainContact" },
-    { label: "Address", key: "delivery_address.address" },
-    {
-      label: "City",
-      key: "city",
-      type: "dropdown",
-      options: users?.city.map((c) => c.name),
-    },
-    { label: "Quote No.", key: "quotation.quotation_id" },
-    { label: "Project Type", key: "quotation.project_type" },
-    { label: "Day to complete", key: "BookingServices[0].day_to_complete" },
-    { label: "Worker", key: "BookingServices[0].worker_names" },
-    {
-      label: "Vendor Amount",
-      key: "BookingServices[0].worker_amount",
-      filterable: false,
-    },
-    { label: "Vendor Payment", key: "payment_mode", filterable: false },
-    { label: "Quote Value", key: "quotation.grand_total", filterable: false },
-    { label: "Customer Payment", key: "service_charge", filterable: false },
-    { label: "Type", key: "type", filterable: false },
-    { label: "Deep cleaning details", key: "description", filterable: false },
-    { label: "Actions", filterable: false },
-  ];
 
-  const getFilterValue = (key) => {
-    switch (key) {
-      case "name":
-        return selectedName;
-      case "city":
-        return selectedCity;
-      case "technician":
-        return selectedTechnician;
-      case "jobtype":
-        return selectedJobType;
-      case "paymentmode":
-        return selectedPaymentMode;
-      case "address":
-        return selectedAddress;
-      case "contactno":
-        return selectedContactNo;
-      case "jobamount":
-        return selectedJobAmount;
-      case "description":
-        return selectedDescription;
-      case "reference":
-        return selectedReference;
-      case "time":
-        return ""; // Optional
-      default:
-        return "";
+  const [PMData, setPMData] = useState([]);
+  const [ExecutiveData, seExecutiveData] = useState([]);
+
+  const fetchPMVendors = async () => {
+    const assignTopm = "PM";
+
+    try {
+      const response = await axios.get(
+        `${config.API_BASE_URL}/vendors/type/${assignTopm}`
+      );
+
+      setPMData(response.data);
+    } catch (error) {
+      console.error("Error fetching details", error);
     }
   };
 
-  const handleFilterChange = (e, field, type = "input") => {
-    const value = e.target.value;
+  const fetchEXEVendors = async () => {
+    const assignTopm = "Executive";
 
-    const setterMap = {
-      category: setSelectedCategory,
-      city: setSelectedCity,
-      technician: setSelectedTechnician,
-      jobtype: setSelectedJobType,
-      paymentmode: setSelectedPaymentMode,
-      name: setSelectedName,
-      address: setSelectedAddress,
-      contactno: setSelectedContactNo,
-      jobamount: setSelectedJobAmount,
-      description: setSelectedDescription,
-      reference: setSelectedReference,
-    };
+    try {
+      const response = await axios.get(
+        `${config.API_BASE_URL}/vendors/type/${assignTopm}`
+      );
 
-    if (setterMap[field]) {
-      setterMap[field](value);
-
-      // Run fetch immediately if dropdown
-      if (type === "dropdown") {
-        setCurrentPage(1);
-        fetchData();
-      }
+      seExecutiveData(response.data);
+    } catch (error) {
+      console.error("Error fetching details", error);
     }
   };
+  useEffect(() => {
+    fetchPMVendors();
+    fetchEXEVendors();
+  }, []);
 
   return (
     <div className="p-2 bg-white">
@@ -205,65 +151,114 @@ const RunningProjects = () => {
       <div className="overflow-x-auto mt-8">
         <table className="min-w-full bg-white border border-gray-200 text-sm shadow-sm">
           <thead className="bg-gray-50 text-gray-800">
-            <tr>
-              {columns.map((col, idx) => {
-                let customWidth = "";
-
-                // Set custom widths based on column labels or keys
-                if (col.label === "Customer Payment")
-                  customWidth = "min-w-[220px]";
-                else if (col.label === "Vendor Payment")
-                  customWidth = "min-w-[200px]";
-                else if (col.label === "Address") customWidth = "min-w-[250px]";
-                else if (col.label === "Deep cleaning details")
-                  customWidth = "min-w-[200px]";
-                else if (col.label === "Contact No.")
-                  customWidth = "min-w-[140px]";
-                else if (col.label === "Worker") customWidth = "min-w-[150px]";
-                else if (col.label === "Date") customWidth = "min-w-[100px]";
-                else if (col.label === "Day to complete")
-                  customWidth = "min-w-[100px]";
-
-                return (
-                  <th
-                    key={idx}
-                    className={`border border-gray-200 px-4 py-3 text-xs font-semibold text-left bg-gray-100 text-gray-800 ${customWidth}`}
-                  >
-                    {col.label}
-                    {col.key &&
-                      col.filterable !== false &&
-                      (col.type === "dropdown" ? (
-                        <select
-                          value={getFilterValue(col.key)}
-                          onChange={(e) =>
-                            handleFilterChange(e, col.key, "dropdown")
-                          }
-                          className="mt-1 w-full border border-gray-300 px-2 py-1 rounded text-xs bg-white"
-                        >
-                          <option value="">--Select--</option>
-                          {col.options?.map((opt, i) => (
-                            <option key={i} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          type={col.key === "contactno" ? "tel" : "text"}
-                          value={getFilterValue(col.key)}
-                          onChange={(e) => handleFilterChange(e, col.key)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              setCurrentPage(1);
-                              fetchData();
-                            }
-                          }}
-                          className="mt-1 w-full border border-gray-300 px-2 py-1 rounded text-xs bg-white"
-                        />
-                      ))}
-                  </th>
-                );
-              })}
+            <tr className="border-b transition cursor-pointer bg-white hover:bg-gray-100">
+              <td className="border border-gray-200 px-3 py-2 text-xs">
+                sl no
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">Date</td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">
+                Category
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">
+                Project Manager
+                <select
+                  className="mt-1 w-full border border-gray-300 px-2 py-1 rounded text-xs bg-white"
+                  value={selectedTechnician} // Bind value to state
+                  onChange={(e) => setSelectedTechnician(e.target.value)} // Update state on change
+                >
+                  <option value="">--Select--</option>
+                  {PMData?.map((vendor, index) => (
+                    <option key={index} value={vendor.vhsname}>
+                      {vendor.vhsname}
+                    </option>
+                  ))}
+                </select>
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">
+                Sales Executive
+                <select
+                  className="mt-1 w-full border border-gray-300 px-2 py-1 rounded text-xs bg-white"
+                  value={sales_executive} // Bind value to state
+                  onChange={(e) => setsales_executive(e.target.value)} // Update state on change
+                >
+                  <option value="">--Select--</option>
+                  {ExecutiveData?.map((vendor, index) => (
+                    <option key={index} value={vendor.vhsname}>
+                      {vendor.vhsname}
+                    </option>
+                  ))}
+                </select>
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">
+                Customer
+                <input
+                  className="mt-1 w-full border border-gray-300 px-2 py-1 rounded text-xs bg-white"
+                  value={selectedName} // Bind value to state
+                  onChange={(e) => setSelectedName(e.target.value)} // Update state on change
+                />
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">
+                Contact No.
+                <input
+                  className="mt-1 w-full border border-gray-300 px-2 py-1 rounded text-xs bg-white"
+                  value={selectedContactNo} // Bind value to state
+                  onChange={(e) => setSelectedContactNo(e.target.value)} // Update state on change
+                />
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">
+                Address
+                <input
+                  className="mt-1 w-full border border-gray-300 px-2 py-1 rounded text-xs bg-white"
+                  value={selectedAddress} // Bind value to state
+                  onChange={(e) => setSelectedAddress(e.target.value)} // Update state on change
+                />
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">
+                City
+                <select
+                  className="mt-1 w-full border border-gray-300 px-2 py-1 rounded text-xs bg-white"
+                  value={selectedCity} // Bind value to state
+                  onChange={(e) => setSelectedCity(e.target.value)} // Update state on change
+                >
+                  <option value="">--Select--</option>
+                  {users?.city?.map((city, index) => (
+                    <option key={index} value={city.name}>
+                      {city.name}
+                    </option>
+                  ))}
+                </select>
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">
+                Quote id
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">
+                Project Type
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">
+                Day to complete
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">
+                Worker
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">
+                Vendor Amount
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs text-black">
+                Vendor Payment
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">
+                Quote Value
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs font-medium text-black">
+                Customer Payment
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">Type</td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">
+                Deep cleaning details
+              </td>
+              <td className="border border-gray-200 px-3 py-2 text-xs">
+                Action
+              </td>
             </tr>
           </thead>
 
@@ -272,7 +267,6 @@ const RunningProjects = () => {
               <tr
                 key={row.id}
                 className="border-b transition cursor-pointer bg-white hover:bg-gray-100"
-                onClick={() => handleRowClick(row.id)}
               >
                 <td className="border border-gray-200 px-3 py-2 text-xs">
                   {rowIndex + 1}
@@ -286,23 +280,23 @@ const RunningProjects = () => {
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
                   {" "}
-                  {row?.quotation.booked_by}
+                  {row?.BookingServices[0]?.vendor_name}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
                   {" "}
-                  {row?.quotation.sales_executive}
+                  {row?.quotation?.sales_executive}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
                   {" "}
-                  {row?.customer.customerName}
+                  {row?.customer?.customerName}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
                   {" "}
-                  {row?.customer.mainContact}
+                  {row?.customer?.mainContact}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
                   {" "}
-                  {row?.delivery_address.address}
+                  {row?.delivery_address?.address}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
                   {" "}
@@ -310,11 +304,11 @@ const RunningProjects = () => {
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
                   {" "}
-                  {row?.quotation.quotation_id}
+                  {row?.quotation?.quotation_id}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
                   {" "}
-                  {row?.quotation.project_type}
+                  {row?.quotation?.project_type}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
                   {" "}
@@ -369,7 +363,7 @@ const RunningProjects = () => {
 
                 <td className="border border-gray-200 px-3 py-2 text-xs">
                   {" "}
-                  {row?.quotation.grand_total}
+                  {row?.quotation?.grand_total}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs font-medium text-black">
                   {(() => {

@@ -253,7 +253,7 @@ const DSRList = () => {
           </thead>
 
           <tbody>
-            {paginatedData.map((row, index) => (
+            {paginatedData?.map((row, index) => (
               <tr
                 key={row.id}
                 onClick={() => handleRowClick(row.id)}
@@ -282,19 +282,19 @@ const DSRList = () => {
                   {row.service_date}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
-                  {row.Booking.selected_slot_text}
+                  {row.Booking?.selected_slot_text}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
-                  {row.Booking.customer.customerName}
+                  {row.Booking?.customer.customerName}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
                   {row.Booking.city}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
-                  {row.Booking.delivery_address?.address}
+                  {row.Booking?.delivery_address?.address}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
-                  {row.Booking.customer.mainContact}
+                  {row.Booking?.customer.mainContact}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
                   {row.vendor_name}
@@ -306,13 +306,13 @@ const DSRList = () => {
                   {row.service_charge}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
-                  {row.Booking.payment_mode}
+                  {row.Booking?.payment_mode}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
-                  {row.Booking.description}
+                  {row.Booking?.description}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
-                  {row.Booking.type}
+                  {row.Booking?.type}
                 </td>
               </tr>
             ))}
