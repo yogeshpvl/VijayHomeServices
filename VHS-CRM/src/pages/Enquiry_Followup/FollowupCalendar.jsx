@@ -22,7 +22,7 @@ function FollowupCalendar() {
   const fetchEvents = async (cat, from, to) => {
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/followups/monthlyCounts",
+        `${config.API_BASE_URL}/followups/monthlyCounts`,
         {
           params: {
             category: cat,

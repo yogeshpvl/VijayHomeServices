@@ -106,7 +106,7 @@ const EnquiryDetail = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/followups",
+        `${config.API_BASE_URL}/followups`,
         formData
       );
 

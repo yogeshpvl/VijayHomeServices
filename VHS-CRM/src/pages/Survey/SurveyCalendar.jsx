@@ -27,7 +27,7 @@ function SurveyCalendar() {
       // Call API with category and date range
       try {
         const res = await axios.get(
-          "http://localhost:5000/api/followups/monthlyCounts",
+          `${config.API_BASE_URL}/followups/monthlyCounts`,
           {
             params: {
               category: selectedCategory,

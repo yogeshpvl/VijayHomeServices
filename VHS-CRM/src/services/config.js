@@ -1,5 +1,5 @@
 export const config = {
-  API_BASE_URL: "http://localhost:5000/api",
+  API_BASE_URL: "https://newapi.vijayhomeservicebengaluru.in/api",
   IMAGE_URL: "http://localhost:8888/uploads",
 
   ADMIN_LOGIN: "/auth/login",

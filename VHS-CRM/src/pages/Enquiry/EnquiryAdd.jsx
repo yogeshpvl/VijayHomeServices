@@ -163,7 +163,7 @@ const EnquiryForm = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/whats-msg/send-message",
+        `${config.API_BASE_URL}/whats-msg/send-message`,
         {
           mobile: "+91" + contactNumber,
           msg: convertedText,
