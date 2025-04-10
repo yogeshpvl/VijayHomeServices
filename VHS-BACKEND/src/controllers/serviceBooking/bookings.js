@@ -315,14 +315,18 @@ exports.getBookingsByUserId = async (req, res) => {
 
 exports.updateBooking = async (req, res) => {
   try {
+    console.log("req.body ", req.body);
+    console.log("req.params.id ", req.params.id);
+
     // Check if body is empty
     if (!req.body || Object.keys(req.body).length === 0) {
       return res.status(400).json({ message: "No data to update" });
     }
 
     // Find the booking first
-    const booking = await Booking.findOne({ where: { id: req.params.id } });
+    const booking = await Booking.findOne({ where: { id: req.body.id } });
 
+    console.log("booking", booking);
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }

@@ -232,7 +232,7 @@ exports.updateServiceDetails = async (req, res) => {
     job_complete,
     tech_comment,
     worker_amount,
-
+    vendor_status,
     vendor_id,
     vendor_name,
     cancel_reason,
@@ -266,6 +266,7 @@ exports.updateServiceDetails = async (req, res) => {
       service.vendor_name = vendor_name || service.vendor_name;
       service.cancel_reason = cancel_reason || service.cancel_reason;
       service.service_date = service_date || service.service_date;
+      service.vendor_status = vendor_status || service.vendor_status;
 
       await service.save(); // Save within the transaction
 
@@ -643,6 +644,7 @@ exports.getDailyServiceData = async (req, res) => {
         "service_name",
         "service_date",
         "status",
+        "vendor_status",
         "id",
       ],
       include: [

@@ -6,6 +6,8 @@ import { Input } from "../../components/ui/Input";
 import moment from "moment";
 import { toast } from "react-toastify";
 import CustomerHistroy from "./CustomerHistroy";
+import { FaEdit } from "react-icons/fa";
+import { BsReceipt } from "react-icons/bs";
 
 function CustomerDetailsPage() {
   const { id } = useParams();
@@ -117,14 +119,17 @@ function CustomerDetailsPage() {
   const handleAddItem = async () => {
     if (!customer.city) {
       toast.error(
-        "Please add the city for this customer! please click the edit customer update the city then come back"
+        "Please add the city for this customer! Please click edit customer, update the city, then come back."
       );
+      return;
     }
     if (!customer.lnf) {
       toast.error(
-        "Please add the  address this customer! please click the edit customer update the address then come back"
+        "Please add the address for this customer! Please click edit customer, update the address, then come back."
       );
+      return;
     }
+
     setLoading(true);
     try {
       const payload = {
@@ -148,15 +153,74 @@ function CustomerDetailsPage() {
           form.contract_type === "AMC" ? form.expiry_date : form.start_date,
       };
 
-      await axios.post(`${config.API_BASE_URL}/bookings/create`, payload);
-      bookingWhatsAppMsg();
+      if (editIndex !== null) {
+        // 🔁 Edit Flow — call PUT API
+        await axios.put(
+          `${config.API_BASE_URL}/bookings/update/${editIndex}`,
+          payload
+        );
+        toast.success("Booking updated successfully");
+      } else {
+        // ➕ Add Flow — call POST API
+        await axios.post(`${config.API_BASE_URL}/bookings/create`, payload);
+        bookingWhatsAppMsg();
+        toast.success("Booking added successfully");
+      }
+
       fetchTreatments();
+      setEditIndex(null); // reset after edit
+      setForm({ ...defaultForm }); // reset form
     } catch (error) {
-      toast.error("Error while adding booking", error);
+      console.error(error);
+      toast.error("Error while saving booking");
     } finally {
       setLoading(false);
     }
   };
+
+  // const handleAddItem = async () => {
+  //   if (!customer.city) {
+  //     toast.error(
+  //       "Please add the city for this customer! please click the edit customer update the city then come back"
+  //     );
+  //   }
+  //   if (!customer.lnf) {
+  //     toast.error(
+  //       "Please add the  address this customer! please click the edit customer update the address then come back"
+  //     );
+  //   }
+  //   setLoading(true);
+  //   try {
+  //     const payload = {
+  //       ...form,
+  //       user_id: id,
+  //       start_date: form.start_date,
+  //       city: customer.city,
+  //       type: customer.approach,
+  //       backoffice_executive: users.displayname,
+  //       amt_frequency: form.serviceFrequency,
+  //       amtstart_date: form.start_date,
+  //       amtexpiry_date: form.expiry_date,
+  //       enquiryId: enquiryId || customer?.enquiryId,
+  //       delivery_address: {
+  //         address: customer.lnf,
+  //         save_as: customer.mainArea,
+  //         landmark: customer.rbhf,
+  //         platno: customer.cnap,
+  //       },
+  //       expiry_date:
+  //         form.contract_type === "AMC" ? form.expiry_date : form.start_date,
+  //     };
+
+  //     await axios.post(`${config.API_BASE_URL}/bookings/create`, payload);
+  //     bookingWhatsAppMsg();
+  //     fetchTreatments();
+  //   } catch (error) {
+  //     toast.error("Error while adding booking", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const handleEdit = (index) => {
     setForm(treatments[index]);
@@ -259,7 +323,7 @@ function CustomerDetailsPage() {
       );
 
       if (response.status === 200) {
-        toast.success("service cancel msg sent sucessful");
+        // toast.success("service cancel msg sent sucessful");
         setForm({
           category: "",
           contract_type: "",
@@ -675,21 +739,25 @@ function CustomerDetailsPage() {
                   <td className="border border-gray-200 px-3 py-2">
                     {treat.description}
                   </td>
-                  <td className="border border-gray-200 px-3 py-2 space-x-2">
-                    {/* <button
-                      onClick={() => handleEdit(index)}
-                      className="text-blue-600 hover:underline text-xs"
-                    >
-                      Edit
-                    </button> */}
-                    <button
-                      onClick={() =>
-                        window.open(`/bill?id=${treat.id}`, "_blank")
-                      }
-                      className="text-green-600 hover:underline text-base"
-                    >
-                      Bill
-                    </button>
+                  <td className="border border-gray-200 px-3 py-2 text-xs">
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={() => handleEdit(index)}
+                        className="flex items-center space-x-1 text-blue-600 hover:underline"
+                      >
+                        <FaEdit className="text-sm" />
+                        {/* <span>Edit</span> */}
+                      </button>
+                      <button
+                        onClick={() =>
+                          window.open(`/bill?id=${treat.id}`, "_blank")
+                        }
+                        className="flex items-center space-x-1 text-green-600 hover:underline"
+                      >
+                        {/* <BsReceipt className="text-base" /> */}
+                        <span>Bill</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

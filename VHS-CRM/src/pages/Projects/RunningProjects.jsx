@@ -205,7 +205,7 @@ const RunningProjects = () => {
                   onChange={(e) => setSelectedContactNo(e.target.value)} // Update state on change
                 />
               </td>
-              <td className="border border-gray-200 px-3 py-2 text-xs">
+              <td className="min-w-[150px] border border-gray-200 px-3 py-2 text-xs">
                 Address
                 <input
                   className="mt-1 w-full border border-gray-300 px-2 py-1 rounded text-xs bg-white"
@@ -243,13 +243,13 @@ const RunningProjects = () => {
               <td className="border border-gray-200 px-3 py-2 text-xs">
                 Vendor Amount
               </td>
-              <td className="border border-gray-200 px-3 py-2 text-xs text-black">
+              <td className=" min-w-[200px] border border-gray-200 px-3 py-2 text-xs text-black">
                 Vendor Payment
               </td>
               <td className="border border-gray-200 px-3 py-2 text-xs">
                 Quote Value
               </td>
-              <td className="border border-gray-200 px-3 py-2 text-xs font-medium text-black">
+              <td className="min-w-[200px] border border-gray-200 px-3 py-2 text-xs font-medium text-black">
                 Customer Payment
               </td>
               <td className="border border-gray-200 px-3 py-2 text-xs">Type</td>

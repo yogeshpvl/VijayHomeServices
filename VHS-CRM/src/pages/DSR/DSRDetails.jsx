@@ -32,7 +32,6 @@ const DSRDetails = () => {
   const [vendorExp, setVendorExp] = useState("");
   const [vendorLan, setVendorLan] = useState("");
 
-  console.log("details", details);
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -77,7 +76,10 @@ const DSRDetails = () => {
     try {
       const response = await axios.put(
         `${config.API_BASE_URL}/bookingService/${id}`,
-        form
+        {
+          ...form,
+          vendor_status: "ACCEPTED",
+        }
       );
 
       if (response.status === 200) {
@@ -105,6 +107,37 @@ const DSRDetails = () => {
     }
   };
 
+  const handleSubmitManulAssign = async () => {
+    if (form.job_complete === "CANCEL" && !form?.cancel_reason?.trim()) {
+      toast.error("Please provide a reason for cancellation.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await axios.put(
+        `${config.API_BASE_URL}/bookingService/${id}`,
+        {
+          ...form,
+          vendor_status: "PENDING",
+        }
+      );
+
+      if (response.status === 200) {
+        toast.success("Updated successfully");
+
+        navigate(
+          `/DSR/DSRList/${details?.service_date}/${details?.Booking?.category}`
+        );
+      }
+    } catch (error) {
+      console.error("Error updating service:", error);
+      toast.error("Something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
+  };
   const handleChaneCitySlot = async () => {
     setIsLoading(true);
 
@@ -1064,8 +1097,12 @@ const DSRDetails = () => {
 
                 {vendorType === "outVendor" ? (
                   <div className="mt-4  border-gray-300 p-3 rounded-md ">
-                    <button className="bg-blue-500 text-white px-4 py-2 rounded-md">
-                      Manual Update
+                    <button
+                      className="bg-blue-500 text-white px-4 py-2 rounded-md"
+                      onClick={handleSubmitManulAssign}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? <div>Loading...</div> : "  Manual Update"}
                     </button>
                   </div>
                 ) : (
