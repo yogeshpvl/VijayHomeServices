@@ -5,15 +5,12 @@ const router = express.Router();
 router.post("/send-message", async (req, res) => {
   try {
     const { mobile, msg } = req.body;
-    console.log("mobile", mobile);
-
     // URL encode the message only once
     const encodedMsg = encodeURIComponent(msg);
 
     const apiURL = `https://web.cloudwhatsapp.com/wapp/api/send?apikey=ed90cfb9843241b3afb223e56e64aa0c&mobile=${mobile}&msg=${encodedMsg}`;
 
     const response = await axios.post(apiURL);
-    console.log(response, "whta");
 
     res.json(response.data);
   } catch (error) {
