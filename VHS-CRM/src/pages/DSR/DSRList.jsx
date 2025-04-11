@@ -297,13 +297,17 @@ const DSRList = () => {
                   {row.Booking?.customer.mainContact}
                 </td>
                 <td className="border border-gray-200 px-3 py-2 text-xs">
-                  {row?.vendor_status === "PENDING" ? (
-                    <div className="bg-orange-500 text-black px-2 py-1">
-                      <div>{`M = ${row.vendor_name.split(" ")[0]}`}</div>
-                      <div>{row.vendor_name.split(" ").slice(1).join(" ")}</div>
-                    </div>
+                  {row?.vendor_name ? (
+                    row.vendor_status === "PENDING" ? (
+                      <div className="bg-orange-500 text-black px-2 py-1 rounded">
+                        <div>{`M = ${row.vendor_name}`}</div>
+                        <div>{row.vendor_name}</div>
+                      </div>
+                    ) : (
+                      <span>{row.vendor_name}</span>
+                    )
                   ) : (
-                    row.vendor_name
+                    ""
                   )}
                 </td>
 

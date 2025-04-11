@@ -2,6 +2,11 @@ const express = require("express");
 const router = express.Router();
 const bookingServiceController = require("../../controllers/serviceBooking/bookingServices");
 
+const multer = require("multer");
+
+// Use memory storage (no uploads folder required)
+const upload = multer({ storage: multer.memoryStorage() });
+
 router.get("/MonthlyCounts", bookingServiceController.getMonthlyServiceCounts);
 
 router.get(
@@ -44,6 +49,15 @@ router.get(
 );
 
 router.get(
+  "/vendor-counts/:vendor_id",
+  bookingServiceController.getServiceCountsByVendor
+);
+router.get(
+  "/vendor-data/:vendor_id",
+  bookingServiceController.getServicesByVendorAndDate
+);
+
+router.get(
   "/past/:user_id",
   bookingServiceController.getPastServicesByUserIdNext
 );
@@ -58,9 +72,17 @@ router.post("/", bookingServiceController.createBookingService);
 
 // ✅ Update service status
 router.put("/:id", bookingServiceController.updateServiceDetails);
-router.put("/START/:id", bookingServiceController.ServiceStartByTenhnicain);
+router.put(
+  "/START/:id",
+  upload.single("before_service_img"),
+  bookingServiceController.ServiceStartByTenhnicain
+);
 
-router.put("/COMPLETE/:id", bookingServiceController.ServiceENDByTenhnicain);
+router.put(
+  "/COMPLETE/:id",
+  upload.single("after_service_img"),
+  bookingServiceController.ServiceENDByTenhnicain
+);
 
 // ✅ Delete a booking service
 router.delete("/:id", bookingServiceController.deleteBookingService);

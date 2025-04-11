@@ -20,3 +20,6 @@ ADD COLUMN UTM_source VARCHAR(255),
 ADD COLUMN UTM_campaign VARCHAR(255),
 ADD COLUMN UTM_content VARCHAR(255),
 ADD COLUMN Tag VARCHAR(255);
+
+
+CREATE INDEX idx_vendor_created_at ON BookingServices (vendor_id, createdAt);

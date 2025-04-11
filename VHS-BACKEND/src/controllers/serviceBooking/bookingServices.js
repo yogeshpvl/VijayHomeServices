@@ -5,6 +5,12 @@ const Booking = require("../../models/serviceBooking/bookings");
 const User = require("../../models/customer/customer");
 const Payment = require("../../models/payments/payments");
 const ExcelJS = require("exceljs");
+const { default: axios } = require("axios");
+
+const BUNNY_STORAGE_ZONE = process.env.BUNNY_STORAGE_ZONE;
+const BUNNY_API_KEY = process.env.BUNNY_API_KEY;
+const BUNNY_CDN_URL = process.env.BUNNY_CDN_URL;
+const BUNNY_STORAGE_URL = `https://storage.bunnycdn.com/${BUNNY_STORAGE_ZONE}`;
 
 // ✅ Create a new booking service entry
 exports.createBookingService = async (req, res) => {
@@ -30,6 +36,109 @@ exports.getServicesByBookingId = async (req, res) => {
   }
 };
 
+exports.getServiceCountsByVendor = async (req, res) => {
+  try {
+    const { vendor_id } = req.params;
+
+    const today = moment().startOf("day");
+    const tomorrow = moment().add(1, "days").startOf("day");
+    const yesterday = moment().subtract(1, "days").startOf("day");
+    const weekStart = moment().startOf("isoWeek");
+    const weekEnd = moment().endOf("isoWeek");
+
+    const [todayCount, tomorrowCount, yesterdayCount, thisWeekCount] =
+      await Promise.all([
+        BookingService.count({
+          where: {
+            vendor_id,
+            service_date: {
+              [Op.gte]: today,
+              [Op.lt]: moment(today).add(1, "days"),
+            },
+          },
+        }),
+        BookingService.count({
+          where: {
+            vendor_id,
+            service_date: {
+              [Op.gte]: tomorrow,
+              [Op.lt]: moment(tomorrow).add(1, "days"),
+            },
+          },
+        }),
+        BookingService.count({
+          where: {
+            vendor_id,
+            service_date: {
+              [Op.gte]: yesterday,
+              [Op.lt]: today,
+            },
+          },
+        }),
+        BookingService.count({
+          where: {
+            vendor_id,
+            service_date: {
+              [Op.between]: [weekStart.toDate(), weekEnd.toDate()],
+            },
+          },
+        }),
+      ]);
+
+    res.json({
+      today: todayCount,
+      tomorrow: tomorrowCount,
+      yesterday: yesterdayCount,
+      thisWeek: thisWeekCount,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getServicesByVendorAndDate = async (req, res) => {
+  try {
+    const { vendor_id } = req.params;
+    const { range } = req.query;
+
+    let startDate, endDate;
+    const today = moment().startOf("day");
+
+    switch (range) {
+      case "today":
+        startDate = today;
+        endDate = moment(today).add(1, "days");
+        break;
+      case "tomorrow":
+        startDate = moment(today).add(1, "days");
+        endDate = moment(today).add(2, "days");
+        break;
+      case "yesterday":
+        startDate = moment(today).subtract(1, "days");
+        endDate = today;
+        break;
+      case "thisWeek":
+        startDate = moment().startOf("isoWeek");
+        endDate = moment().endOf("isoWeek");
+        break;
+      default:
+        return res.status(400).json({ error: "Invalid range" });
+    }
+
+    const services = await BookingService.findAll({
+      where: {
+        vendor_id,
+        service_date: {
+          [Op.between]: [startDate.toDate(), endDate.toDate()],
+        },
+      },
+    });
+
+    res.json(services);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 exports.getServicesByBookingServiceId = async (req, res) => {
   try {
     const { id } = req.params;
@@ -286,6 +395,7 @@ exports.updateServiceDetails = async (req, res) => {
 
 exports.ServiceStartByTenhnicain = async (req, res) => {
   const { id } = req.params;
+  const file = req.file;
   const {
     customer_feedback,
     worker_names,
@@ -298,12 +408,22 @@ exports.ServiceStartByTenhnicain = async (req, res) => {
     vendor_name,
     cancel_reason,
     service_date,
-    before_service_img,
   } = req.body;
 
   let finalStatus = "SERVICE STARTED";
 
   try {
+    const fileName = `${Date.now()}-${file.originalname}`;
+    const fileBuffer = file.buffer;
+
+    await axios.put(`${BUNNY_STORAGE_URL}/${fileName}`, fileBuffer, {
+      headers: {
+        AccessKey: BUNNY_API_KEY,
+        "Content-Type": "application/octet-stream",
+      },
+    });
+
+    const cdnUrl = `${BUNNY_CDN_URL}/${fileName}`;
     const service = await BookingService.findByPk(id);
     if (!service) return res.status(404).json({ message: "Service not found" });
 
@@ -322,8 +442,7 @@ exports.ServiceStartByTenhnicain = async (req, res) => {
       service.cancel_reason = cancel_reason || service.cancel_reason;
       service.service_date = service_date || service.service_date;
       service.start_date_time = start_date_time || service.start_date_time;
-      service.before_service_img =
-        before_service_img || service.before_service_img;
+      service.before_service_img = cdnUrl;
 
       await service.save(); // Save within the transaction
 
@@ -343,6 +462,7 @@ exports.ServiceStartByTenhnicain = async (req, res) => {
 
 exports.ServiceENDByTenhnicain = async (req, res) => {
   const { id } = req.params;
+  const file = req.file;
   const {
     customer_feedback,
     worker_names,
@@ -355,12 +475,22 @@ exports.ServiceENDByTenhnicain = async (req, res) => {
     vendor_name,
     cancel_reason,
     service_date,
-    after_service_img,
   } = req.body;
 
   let finalStatus = "SERVICE COMPLETED";
 
   try {
+    const fileName = `${Date.now()}-${file.originalname}`;
+    const fileBuffer = file.buffer;
+
+    await axios.put(`${BUNNY_STORAGE_URL}/${fileName}`, fileBuffer, {
+      headers: {
+        AccessKey: BUNNY_API_KEY,
+        "Content-Type": "application/octet-stream",
+      },
+    });
+
+    const cdnUrl = `${BUNNY_CDN_URL}/${fileName}`;
     const service = await BookingService.findByPk(id);
     if (!service) return res.status(404).json({ message: "Service not found" });
 
@@ -379,8 +509,7 @@ exports.ServiceENDByTenhnicain = async (req, res) => {
       service.cancel_reason = cancel_reason || service.cancel_reason;
       service.service_date = service_date || service.service_date;
       service.end_date_time = end_date_time || service.end_date_time;
-      service.after_service_img =
-        after_service_img || service.after_service_img;
+      service.after_service_img = cdnUrl;
 
       await service.save(); // Save within the transaction
 

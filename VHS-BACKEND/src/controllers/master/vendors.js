@@ -145,10 +145,13 @@ exports.login = async (req, res) => {
   try {
     const { number, password } = req.body;
     const vendor = await Vendor.findOne({ where: { number } });
+
     if (!vendor) return res.status(404).json({ error: "Vendor not found" });
 
-    const match = await bcrypt.compare(password, vendor.password);
-    if (!match) return res.status(401).json({ error: "Invalid password" });
+    // Plain text password comparison (NOT RECOMMENDED for production)
+    if (password !== vendor.password) {
+      return res.status(401).json({ error: "Invalid password" });
+    }
 
     res.json(vendor);
   } catch (error) {
