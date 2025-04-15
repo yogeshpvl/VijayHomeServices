@@ -137,7 +137,7 @@ class CustomerPG {
       const orderId = `TXN${Date.now()}`;
       const currency = "INR";
 
-      const redirectUrl = `http://192.168.0.102:5000/api/customerPG/customer-booking-payment-status/${newBooking.id}/${start_date}/${user_id}`;
+      const redirectUrl = `https://newapi.vijayhomeservicebengaluru.in/api/customerPG/customer-booking-payment-status/${newBooking.id}/${start_date}/${user_id}`;
       const cancelUrl = "http://localhost:3000/payment-cancel";
       const language = "EN";
 
@@ -211,7 +211,7 @@ class CustomerPG {
     const orderId = new Date();
     const currency = "INR";
 
-    const redirectUrl = `http://localhost:5000/api/customerPG/customer-payment-after-booking-status/${serviceId}/${service_date}/${customer_id}`;
+    const redirectUrl = `https://newapi.vijayhomeservicebengaluru.in/api/customerPG/customer-payment-after-booking-status/${serviceId}/${service_date}/${customer_id}`;
 
     const cancelUrl = "http://localhost:3000/payment-cancel";
     const language = "EN";
@@ -396,7 +396,7 @@ class CustomerPG {
       const orderId = `TXN${Date.now()}`;
       const currency = "INR";
 
-      const redirectUrl = `http://192.168.0.102:5000/api/customerPG/customer-booking-payment-status-web/${newBooking.id}/${start_date}/${user_id}`;
+      const redirectUrl = `https://newapi.vijayhomeservicebengaluru.in/api/customerPG/customer-booking-payment-status-web/${newBooking.id}/${start_date}/${user_id}`;
       const cancelUrl = "http://localhost:3000/payment-cancel";
       const language = "EN";
 

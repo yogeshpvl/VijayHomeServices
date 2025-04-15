@@ -13,7 +13,7 @@ class vendorPG {
     const orderId = transactionId;
     const currency = "INR";
 
-    const redirectUrl = `http://192.168.0.102:5000/api/vendorPG/vendorRechargeStatus/${transactionId}/${vendorId}/${amount}`;
+    const redirectUrl = `https://newapi.vijayhomeservicebengaluru.in/api/vendorPG/vendorRechargeStatus/${transactionId}/${vendorId}/${amount}`;
 
     const cancelUrl = "http://localhost:3000/payment-cancel";
     const language = "EN";
