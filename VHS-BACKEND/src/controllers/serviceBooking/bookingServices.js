@@ -1,11 +1,16 @@
 const moment = require("moment");
 const BookingService = require("../../models/serviceBooking/bookingServices");
-const { Op, Sequelize } = require("sequelize");
+
+const { Op, fn, col, where, Sequelize } = require("sequelize");
 const Booking = require("../../models/serviceBooking/bookings");
 const User = require("../../models/customer/customer");
 const Payment = require("../../models/payments/payments");
 const ExcelJS = require("exceljs");
 const { default: axios } = require("axios");
+const Techcancel = require("../../models/serviceBooking/techCancel");
+const TechReschedule = require("../../models/serviceBooking/techReschedule");
+const Vendor = require("../../models/master/vendors");
+const vendorPayment = require("../../models/payments/vendorPayments");
 
 const BUNNY_STORAGE_ZONE = process.env.BUNNY_STORAGE_ZONE;
 const BUNNY_API_KEY = process.env.BUNNY_API_KEY;
@@ -38,48 +43,45 @@ exports.getServicesByBookingId = async (req, res) => {
 
 exports.getServiceCountsByVendor = async (req, res) => {
   try {
-    const { vendor_id } = req.params;
+    const vendorId = parseInt(req.params.vendor_id);
+    if (isNaN(vendorId)) {
+      return res.status(400).json({ error: "Invalid vendor_id" });
+    }
 
-    const today = moment().startOf("day");
-    const tomorrow = moment().add(1, "days").startOf("day");
-    const yesterday = moment().subtract(1, "days").startOf("day");
-    const weekStart = moment().startOf("isoWeek");
-    const weekEnd = moment().endOf("isoWeek");
+    const today = moment().format("YYYY-MM-DD");
+    const tomorrow = moment().add(1, "days").format("YYYY-MM-DD");
+    const yesterday = moment().subtract(1, "days").format("YYYY-MM-DD");
+    const weekStart = moment().startOf("isoWeek").format("YYYY-MM-DD");
+    const weekEnd = moment().endOf("isoWeek").format("YYYY-MM-DD");
+
+    const dateCompare = (targetDate) =>
+      where(fn("DATE", col("service_date")), targetDate);
 
     const [todayCount, tomorrowCount, yesterdayCount, thisWeekCount] =
       await Promise.all([
         BookingService.count({
           where: {
-            vendor_id,
-            service_date: {
-              [Op.gte]: today,
-              [Op.lt]: moment(today).add(1, "days"),
-            },
+            vendor_id: vendorId,
+            [Op.and]: [dateCompare(today)],
           },
         }),
         BookingService.count({
           where: {
-            vendor_id,
-            service_date: {
-              [Op.gte]: tomorrow,
-              [Op.lt]: moment(tomorrow).add(1, "days"),
-            },
+            vendor_id: vendorId,
+            [Op.and]: [dateCompare(tomorrow)],
           },
         }),
         BookingService.count({
           where: {
-            vendor_id,
-            service_date: {
-              [Op.gte]: yesterday,
-              [Op.lt]: today,
-            },
+            vendor_id: vendorId,
+            [Op.and]: [dateCompare(yesterday)],
           },
         }),
         BookingService.count({
           where: {
-            vendor_id,
+            vendor_id: vendorId,
             service_date: {
-              [Op.between]: [weekStart.toDate(), weekEnd.toDate()],
+              [Op.between]: [weekStart, weekEnd],
             },
           },
         }),
@@ -92,34 +94,39 @@ exports.getServiceCountsByVendor = async (req, res) => {
       thisWeek: thisWeekCount,
     });
   } catch (error) {
+    console.error("Error in getServiceCountsByVendor:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
 exports.getServicesByVendorAndDate = async (req, res) => {
   try {
-    const { vendor_id } = req.params;
+    const vendorId = parseInt(req.params.vendor_id);
     const { range } = req.query;
 
+    if (isNaN(vendorId)) {
+      return res.status(400).json({ error: "Invalid vendor_id" });
+    }
+
+    const today = moment().format("YYYY-MM-DD");
     let startDate, endDate;
-    const today = moment().startOf("day");
 
     switch (range) {
       case "today":
         startDate = today;
-        endDate = moment(today).add(1, "days");
+        endDate = moment(today).add(1, "days").format("YYYY-MM-DD");
         break;
       case "tomorrow":
-        startDate = moment(today).add(1, "days");
-        endDate = moment(today).add(2, "days");
+        startDate = moment(today).add(1, "days").format("YYYY-MM-DD");
+        endDate = moment(today).add(2, "days").format("YYYY-MM-DD");
         break;
       case "yesterday":
-        startDate = moment(today).subtract(1, "days");
+        startDate = moment(today).subtract(1, "days").format("YYYY-MM-DD");
         endDate = today;
         break;
       case "thisWeek":
-        startDate = moment().startOf("isoWeek");
-        endDate = moment().endOf("isoWeek");
+        startDate = moment().startOf("isoWeek").format("YYYY-MM-DD");
+        endDate = moment().endOf("isoWeek").format("YYYY-MM-DD");
         break;
       default:
         return res.status(400).json({ error: "Invalid range" });
@@ -127,15 +134,385 @@ exports.getServicesByVendorAndDate = async (req, res) => {
 
     const services = await BookingService.findAll({
       where: {
-        vendor_id,
-        service_date: {
-          [Op.between]: [startDate.toDate(), endDate.toDate()],
-        },
+        [Op.and]: [
+          where(fn("DATE", col("service_date")), {
+            [Op.gte]: startDate,
+          }),
+          where(fn("DATE", col("service_date")), {
+            [Op.lt]: endDate,
+          }),
+        ],
+        vendor_id: vendorId,
       },
+      include: [
+        {
+          model: Booking,
+          attributes: [
+            "category",
+            "id",
+            "selected_slot_text",
+            "service",
+            "delivery_address",
+            "description",
+            "service_charge",
+            "contract_type",
+            "backoffice_executive",
+          ],
+
+          include: [
+            {
+              model: User,
+              as: "customer",
+              attributes: [
+                "id",
+                "customerName",
+                "email",
+                "mainContact",
+                "alternateContact",
+                "lnf",
+                "city",
+              ],
+            },
+          ],
+        },
+        {
+          model: Techcancel,
+          attributes: [
+            "reason",
+            "cancel",
+
+            "vendor_id",
+            "booking_service_id",
+            "created_at",
+          ],
+        },
+        {
+          model: TechReschedule,
+          attributes: [
+            "reschedule_date",
+            "reason",
+
+            "vendor_id",
+            "booking_service_id",
+            "created_at",
+          ],
+        },
+      ],
     });
 
     res.json(services);
   } catch (error) {
+    console.error("Error in getServicesByVendorAndDate:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getServicesByVendorInhouseData = async (req, res) => {
+  try {
+    const vendorId = parseInt(req.params.vendor_id);
+
+    const services = await BookingService.findAll({
+      where: {
+        vendor_status: "PENDING",
+        vendor_id: vendorId,
+      },
+      attributes: [
+        "service_date",
+        "id",
+        "service_name",
+        "amt_date",
+        "service_charge",
+      ],
+      include: [
+        {
+          model: Booking,
+          attributes: [
+            "category",
+            "id",
+            "selected_slot_text",
+            "service",
+            "delivery_address",
+            "description",
+            "service_charge",
+            "city",
+          ],
+          include: [
+            {
+              model: User,
+              as: "customer",
+              attributes: ["id", "customerName", "email", "mainContact"],
+            },
+          ],
+        },
+      ],
+    });
+
+    res.json(services);
+  } catch (error) {
+    console.error("Error in getServicesByVendorAndDate:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getServicesByVendorInhouseAcceptOrREjectJOb = async (req, res) => {
+  try {
+    const vendorId = parseInt(req.params.vendor_id);
+    const { serviceId, vendor_status } = req.body;
+
+    console.log("vendorId", vendorId);
+    console.log("serviceId", serviceId, vendor_status);
+
+    if (!vendorId || !serviceId) {
+      return res
+        .status(400)
+        .json({ error: "vendorId and serviceId are required" });
+    }
+
+    // Update the vendor status
+    await BookingService.update(
+      { vendor_status: vendor_status || "ACCEPTED" },
+      { where: { id: serviceId } }
+    );
+
+    // Fetch the updated booking service to get service_charge
+    const service = await BookingService.findOne({
+      where: { id: serviceId },
+      attributes: [
+        "id",
+        "service_name",
+        "service_charge",
+        "service_date",
+        "amt_date",
+      ],
+      include: [
+        {
+          model: Booking,
+          required: true,
+          attributes: [
+            "id",
+            "payment_mode",
+            "description",
+            "selected_slot_text",
+          ],
+          include: [
+            {
+              model: User,
+              as: "customer",
+
+              attributes: ["id", "customerName", "email", "mainContact"],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (vendor_status === "ACCEPTED" && service) {
+      const serviceCharge = parseFloat(service.service_charge || 0);
+
+      // Decrement the vendor amount
+      await Vendor.decrement("vendor_amt", {
+        by: serviceCharge,
+        where: { id: vendorId },
+      });
+
+      // Log payment
+      await vendorPayment.create({
+        payment_date: moment().format("YYYY-MM-DD"),
+        payment_type: "debit",
+        payment_mode: "vendorapp",
+        amount: serviceCharge,
+        comment: service?.service_name ? service?.service_name : "NA",
+        vendor_id: vendorId,
+      });
+    }
+
+    res.json({ success: true, message: "Job status updated", service });
+  } catch (error) {
+    console.error("Error in getServicesByVendorInhouseAcceptJOb:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getServicesByVendorOngoningData = async (req, res) => {
+  try {
+    const vendorId = parseInt(req.params.vendor_id);
+    const { range } = req.query;
+
+    if (isNaN(vendorId)) {
+      return res.status(400).json({ error: "Invalid vendor_id" });
+    }
+
+    const today = moment().format("YYYY-MM-DD");
+    let startDate, endDate;
+
+    switch (range) {
+      case "today":
+        startDate = today;
+        endDate = moment(today).add(1, "days").format("YYYY-MM-DD");
+        break;
+      case "tomorrow":
+        startDate = moment(today).add(1, "days").format("YYYY-MM-DD");
+        endDate = moment(today).add(2, "days").format("YYYY-MM-DD");
+        break;
+
+      default:
+        return res.status(400).json({ error: "Invalid range" });
+    }
+
+    const services = await BookingService.findAll({
+      where: {
+        [Op.and]: [
+          where(fn("DATE", col("service_date")), {
+            [Op.gte]: startDate,
+          }),
+          where(fn("DATE", col("service_date")), {
+            [Op.lt]: endDate,
+          }),
+        ],
+        vendor_id: vendorId,
+      },
+      attributes: [
+        "id",
+        "service_date",
+        "service_name",
+        "service_charge",
+        "job_complete",
+        "start_date_time",
+        "end_date_time",
+        "status",
+      ],
+      include: [
+        {
+          model: Booking,
+          attributes: [
+            "category",
+            "id",
+            "selected_slot_text",
+            "service",
+            "delivery_address",
+            "description",
+            "service_charge",
+            "contract_type",
+            "backoffice_executive",
+            "marker_coordinate",
+          ],
+
+          include: [
+            {
+              model: User,
+              as: "customer",
+              attributes: [
+                "id",
+                "customerName",
+                "email",
+                "mainContact",
+                "alternateContact",
+                "lnf",
+                "city",
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    res.json(services);
+  } catch (error) {
+    console.error("Error in getServicesByVendorAndDate:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getServicesByVendorCompletedData = async (req, res) => {
+  try {
+    const vendorId = parseInt(req.params.vendor_id);
+    const { range } = req.query;
+
+    const today = moment().startOf("day");
+    let startDate, endDate;
+
+    switch (range) {
+      case "today":
+        startDate = today.clone().format("YYYY-MM-DD");
+        endDate = today.clone().add(1, "day").format("YYYY-MM-DD");
+        break;
+
+      case "tomorrow":
+        startDate = today.clone().add(1, "day").format("YYYY-MM-DD");
+        endDate = today.clone().add(2, "day").format("YYYY-MM-DD");
+        break;
+
+      case "thisweek":
+        startDate = today.clone().startOf("week").format("YYYY-MM-DD"); // Monday
+        endDate = today
+          .clone()
+          .endOf("week")
+          .add(1, "day")
+          .format("YYYY-MM-DD"); // End of Sunday + 1
+        break;
+
+      case "thismonth":
+        startDate = today.clone().startOf("month").format("YYYY-MM-DD");
+        endDate = today
+          .clone()
+          .endOf("month")
+          .add(1, "day")
+          .format("YYYY-MM-DD");
+        break;
+
+      case "all":
+        startDate = null;
+        endDate = null;
+        break;
+
+      default:
+        return res.status(400).json({ error: "Invalid range" });
+    }
+
+    const whereClause = {
+      vendor_id: vendorId,
+    };
+
+    if (startDate && endDate) {
+      whereClause[Op.and] = [
+        where(fn("DATE", col("service_date")), {
+          [Op.gte]: startDate,
+        }),
+        where(fn("DATE", col("service_date")), {
+          [Op.lt]: endDate,
+        }),
+      ];
+    }
+
+    const services = await BookingService.findAll({
+      where: whereClause,
+      attributes: [
+        "id",
+        "service_date",
+        "service_name",
+        "service_charge",
+        "job_complete",
+        "start_date_time",
+        "end_date_time",
+      ],
+      include: [
+        {
+          model: Booking,
+          attributes: [
+            "category",
+            "id",
+            "selected_slot_text",
+            "service",
+            "delivery_address",
+            "description",
+          ],
+        },
+      ],
+    });
+
+    res.json(services);
+  } catch (error) {
+    console.error("Error in getServicesByVendorCompletedData:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -152,12 +529,10 @@ exports.getServicesByBookingServiceId = async (req, res) => {
           attributes: [
             "category",
             "id",
-
+            "selected_slot_text",
             "service",
             "delivery_address",
             "description",
-            "service_charge",
-            "contract_type",
           ],
 
           include: [
@@ -210,10 +585,42 @@ exports.getPastServicesByUserIdNext = async (req, res) => {
         "job_complete",
         "amt_date",
         "service_charge",
+        "vendor_id",
       ],
     });
     res.status(200).json(services);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+exports.gettodayServicesByUserIdNext = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    // Get today's date in "YYYY-MM-DD" format
+    const todayDate = moment().format("YYYY-MM-DD");
+
+    const services = await BookingService.findAll({
+      where: {
+        user_id,
+        service_date: todayDate, // Ensure the service_date is compared to the current date
+      },
+      attributes: [
+        "service_date",
+        "service_name",
+        "vendor_name",
+        "job_complete",
+        "amt_date",
+        "service_charge",
+        "id",
+        "vendor_id",
+      ],
+    });
+
+    // Return the services found for today
+    res.status(200).json(services);
+  } catch (error) {
+    // Return a 500 error with the error message if any issue occurs
     res.status(500).json({ error: error.message });
   }
 };
@@ -236,6 +643,8 @@ exports.getFutureServicesByUserIdNext = async (req, res) => {
         "job_complete",
         "amt_date",
         "service_charge",
+        "id",
+        "vendor_id",
       ],
     });
     res.status(200).json(services);
@@ -271,7 +680,12 @@ exports.getServiceById = async (req, res) => {
             "backoffice_executive",
             "type",
             "city",
-            "selected_slot_text",
+            "total_saved",
+            "discount_amount",
+            "grand_total",
+            "total_amount",
+            "total_saved",
+            "coupon_code",
           ],
           include: [
             {
@@ -307,6 +721,50 @@ exports.getServiceById = async (req, res) => {
   }
 };
 
+exports.getbookingIDForUserById = async (req, res) => {
+  try {
+    const { booking_id, service_date } = req.query; // Get the `id` from URL params
+
+    // Fetch the service with related Booking and User (customer) data
+    const service = await BookingService.findOne({
+      where: { booking_id: booking_id, service_date: service_date }, // Find the service by ID
+      include: [
+        {
+          model: Booking,
+          required: true,
+          attributes: [
+            "id",
+            "city",
+            "category",
+            "contract_type",
+
+            "start_date",
+            "expiry_date",
+            "selected_slot_text",
+            "service_charge",
+            "delivery_address",
+            "description",
+            "payment_mode",
+
+            "type",
+            "city",
+          ],
+        },
+      ],
+    });
+
+    // If no service found, return an error message
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    // Return the service details with associated data
+    return res.status(200).json(service);
+  } catch (error) {
+    console.error("Error fetching service by ID:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
 // ✅ Get monthly booking services with optional vendor filtering
 exports.getMonthlyBookingServices = async (req, res) => {
   try {
@@ -393,7 +851,7 @@ exports.updateServiceDetails = async (req, res) => {
   }
 };
 
-exports.ServiceStartByTenhnicain = async (req, res) => {
+exports.ServiceStartByVendor = async (req, res) => {
   const { id } = req.params;
   const file = req.file;
   const {
@@ -460,7 +918,7 @@ exports.ServiceStartByTenhnicain = async (req, res) => {
   }
 };
 
-exports.ServiceENDByTenhnicain = async (req, res) => {
+exports.ServiceENDByVendor = async (req, res) => {
   const { id } = req.params;
   const file = req.file;
   const {
@@ -526,6 +984,105 @@ exports.ServiceENDByTenhnicain = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.ServiceStartByTenhnicain = async (req, res) => {
+  const { id } = req.params;
+
+  const {
+    customer_feedback,
+    worker_names,
+    day_to_complete,
+    job_complete,
+    tech_comment,
+    worker_amount,
+
+    vendor_id,
+    vendor_name,
+    cancel_reason,
+    service_date,
+  } = req.body;
+
+  let finalStatus = "SERVICE STARTED";
+  let start_date_time = moment().format();
+  try {
+    const service = await BookingService.findByPk(id);
+    if (!service) return res.status(404).json({ message: "Service not found" });
+
+    try {
+      // Update the service details inside the transaction
+      service.customer_feedback =
+        customer_feedback || service.customer_feedback;
+      service.worker_names = worker_names || service.worker_names;
+      service.day_to_complete = day_to_complete || service.day_to_complete;
+      service.job_complete = job_complete || service.job_complete;
+      service.tech_comment = tech_comment || service.tech_comment;
+      service.worker_amount = worker_amount || service.worker_amount;
+      service.status = finalStatus || service.status;
+      service.vendor_id = vendor_id || service.vendor_id;
+      service.vendor_name = vendor_name || service.vendor_name;
+      service.cancel_reason = cancel_reason || service.cancel_reason;
+      service.service_date = service_date || service.service_date;
+      service.start_date_time = start_date_time;
+
+      await service.save(); // Save within the transaction
+
+      res.status(200).json({
+        message: "Service details updated successfully",
+        data: service,
+      });
+    } catch (error) {
+      console.error("Error in transaction:", error);
+      res.status(500).json({ error: error.message });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.ServiceENDByTenhnicain = async (req, res) => {
+  const { id } = req.params;
+
+  const {
+    end_job_reason,
+
+    chemicals,
+    remark_or_comments,
+  } = req.body;
+
+  let finalStatus = "SERVICE COMPLETED";
+  let end_date_time = moment().format();
+  try {
+    const service = await BookingService.findByPk(id);
+    if (!service) return res.status(404).json({ message: "Service not found" });
+
+    try {
+      // Update the service details inside the transaction
+      service.end_job_reason = end_job_reason || service.end_job_reason;
+      service.chemicals = chemicals || service.chemicals;
+      service.remark_or_comments =
+        remark_or_comments || service.remark_or_comments;
+
+      service.status = finalStatus || service.status;
+
+      service.end_date_time = end_date_time;
+
+      await service.save(); // Save within the transaction
+
+      res.status(200).json({
+        message: "Service details updated successfully",
+        data: service,
+      });
+    } catch (error) {
+      console.error("Error in transaction:", error);
+      res.status(500).json({ error: error.message });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // ✅ Delete a booking service entry
 exports.deleteBookingService = async (req, res) => {
   try {
@@ -606,7 +1163,6 @@ exports.getMonthlyServiceCounts = async (req, res) => {
         serviceCount: serviceCountsByDay[day],
       }));
 
-    console.log("responseData", responseData);
     // Include the total count in the response
     res.status(200).json({
       totalCount: totalServiceCount,
@@ -683,7 +1239,6 @@ exports.getMonthlyPaymentsServiceCounts = async (req, res) => {
         serviceCount: serviceCountsByDay[day],
       }));
 
-    console.log("responseData", responseData);
     // Include the total count in the response
     res.status(200).json({
       totalCount: totalServiceCount,
@@ -775,6 +1330,7 @@ exports.getDailyServiceData = async (req, res) => {
         "status",
         "vendor_status",
         "id",
+        "created_at",
       ],
       include: [
         {
@@ -797,10 +1353,25 @@ exports.getDailyServiceData = async (req, res) => {
             },
           ],
         },
+        {
+          model: Techcancel,
+          attributes: ["reason", "vendor_name", "created_at"],
+        },
+        {
+          model: TechReschedule,
+          attributes: [
+            "reschedule_date",
+            "reason",
+
+            "vendor_name",
+
+            "created_at",
+          ],
+        },
       ],
       offset,
       limit: pageLimit,
-      order: [["service_date", "ASC"]],
+      order: [["created_at", "DESC"]],
     });
     const vendorNames = await BookingService.findAll({
       where: Sequelize.where(
@@ -1478,5 +2049,205 @@ exports.getyearlyCounts = async (req, res) => {
   } catch (err) {
     console.log("Error:", err.message);
     res.status(500).json({ message: err.message });
+  }
+};
+
+exports.PMStartProjectsData = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { pm_status } = req.query;
+    // ✅ Update pm_status to 'START' for all services of this vendor
+    const [updatedRowsCount] = await BookingService.update(
+      { pm_status: pm_status },
+      {
+        where: {
+          id: id,
+        },
+      }
+    );
+
+    res.status(200).json({
+      message: `PM status updated to START for ${updatedRowsCount} services.`,
+    });
+  } catch (error) {
+    console.error("Error updating PM start status:", error);
+    res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
+exports.PMprojectsCounts = async (req, res) => {
+  try {
+    const { vendor_id } = req.query;
+
+    if (!vendor_id) {
+      return res.status(400).json({ message: "vendor_id is required" });
+    }
+
+    const [pendingCount, startedCount] = await Promise.all([
+      BookingService.count({
+        where: {
+          pm_status: "PENDING",
+          vendor_id: vendor_id,
+        },
+      }),
+      BookingService.count({
+        where: {
+          pm_status: "START",
+          vendor_id: vendor_id,
+        },
+      }),
+    ]);
+
+    res.status(200).json({
+      pending: pendingCount,
+      started: startedCount,
+    });
+  } catch (error) {
+    console.error("Error fetching PM project counts:", error);
+    res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
+exports.PMNewProjectdata = async (req, res) => {
+  try {
+    const { vendor_id, range } = req.query;
+
+    if (!vendor_id) {
+      return res.status(400).json({ message: "vendor_id is required" });
+    }
+
+    const data = await BookingService.findAll({
+      where: {
+        pm_status: range,
+        vendor_id: vendor_id,
+      },
+      attributes: [
+        "vendor_name",
+        "service_charge",
+        "service_name",
+        "service_date",
+        "worker_names",
+        "worker_amount",
+        "day_to_complete",
+        "job_complete",
+        "created_at",
+        "deep_cleaning_note",
+        "deep_cleaning_date",
+        "pm_status",
+        "id",
+      ],
+      include: [
+        {
+          model: Booking,
+          required: true,
+          attributes: [
+            "id",
+            "category",
+            "enquiry_id",
+            "selected_slot_text",
+            "delivery_address",
+          ],
+          include: [
+            {
+              model: User,
+              as: "customer",
+
+              attributes: [
+                "id",
+                "customerName",
+                "email",
+                "mainContact",
+                "alternateContact",
+                "gst",
+              ],
+            },
+          ],
+        },
+      ],
+      order: [["service_date", "DESC"]],
+    });
+
+    res.status(200).json({ data });
+  } catch (error) {
+    console.error("Error fetching PM running project data:", error);
+    res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
+exports.PMDeepCleanUpdate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { deep_cleaning_date, deep_cleaning_note } = req.body;
+    // ✅ Update pm_status to 'START' for all services of this vendor
+    const [updatedRowsCount] = await BookingService.update(
+      {
+        deep_cleaning_note,
+        deep_cleaning_date,
+        pm_status: "DEEP CLEANING ASSIGNED",
+      },
+      {
+        where: {
+          id: id,
+        },
+      }
+    );
+
+    res.status(200).json({
+      message: `PM status updated to START for ${updatedRowsCount} services.`,
+    });
+  } catch (error) {
+    console.error("Error updating PM start status:", error);
+    res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
+exports.closedPojects = async (req, res) => {
+  try {
+    const data = await BookingService.findAll({
+      where: {
+        pm_status: "CLOSED",
+      },
+      attributes: [
+        "created_at",
+        "deep_cleaning_note",
+        "deep_cleaning_date",
+        "pm_status",
+        "id",
+      ],
+      include: [
+        {
+          model: Booking,
+          required: true,
+          attributes: [
+            "id",
+            "category",
+            "enquiry_id",
+            "selected_slot_text",
+            "delivery_address",
+          ],
+          include: [
+            {
+              model: User,
+              as: "customer",
+
+              attributes: [
+                "id",
+                "customerName",
+                "email",
+                "mainContact",
+                "alternateContact",
+                "gst",
+              ],
+            },
+          ],
+        },
+      ],
+      order: [["service_date", "DESC"]],
+    });
+
+    res.status(200).json({ data });
+  } catch (error) {
+    console.error("Error fetching PM running project data:", error);
+    res.status(500).json({ message: "Internal server error", error });
   }
 };

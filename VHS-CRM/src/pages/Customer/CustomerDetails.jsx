@@ -28,7 +28,7 @@ function CustomerDetailsPage() {
   const [allServices, setAllServices] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
 
-  const [form, setForm] = useState({
+  const defaultForm = {
     category: "",
     contract_type: "",
     service: "",
@@ -45,7 +45,8 @@ function CustomerDetailsPage() {
     longitude: 0,
     description: "",
     service_id: "",
-  });
+  };
+  const [form, setForm] = useState({ ...defaultForm });
 
   console.log("form", form);
   useEffect(() => {
@@ -138,6 +139,7 @@ function CustomerDetailsPage() {
         start_date: form.start_date,
         city: customer.city,
         type: customer.approach,
+        customerName: customer.customerName || "NA",
         backoffice_executive: users.displayname,
         amt_frequency: form.serviceFrequency,
         amtstart_date: form.start_date,

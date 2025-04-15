@@ -1,23 +1,8 @@
-import React, { useState } from "react";
+import axios from "axios";
+import React, { useEffect, useState } from "react";
+import { config } from "../../services/config";
 
-const ClosedProject = ({ itemsPerPage = 10 }) => {
-  // Sample Data
-  const data = [
-    {
-      id: 1,
-      crDate: "02-08-2025 1:38:34 PM",
-      projectManager: "John Doe",
-      salesExecutive: "Jane Smith",
-      customer: "Vedant",
-      contactNo: "9425746962",
-      address: "Purva Heights Block A, Bengaluru",
-      city: "Bangalore",
-      status: "Closed",
-    },
-    // Add more rows as needed
-  ];
-
-  // Table Columns
+const ClosedProject = () => {
   const columns = [
     { label: "Sr.No", accessor: "id" },
     { label: "Cr.Date", accessor: "crDate" },
@@ -32,19 +17,47 @@ const ClosedProject = ({ itemsPerPage = 10 }) => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [data, setData] = useState([]);
 
-  // Filtered Data
-  const filteredData = data.filter((row) =>
-    columns.some((col) =>
-      String(row[col.accessor]).toLowerCase().includes(searchTerm.toLowerCase())
-    )
+  const itemsPerPage = 10;
+
+  const fetchClosedProjects = async () => {
+    try {
+      const response = await axios.get(
+        `${config.API_BASE_URL}/bookingService/close-projects`
+      );
+
+      const cleaned = response.data.data.map((item, index) => ({
+        id: index + 1,
+        crDate: new Date(item.created_at).toLocaleDateString(),
+        projectManager: item.project_manager || "N/A",
+        salesExecutive: item.sales_executive || "N/A",
+        customer: item.Booking?.customer?.customerName || "N/A",
+        contactNo: item.Booking?.customer?.mainContact || "N/A",
+        address: item.Booking?.delivery_address?.address || "N/A",
+        city: item.Booking?.delivery_address?.city || "N/A",
+        status: item.pm_status || "N/A",
+      }));
+
+      setData(cleaned);
+    } catch (error) {
+      console.error("Error fetching details", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchClosedProjects();
+  }, []);
+
+  // 🔍 Filter + Pagination
+  const filteredData = data.filter((item) =>
+    JSON.stringify(item).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = filteredData.slice(
-    startIndex,
-    startIndex + itemsPerPage
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   return (
@@ -59,12 +72,13 @@ const ClosedProject = ({ itemsPerPage = 10 }) => {
           value={searchTerm}
           onChange={(e) => {
             setSearchTerm(e.target.value);
-            setCurrentPage(1); // Reset to page 1 on search
+            setCurrentPage(1);
           }}
-          className="px-3 py-2 border rounded w-50 text-sm border-gray-100"
+          className="px-3 py-2 border rounded w-64 text-sm border-gray-300"
         />
       </div>
 
+      {/* 🧾 Table */}
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white border border-gray-200 text-sm shadow-sm">
           <thead className="bg-gray-100 text-gray-800">
@@ -81,11 +95,11 @@ const ClosedProject = ({ itemsPerPage = 10 }) => {
           </thead>
           <tbody>
             {paginatedData.length > 0 ? (
-              paginatedData.map((row, rowIndex) => (
-                <tr key={row.id} className="border-b hover:bg-gray-100">
-                  {columns.map((col, colIndex) => (
+              paginatedData.map((row) => (
+                <tr key={row.id} className="border-b hover:bg-gray-50">
+                  {columns.map((col, index) => (
                     <td
-                      key={colIndex}
+                      key={index}
                       className="border border-gray-200 px-3 py-2 text-xs"
                     >
                       {row[col.accessor]}

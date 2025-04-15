@@ -239,7 +239,7 @@ function QuoteList() {
                   {row.enquiry.city}
                 </td>
                 <td className="border border-gray-200 px-3 py-2">
-                  {row.enquiry.intrested_for}
+                  {row.enquiry.interested_for}
                 </td>
                 <td className="border border-gray-200 px-3 py-2">
                   {row.grand_total}

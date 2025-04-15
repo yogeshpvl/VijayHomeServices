@@ -6,7 +6,6 @@ const TryToBooking = sequelize.define(
   {
     name: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
     email: {
       type: DataTypes.STRING,
@@ -17,29 +16,39 @@ const TryToBooking = sequelize.define(
     },
     phoneNumber: {
       type: DataTypes.STRING,
-      allowNull: false,
+
       field: "phonenumber",
     },
 
     service: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
     reference: {
       type: DataTypes.STRING,
-      allowNull: true,
+    },
+    reference1: {
+      type: DataTypes.STRING,
+    },
+    reference2: {
+      type: DataTypes.STRING,
+    },
+    reference3: {
+      type: DataTypes.STRING,
+    },
+    reference4: {
+      type: DataTypes.STRING,
+    },
+    reference5: {
+      type: DataTypes.STRING,
     },
     executive: {
       type: DataTypes.STRING,
-      allowNull: true,
     },
     remarks: {
       type: DataTypes.TEXT,
-      allowNull: true,
     },
     date: {
       type: DataTypes.DATEONLY,
-      allowNull: true,
     },
   },
   {

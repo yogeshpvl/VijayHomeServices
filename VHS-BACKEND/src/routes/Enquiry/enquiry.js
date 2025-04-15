@@ -14,6 +14,7 @@ const {
   getEnquiriesFoReporPage,
   getEnquiriesFoReporPageDownload,
   gettotalCounts,
+  getEnquiryByuserId,
 } = require("../../controllers/enquiry/enquiry");
 const { protect, authorize } = require("../../middlewares/authMiddleware");
 
@@ -30,6 +31,8 @@ router.get("/getEnquiriesFoReporPage", getEnquiriesFoReporPage);
 router.get("/getEnquiriesFoReporPageDownload", getEnquiriesFoReporPageDownload);
 
 router.get("/:enquiryId", getEnquiryById);
+
+router.get("/user/:user_id", getEnquiryByuserId);
 
 router.post("/create", createEnquiry);
 

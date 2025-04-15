@@ -28,6 +28,17 @@ router.put(
   "/update-cancel-survey/:followupId",
   followupController.updateFollowupSurveyCancel
 );
+
+// executives
+router.get(
+  "/executive-data-counts/:executive_id",
+  followupController.getExecutivesAppCounts
+);
+router.get(
+  "/executive-data-range/:executive_id",
+  followupController.getExecutivesAppFollowupsByData
+);
+
 // ✅ 2️⃣ Get Follow-ups Response-wise
 router.get("/response/:response", followupController.getFollowupsByResponse);
 

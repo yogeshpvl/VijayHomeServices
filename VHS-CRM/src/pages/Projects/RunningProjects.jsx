@@ -3,6 +3,7 @@ import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import { config } from "../../services/config";
 import moment from "moment";
+import { toast } from "react-toastify";
 
 const RunningProjects = () => {
   const navigate = useNavigate();
@@ -126,6 +127,16 @@ const RunningProjects = () => {
     fetchEXEVendors();
   }, []);
 
+  const closed = async () => {
+    const res = await axios.put(
+      `${config.API_BASE_URL}/bookingService/pm-start-project/${selectedId}?pm_status=CLOSED`
+    );
+
+    if (res.status === 200) {
+      fetchData();
+      toast.success("Project closed Added");
+    }
+  };
   return (
     <div className="p-2 bg-white">
       <div className="flex justify-between items-center mb-4 mt-8">
@@ -427,7 +438,7 @@ const RunningProjects = () => {
                     className="text-red-600 hover:underline"
                     onClick={(e) => {
                       e.stopPropagation(); // prevent row click
-                      setSelectedId(row.id);
+                      setSelectedId(row.BookingServices[0]?.id);
                       setShowModal(true);
                     }}
                   >
@@ -479,7 +490,7 @@ const RunningProjects = () => {
                 className="px-4 py-2 text-sm rounded bg-red-600 text-white"
                 onClick={() => {
                   console.log("Close confirmed for", selectedId);
-                  // TODO: Add API call to close project here
+                  closed();
                   setShowModal(false);
                 }}
               >

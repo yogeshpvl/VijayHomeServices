@@ -1,8 +1,21 @@
 const { Op, literal } = require("sequelize");
 const Customer = require("../../models/customer/customer");
+const TryToBooking = require("../../models/trytobooking");
 const sanitizeNumber = (value) => {
   return value === "" ? null : value;
 };
+
+function generateReferralCode() {
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let referralCode = "";
+  for (let i = 0; i < 6; i++) {
+    referralCode += characters.charAt(
+      Math.floor(Math.random() * characters.length)
+    );
+  }
+  return referralCode;
+}
 
 exports.create = async (req, res) => {
   try {
@@ -58,24 +71,138 @@ exports.create = async (req, res) => {
 };
 
 // Register (name + phone)
-exports.register = async (req, res) => {
+// Register or Login (phone only required)
+exports.registerorlogin = async (req, res) => {
   try {
-    const { customerName, mainContact } = req.body;
+    const { customerName, mainContact, reference, reference1, fcmtoken } =
+      req.body;
 
-    if (!customerName || !mainContact)
-      return res.status(400).json({ message: "Name & phone required" });
+    if (!mainContact) {
+      return res.status(400).json({ message: "Phone number is required" });
+    }
 
-    const existing = await Customer.findOne({ where: { mainContact } });
-    if (existing)
-      return res.status(400).json({ message: "Customer already exists" });
+    // Try to find the customer
+    let customer = await Customer.findOne({ where: { mainContact } });
 
-    const customer = await Customer.create({ customerName, mainContact });
-    res.status(201).json({ message: "Registered successfully", customer });
+    if (customer) {
+      // Optionally update FCM token and reference if provided
+      if (fcmtoken || reference) {
+        await customer.update({
+          fcmtoken: fcmtoken || customer.fcmtoken,
+          reference: reference || customer.reference,
+          customerName: customerName || customer.customerName,
+        });
+      }
+
+      return res.status(200).json({
+        message: "Customer already exists",
+        customer,
+      });
+    }
+
+    // Create new customer if not found
+    customer = await Customer.create({
+      customerName,
+      mainContact,
+      reference: reference ? reference : reference1,
+      fcmtoken,
+      wAmount: 2000,
+      referralCode: generateReferralCode(),
+    });
+
+    res.status(200).json({
+      message: "Registered successfully",
+      customer,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
+exports.registerorloginwebsite = async (req, res) => {
+  try {
+    const {
+      customerName,
+      mainContact,
+      service,
+      reference,
+      reference1,
+      reference2,
+      reference3,
+      reference4,
+      reference5,
+      Tag,
+      fcmtoken, // make sure to destructure this if you're using it
+    } = req.body;
+
+    if (!mainContact) {
+      return res.status(400).json({ message: "Phone number is required" });
+    }
+
+    // Try to find the customer
+    let customer = await Customer.findOne({ where: { mainContact } });
+
+    if (customer) {
+      // Optionally update values
+      await customer.update({
+        fcmtoken: fcmtoken || customer.fcmtoken,
+        reference: reference || customer.reference,
+        customerName: customerName || customer.customerName,
+      });
+
+      // Log attempted booking
+      await TryToBooking.create({
+        name: customerName || customer.customerName,
+        phonenumber: mainContact,
+        service,
+        reference,
+        reference1,
+        reference2,
+        reference3,
+        reference4,
+        reference5,
+        Tag,
+      });
+
+      return res.status(200).json({
+        message: "Customer already exists",
+        customer,
+      });
+    }
+
+    // Log attempted booking
+    await TryToBooking.create({
+      name: customerName,
+      phonenumber: mainContact,
+      service,
+      reference,
+      reference1,
+      reference2,
+      reference3,
+      reference4,
+      reference5,
+      Tag,
+    });
+
+    // Create new customer
+    customer = await Customer.create({
+      customerName,
+      mainContact,
+      reference: reference || reference1 || null,
+      fcmtoken,
+      wAmount: 2000,
+      referralCode: generateReferralCode(),
+    });
+
+    res.status(200).json({
+      message: "Registered successfully",
+      customer,
+    });
+  } catch (err) {
+    console.error("Error in registerorloginwebsite:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
 // Login (by phone)
 exports.login = async (req, res) => {
   try {

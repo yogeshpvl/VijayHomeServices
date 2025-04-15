@@ -6,6 +6,7 @@ exports.createAddress = async (req, res) => {
     const data = await UserAddress.create(req.body);
     res.status(201).json(data);
   } catch (error) {
+    console.log("errr addree", error);
     res
       .status(500)
       .json({ error: "Failed to create address", details: error.message });

@@ -4,7 +4,9 @@ const customerController = require("../../controllers/customer/customer");
 
 router.post("/create", customerController.create);
 
-router.post("/register", customerController.register);
+router.post("/registerorlogin", customerController.registerorlogin);
+router.post("/registerorloginweb", customerController.registerorloginwebsite);
+
 router.post("/login", customerController.login);
 router.get("/last-cardno", customerController.getLastCardNo);
 router.get("/search", customerController.searchCustomers);

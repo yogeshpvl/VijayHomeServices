@@ -1,6 +1,6 @@
 const Enquiry = require("../../models/enquiry/enquiry");
 const Followup = require("../../models/followups/followups");
-const { Op, Sequelize, QueryTypes } = require("sequelize");
+const { Op, Sequelize, QueryTypes, fn, col, where } = require("sequelize");
 const sequelize = require("../../config/database");
 const moment = require("moment");
 const ExcelJS = require("exceljs");
@@ -325,27 +325,29 @@ exports.createFollowup = async (req, res) => {
       next_followup_date,
     } = req.body;
 
-    console.log("  categorycity", category, city);
-    // If next_followup_date is not provided, set it to the current date
     const followUpDate = next_followup_date || new Date().toISOString();
 
-    // ✅ Validate input
-    if (!enquiryId || !staff || !response) {
-      return res.status(400).json({
-        error: "Missing required fields (enquiryId, staff, response)",
-      });
+    // ✅ Default values for missing fields
+    const safeStaff = staff || "N/A";
+    const safeDescription = description || "N/A";
+    const safeResponse = response || "N/A";
+    const safeCategory = category || "N/A";
+    const safeCity = city || "N/A";
+
+    // ✅ Required field validation
+    if (!enquiryId) {
+      return res.status(400).json({ error: "enquiryId is required" });
     }
 
-    // ✅ Create a new follow-up entry
     const newFollowup = await Followup.create({
       enquiryId,
-      staff,
-      response,
-      description,
+      staff: safeStaff,
+      response: safeResponse,
+      description: safeDescription,
       value,
       color,
-      category,
-      city,
+      category: safeCategory,
+      city: safeCity,
       next_followup_date: followUpDate,
     });
 
@@ -956,5 +958,114 @@ exports.gettotalCounts = async (req, res) => {
   } catch (err) {
     console.error("❌ Error fetching follow-up counts:", err);
     res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getExecutivesAppCounts = async (req, res) => {
+  try {
+    const { executive_id } = req.params;
+
+    const today = moment().format("YYYY-MM-DD");
+    const tomorrow = moment().add(1, "days").format("YYYY-MM-DD");
+    const yesterday = moment().subtract(1, "days").format("YYYY-MM-DD");
+
+    const [todayCount, tomorrowCount, yesterdayCount] = await Promise.all([
+      Followup.count({
+        where: {
+          executive_id,
+          [Op.and]: [where(fn("DATE", col("next_followup_date")), today)],
+        },
+      }),
+      Followup.count({
+        where: {
+          executive_id,
+          [Op.and]: [where(fn("DATE", col("next_followup_date")), tomorrow)],
+        },
+      }),
+      Followup.count({
+        where: {
+          executive_id,
+          [Op.and]: [where(fn("DATE", col("next_followup_date")), yesterday)],
+        },
+      }),
+    ]);
+
+    return res.json({
+      today: todayCount,
+      tomorrow: tomorrowCount,
+      yesterday: yesterdayCount,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching follow-up counts:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+exports.getExecutivesAppFollowupsByData = async (req, res) => {
+  try {
+    const { executive_id } = req.params;
+    const { range } = req.query;
+
+    const today = moment().format("YYYY-MM-DD");
+    const tomorrow = moment().add(1, "days").format("YYYY-MM-DD");
+    const yesterday = moment().subtract(1, "days").format("YYYY-MM-DD");
+
+    let targetDate;
+
+    switch (range) {
+      case "today":
+        targetDate = today;
+        break;
+      case "tomorrow":
+        targetDate = tomorrow;
+        break;
+      case "yesterday":
+        targetDate = yesterday;
+        break;
+      default:
+        return res.status(400).json({ error: "Invalid range parameter" });
+    }
+
+    const followups = await Followup.findAll({
+      where: {
+        executive_id,
+        [Op.and]: [where(fn("DATE", col("next_followup_date")), targetDate)],
+      },
+      attributes: [
+        "next_followup_date",
+        "description",
+        "appo_time",
+        "enquiryId",
+        "followupId",
+      ],
+
+      order: [["next_followup_date", "ASC"]],
+      include: [
+        {
+          model: Enquiry,
+          as: "Enquiry",
+
+          attributes: [
+            "enquiryId",
+            "name",
+            "mobile",
+            "category",
+            "city",
+            "date",
+            "time",
+            "executive",
+            "address",
+            "reference1",
+            "interested_for",
+            "comment",
+          ],
+        },
+      ],
+    });
+
+    return res.json({ followups });
+  } catch (error) {
+    console.error("❌ Error fetching follow-ups by date:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };

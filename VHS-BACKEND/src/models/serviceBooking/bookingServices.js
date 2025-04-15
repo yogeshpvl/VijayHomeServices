@@ -1,6 +1,8 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../../config/database");
 const Booking = require("./bookings"); // Import Booking model
+const Techcancel = require("./techCancel");
+const TechReschedule = require("./techReschedule");
 
 const BookingService = sequelize.define(
   "BookingService",
@@ -76,8 +78,22 @@ const BookingService = sequelize.define(
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
-
+    end_job_reason: {
+      type: DataTypes.STRING,
+    },
+    chemicals: {
+      type: DataTypes.STRING,
+    },
+    remark_or_comments: {
+      type: DataTypes.STRING,
+    },
     status: { type: DataTypes.STRING, defaultValue: "NOT ASSIGNED" },
+    pm_status: { type: DataTypes.STRING, defaultValue: "PENDING" },
+
+    deep_cleaning_date: { type: DataTypes.STRING },
+
+    deep_cleaning_note: { type: DataTypes.STRING },
+
     created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   },
   { tableName: "booking_services", timestamps: false }
@@ -88,5 +104,10 @@ Booking.hasMany(BookingService, {
   onDelete: "CASCADE",
 });
 BookingService.belongsTo(Booking, { foreignKey: "booking_id" });
+BookingService.hasMany(Techcancel, { foreignKey: "booking_service_id" });
+Techcancel.belongsTo(BookingService, { foreignKey: "booking_service_id" });
+
+BookingService.hasMany(TechReschedule, { foreignKey: "booking_service_id" });
+TechReschedule.belongsTo(BookingService, { foreignKey: "booking_service_id" });
 
 module.exports = BookingService;

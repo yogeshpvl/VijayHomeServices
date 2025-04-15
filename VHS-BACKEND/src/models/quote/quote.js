@@ -71,6 +71,18 @@ const Quotation = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    adv_payment_date: {
+      type: DataTypes.STRING,
+    },
+    adv_amount: {
+      type: DataTypes.STRING,
+    },
+    adv_comment: {
+      type: DataTypes.STRING,
+    },
+    adv_payment_mode: {
+      type: DataTypes.STRING,
+    },
   },
   {
     tableName: "quotations",

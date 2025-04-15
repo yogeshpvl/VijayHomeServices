@@ -43,6 +43,8 @@ router.get(
   bookingServiceController.getServicesByBookingId
 );
 
+router.get("/bookingForuser", bookingServiceController.getbookingIDForUserById);
+
 router.get(
   "/booking-sevice/:id",
   bookingServiceController.getServicesByBookingServiceId
@@ -57,6 +59,16 @@ router.get(
   bookingServiceController.getServicesByVendorAndDate
 );
 
+//project manager
+router.get("/pm-project-counts", bookingServiceController.PMprojectsCounts);
+router.get("/pm-project-data", bookingServiceController.PMNewProjectdata);
+
+router.put(
+  "/pm-start-project/:id",
+  bookingServiceController.PMStartProjectsData
+);
+
+router.put("/pm-deep-clean/:id", bookingServiceController.PMDeepCleanUpdate);
 router.get(
   "/past/:user_id",
   bookingServiceController.getPastServicesByUserIdNext
@@ -66,21 +78,57 @@ router.get(
   "/future/:user_id",
   bookingServiceController.getFutureServicesByUserIdNext
 );
+router.get(
+  "/today/:user_id",
+  bookingServiceController.gettodayServicesByUserIdNext
+);
 
 // ✅ Create a booking service entry
 router.post("/", bookingServiceController.createBookingService);
 
 // ✅ Update service status
 router.put("/:id", bookingServiceController.updateServiceDetails);
+router.get(
+  "/vendor-app-inhouse-data/:vendor_id",
+  bookingServiceController.getServicesByVendorInhouseData
+);
+router.put(
+  "/vendor-job-accept/:vendor_id",
+  bookingServiceController.getServicesByVendorInhouseAcceptOrREjectJOb
+);
+
+router.get(
+  "/vendor-app-ongoning-jobs/:vendor_id",
+  bookingServiceController.getServicesByVendorOngoningData
+);
+
 router.put(
   "/START/:id",
   upload.single("before_service_img"),
-  bookingServiceController.ServiceStartByTenhnicain
+  bookingServiceController.ServiceStartByVendor
+);
+
+router.get(
+  "/vendor-app-completed-jobs/:vendor_id",
+  bookingServiceController.getServicesByVendorCompletedData
 );
 
 router.put(
   "/COMPLETE/:id",
   upload.single("after_service_img"),
+  bookingServiceController.ServiceENDByVendor
+);
+
+router.put(
+  "/TECHSTART/:id",
+
+  bookingServiceController.ServiceStartByTenhnicain
+);
+
+router.get("/close-projects", bookingServiceController.closedPojects);
+router.put(
+  "/TECHCOMPLETE/:id",
+
   bookingServiceController.ServiceENDByTenhnicain
 );
 

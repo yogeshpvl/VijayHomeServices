@@ -19,7 +19,8 @@ const Booking = sequelize.define(
     service_id: { type: DataTypes.STRING },
     plan_name: { type: DataTypes.STRING },
     service_charge: { type: DataTypes.STRING(50) },
-    date_of_service: { type: DataTypes.ARRAY(DataTypes.TEXT) },
+    date_of_service: { type: DataTypes.DATE }, // ✅ instead of ARRAY(TEXT)
+
     delivery_address: { type: DataTypes.JSONB },
     description: { type: DataTypes.TEXT },
     marker_coordinate: { type: DataTypes.JSONB },

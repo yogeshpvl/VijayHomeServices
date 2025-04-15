@@ -40,6 +40,7 @@ const whatappMsgRoutes = require("./routes/whatappMsg");
 //customer
 const customerRoutes = require("./routes/customer/customer");
 const userAddressRoutes = require("./routes/customer/customeraddresss");
+const customerWalletRoutes = require("./routes/customer/customerWallet");
 
 //try to booking
 const trytobookingRoutes = require("./routes/trytobooking");
@@ -55,7 +56,8 @@ const vendorAssignmentsRoutes = require("./routes/serviceBooking/vendorAssignmen
 const rescheduleRoutes = require("./routes/serviceBooking/resheduledata");
 const rmaterialRoutes = require("./routes/serviceBooking/rMaterials");
 const workMaterialRoutes = require("./routes/serviceBooking/work");
-
+const techCancelRoutes = require("./routes/serviceBooking/techCancel");
+const techRescheduleRoutes = require("./routes/serviceBooking/techReschedule");
 const manpowerRoutes = require("./routes/serviceBooking/manpower");
 
 //b2b
@@ -68,6 +70,13 @@ const communityPaymentRoutes = require("./routes/1community/communityPayments");
 
 //paymets
 const paymentRoutes = require("./routes/payments/payments");
+const vendorPaymentRoutes = require("./routes/payments/vendorPayments");
+
+const vendorPgRoutes = require("./routes/PG/vendorPG");
+const customerPGRoutes = require("./routes/PG/customerPG");
+
+app.use("/api/vendorPG", vendorPgRoutes);
+app.use("/api/customerPG", customerPGRoutes);
 
 app.use("/api/enquiries", enquiryRoutes);
 app.use("/api/auth", userRoutes);
@@ -99,6 +108,8 @@ app.use("/api/trytobooking", trytobookingRoutes);
 //customer
 app.use("/api/customers", customerRoutes);
 app.use("/api/customer-address", userAddressRoutes);
+app.use("/api/customer-wallet", customerWalletRoutes);
+
 app.use("/api/quotation", quotationRoutes);
 app.use("/api", quotationItemRoutes);
 app.use("/api/quote-followups", quoteFollowupRoutes);
@@ -111,6 +122,8 @@ app.use("/api", vendorAssignmentsRoutes);
 app.use("/api/manpower", manpowerRoutes);
 app.use("/api/rmaterial", rmaterialRoutes);
 app.use("/api/work-materials", workMaterialRoutes);
+app.use("/api", techCancelRoutes);
+app.use("/api", techRescheduleRoutes);
 
 //b2b
 app.use("/api/b2b", b2bRoutes);
@@ -123,6 +136,7 @@ app.use("/api/community-payments", communityPaymentRoutes);
 //payments
 
 app.use("/api/payments", paymentRoutes);
+app.use("/api", vendorPaymentRoutes);
 
 const PORT = process.env.PORT || 5000;
 

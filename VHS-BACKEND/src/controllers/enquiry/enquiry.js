@@ -426,24 +426,32 @@ const getEnquiryById = async (req, res) => {
     // ✅ Fetch enquiry details with additional data if needed
     const enquiry = await Enquiry.findOne({
       where: { enquiryId: enquiryId },
-      // attributes: [
-      //   "enquiryId",
-      //   "date",
-      //   "time",
-      //   "executive",
-      //   "name",
-      //   "email",
-      //   "mobile",
-      //   "contact2",
-      //   "address",
-      //   "city",
-      //   "category",
-      //   "reference1",
-      //   "reference2",
-      //   "reference3",
-      //   "interested_for",
-      //   "comment",
-      // ],
+    });
+
+    // ✅ If no enquiry found, return 404
+    if (!enquiry) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Enquiry not found" });
+    }
+
+    // ✅ Return enquiry data
+    res.status(200).json({ success: true, data: enquiry });
+  } catch (error) {
+    console.error("Error fetching enquiry:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+const getEnquiryByuserId = async (req, res) => {
+  try {
+    const { user_id } = req.params; // Extract enquiryenquiryId from request parameters
+
+    // ✅ Fetch enquiry details with additional data if needed
+    const enquiry = await Enquiry.findOne({
+      where: { user_id: user_id },
     });
 
     // ✅ If no enquiry found, return 404
@@ -508,7 +516,33 @@ const getEnquiryCounts = async (req, res) => {
 // ✅ Create a new enquiry
 const createEnquiry = async (req, res) => {
   try {
-    const newEnquiry = await Enquiry.create(req.body);
+    // const newEnquiry = await Enquiry.create(req.body);
+    const newEnquiry = await Enquiry.create({
+      date: moment(req.body.date).format("YYYY-MM-DD"),
+      executive: req.body.executive || "userapp",
+      name: req.body.name,
+      email: req.body.email || "N/A",
+      mobile: req.body.mobile,
+      contact2: req.body.contact2 || "N/A", // ✅ Fix here
+      address: req.body.address || "N/A",
+      city: req.body.city,
+      category: req.body.category,
+      reference1: req.body.reference1,
+      reference2: req.body.reference2 || "N/A",
+
+      reference3: req.body.reference3 || "N/A",
+
+      reference4: req.body.reference4 || "N/A",
+
+      reference5: req.body.reference5 || "N/A",
+      tag: req.body.tag || "N/A",
+      amount: req.body.amount || "N/A",
+
+      interested_for: req.body.interested_for,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      user_id: req.body.user_id || "N/A",
+    });
 
     return res.status(201).json({
       success: true,
@@ -945,4 +979,5 @@ module.exports = {
   getEnquiriesFoReporPage,
   getEnquiriesFoReporPageDownload,
   gettotalCounts,
+  getEnquiryByuserId,
 };

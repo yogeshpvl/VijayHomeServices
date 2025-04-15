@@ -22,10 +22,6 @@ exports.getRunningProjectWithFilter = async (req, res) => {
     const category = "Painting";
     const contract_type = "AMC";
 
-    console.log(
-      `Filters received - Name: ${name}, City: ${city}, Contact No: ${contactNo}, Job Amount: ${jobAmount}, Description: ${description}, Reference: ${reference}, Technician: ${technician}`
-    );
-
     // Convert page & limit to numbers
     const pageNumber = parseInt(page, 10);
     const limitNumber = parseInt(limit, 10);
@@ -46,6 +42,9 @@ exports.getRunningProjectWithFilter = async (req, res) => {
 
     // Booking service filters
     const bookingServiceFilters = {};
+    bookingServiceFilters.pm_status = {
+      [Op.not]: "CLOSED",
+    };
     if (jobAmount)
       bookingServiceFilters.worker_amount = { [Op.iLike]: `%${jobAmount}%` };
     if (description)
@@ -83,6 +82,10 @@ exports.getRunningProjectWithFilter = async (req, res) => {
             "tech_comment",
             "worker_amount",
             "vendor_name",
+            "status",
+            "pm_status",
+            "deep_cleaning_date",
+            "deep_cleaning_note",
           ],
           where: bookingServiceFilters, // Apply jobAmount and description filter
         },
@@ -145,7 +148,8 @@ exports.createBooking = async (req, res) => {
     const {
       contract_type,
       service,
-      delivery_address,
+      customerName,
+      email,
       service_charge,
       serviceFrequency,
       start_date,
@@ -157,17 +161,34 @@ exports.createBooking = async (req, res) => {
       user_id,
     } = req.body;
 
+    const [rowsUpdated, [updatedUser]] = await User.update(
+      { customerName, email },
+      {
+        where: { id: user_id },
+        returning: true, // Only works in PostgreSQL
+      }
+    );
+
+    const markerCoord = req.body.marker_coordinate
+      ? [
+          req.body.marker_coordinate.latitude,
+          req.body.marker_coordinate.longitude,
+        ]
+      : [];
+
     const service_id = "121";
 
     // Step 1: Create the booking
     const newBooking = await Booking.create({
       ...req.body,
-      amt_frequency: amt_frequency || null,
+      marker_coordinate: markerCoord,
+      amt_frequency: amt_frequency || 1,
       amtstart_date: safeDate(amtstart_date),
       amtexpiry_date: safeDate(amtexpiry_date),
       start_date: safeDate(start_date),
       expiry_date: safeDate(expiry_date),
-      delivery_address,
+      delivery_address: req.body.delivery_address,
+
       service_frequency: serviceFrequency,
       enquiryId,
     });
@@ -246,6 +267,7 @@ exports.createBooking = async (req, res) => {
     res.status(201).json({
       message: "Booking created successfully",
       booking: newBooking,
+      user: updatedUser,
     });
   } catch (error) {
     console.error("Booking creation error:", error);

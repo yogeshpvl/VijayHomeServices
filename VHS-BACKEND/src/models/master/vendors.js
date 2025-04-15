@@ -22,7 +22,8 @@ const Vendor = sequelize.define(
     status: { type: DataTypes.BOOLEAN, defaultValue: true },
     block: { type: DataTypes.BOOLEAN, defaultValue: false },
     reason: { type: DataTypes.TEXT },
-
+    adharno: { type: DataTypes.TEXT },
+    adhar_img_url: { type: DataTypes.TEXT },
     id_proof: { type: DataTypes.BOOLEAN, defaultValue: false },
     address_proof: { type: DataTypes.BOOLEAN, defaultValue: false },
     bank_proof: { type: DataTypes.BOOLEAN, defaultValue: false },

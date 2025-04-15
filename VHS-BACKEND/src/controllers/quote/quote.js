@@ -127,6 +127,35 @@ const editQuotation = async (req, res) => {
   }
 };
 
+const updateAdvQuotation = async (req, res) => {
+  try {
+    const { quotation_id } = req.params;
+    const { adv_payment_date, adv_payment_mode, adv_amount, adv_comment } =
+      req.body;
+
+    const quotation = await Quotation.findByPk(quotation_id);
+
+    if (!quotation) {
+      return res.status(404).json({ message: "Quotation not found" });
+    }
+
+    await quotation.update({
+      adv_payment_date,
+      adv_amount,
+      adv_comment,
+      adv_payment_mode,
+    });
+
+    res.status(200).json({
+      message: "Quotation updated successfully",
+      data: quotation,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error updating quotation", error });
+  }
+};
+
 const fetchQuotations = async (req, res) => {
   try {
     const {
@@ -194,6 +223,38 @@ const fetchQuotations = async (req, res) => {
   }
 };
 
+const ExecutiveQuotations = async (req, res) => {
+  try {
+    const { executive_id } = req.query;
+
+    const rows = await Quotation.findAll({
+      where: {
+        executive_id,
+      },
+      include: [
+        {
+          model: Enquiry,
+          as: "enquiry",
+        },
+        {
+          model: QuoteFollowup,
+          as: "QuoteFollowups",
+          separate: true,
+          order: [["id", "DESC"]],
+        },
+      ],
+      order: [["quotation_date", "DESC"]],
+    });
+
+    res.status(200).json({
+      data: rows,
+    });
+  } catch (error) {
+    console.error("ERROR:", error);
+    res.status(500).json({ message: "Error fetching quotations", error });
+  }
+};
+
 // Fetch a particular quotation by enquiry_id
 const fetchQuotationByEnquiryId = async (req, res) => {
   try {
@@ -201,6 +262,38 @@ const fetchQuotationByEnquiryId = async (req, res) => {
 
     const quotation = await Quotation.findAll({
       where: { enquiry_id },
+    });
+
+    if (!quotation || quotation.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No quotations found for this enquiry" });
+    }
+
+    res.status(200).json({ data: quotation });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Error fetching quotation by enquiryId", error });
+  }
+};
+
+// Fetch a particular quotation by enquiry_id
+const fetchQuotationByEnquiryIdForPM = async (req, res) => {
+  try {
+    const { enquiry_id } = req.params;
+
+    const quotation = await Quotation.findAll({
+      where: { enquiry_id },
+      attributes: [
+        "quotation_id",
+        "sales_executive",
+        "executive_id",
+        "exe_number",
+        "booked_by",
+        "grand_total",
+      ],
     });
 
     if (!quotation || quotation.length === 0) {
@@ -500,4 +593,7 @@ module.exports = {
   fetchQuotationswithItems,
   fetchQuotationsReport,
   fetchQuotationsReportDownload,
+  ExecutiveQuotations,
+  updateAdvQuotation,
+  fetchQuotationByEnquiryIdForPM,
 };

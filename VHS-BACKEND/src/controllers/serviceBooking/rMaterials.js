@@ -1,11 +1,38 @@
 const RMaterial = require("../../models/serviceBooking/rMaterials");
-
+const moment = require("moment");
 exports.createRMaterial = async (req, res) => {
   try {
-    const data = await RMaterial.create(req.body);
-    res.status(201).json(data);
+    const {
+      work_date,
+      work_mile_stone,
+      work_material_use,
+      work_details,
+      work_remark,
+      service_id,
+    } = req.body;
+
+    // ✅ Validate the date
+    const formattedDate = moment(work_date, "YYYY-MM-DD", true).isValid()
+      ? moment(work_date).format("YYYY-MM-DD")
+      : null;
+
+    if (!formattedDate) {
+      return res.status(400).json({ message: "Invalid work_date format" });
+    }
+
+    const newMaterial = await RMaterial.create({
+      work_date: formattedDate,
+      work_mile_stone,
+      work_material_use,
+      work_details,
+      work_remark,
+      service_id,
+    });
+
+    res.status(201).json(newMaterial);
   } catch (error) {
-    res.status(500).json({ error: "Failed to create entry", details: error });
+    console.error("Error creating RMaterial:", error);
+    res.status(500).json({ message: "Internal server error", error });
   }
 };
 

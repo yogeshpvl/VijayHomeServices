@@ -9,6 +9,9 @@ const Enquiry = sequelize.define(
       autoIncrement: true,
       primaryKey: true,
     },
+    user_id: {
+      type: DataTypes.STRING,
+    },
     date: {
       type: DataTypes.STRING,
     },
@@ -17,15 +20,12 @@ const Enquiry = sequelize.define(
     },
     executive: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
     name: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
     email: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
     mobile: {
       type: DataTypes.STRING,
@@ -33,7 +33,6 @@ const Enquiry = sequelize.define(
     },
     contact2: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
     address: {
       type: DataTypes.TEXT,
@@ -41,7 +40,6 @@ const Enquiry = sequelize.define(
     },
     city: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
     category: {
       type: DataTypes.STRING,
@@ -54,6 +52,15 @@ const Enquiry = sequelize.define(
       type: DataTypes.STRING,
     },
     reference3: {
+      type: DataTypes.STRING,
+    },
+    reference4: {
+      type: DataTypes.STRING,
+    },
+    reference5: {
+      type: DataTypes.STRING,
+    },
+    amount: {
       type: DataTypes.STRING,
     },
     comment: {

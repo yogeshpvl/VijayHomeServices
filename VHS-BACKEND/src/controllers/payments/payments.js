@@ -2,9 +2,11 @@ const Payment = require("../../models/payments/payments");
 
 exports.createPayment = async (req, res) => {
   try {
+    console.log("req.body", req.body);
     const data = await Payment.create(req.body);
     res.status(201).json(data);
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: "Failed to create payment", details: error });
   }
 };

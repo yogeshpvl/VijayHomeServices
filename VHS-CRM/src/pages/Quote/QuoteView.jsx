@@ -219,7 +219,8 @@ function QuoteView() {
             <span className="font-normal">{quoteData[0]?.quotation_id}</span>
           </p>
           <p className="font-bold">
-            Date: <span className="font-normal">{moment().format("L")}</span>
+            Date:{" "}
+            <span className="font-normal">{quoteData[0]?.quotation_date}</span>
           </p>
           <p className="font-bold">
             Project Type:{" "}

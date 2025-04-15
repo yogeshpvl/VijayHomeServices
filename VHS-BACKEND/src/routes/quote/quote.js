@@ -15,9 +15,15 @@ router.put(
 
 // Edit a quotation
 router.put("/quotations/:quotation_id", QuotationController.editQuotation);
+router.put(
+  "/advupdatequotations/:quotation_id",
+  QuotationController.updateAdvQuotation
+);
 
 // Fetch all quotations
 router.get("/quotations", QuotationController.fetchQuotations);
+router.get("/executivequotations", QuotationController.ExecutiveQuotations);
+
 router.get("/fetchQuotationsReport", QuotationController.fetchQuotationsReport);
 router.get(
   "/fetchQuotationsReportDownload",
@@ -32,6 +38,11 @@ router.get(
   QuotationController.fetchQuotationByEnquiryId
 );
 
+// Fetch quotation by enquiry_id
+router.get(
+  "/pmsalename/:enquiry_id",
+  QuotationController.fetchQuotationByEnquiryIdForPM
+);
 // Delete a quotation
 router.delete("/quotations/:quotation_id", QuotationController.deleteQuotation);
 
