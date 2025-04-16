@@ -56,6 +56,23 @@ exports.getAll = async (req, res) => {
   }
 };
 
+exports.getoutAll = async (req, res) => {
+  try {
+    const { count, rows } = await Vendor.findAndCountAll({
+      where: {
+        type: "outVendor", // Filter by the correct type
+      },
+    });
+
+    return res.json({
+      results: rows,
+    });
+  } catch (err) {
+    console.error("Error fetching vendors:", err);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 exports.bulkRegister = async (req, res) => {
   try {
     const vendors = req.body;
@@ -387,12 +404,51 @@ exports.delete = async (req, res) => {
   await Vendor.destroy({ where: { id: req.params.id } });
   res.json({ message: "Deleted" });
 };
-
 exports.block = async (req, res) => {
-  await Vendor.update({ block: true }, { where: { id: req.params.id } });
-  res.json({ message: "Blocked" });
+  try {
+    const result = await Vendor.update(
+      { block: true, reason: req.body.reason },
+      { where: { id: req.params.id } }
+    );
+
+    if (result[0] === 0) {
+      return res
+        .status(404)
+        .json({ message: "Vendor not found or no changes made." });
+    }
+
+    res.json({ message: "Vendor blocked successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "An error occurred while blocking the vendor",
+      error: error.message,
+    });
+  }
 };
 
+exports.unblock = async (req, res) => {
+  try {
+    const result = await Vendor.update(
+      { block: false },
+      { where: { id: req.params.id } }
+    );
+
+    if (result[0] === 0) {
+      return res
+        .status(404)
+        .json({ message: "Vendor not found or no changes made." });
+    }
+
+    res.json({ message: "Vendor unblocked successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "An error occurred while blocking the vendor",
+      error: error.message,
+    });
+  }
+};
 exports.logout = async (req, res) => {
   await Vendor.update({ fcmtoken: null }, { where: { id: req.body.id } });
   res.json({ message: "Logged out" });

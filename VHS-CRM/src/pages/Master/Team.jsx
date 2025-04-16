@@ -35,7 +35,7 @@ function Team() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [limit] = useState(25); // Page size
+  const [limit] = useState(25);
 
   const categoryOptions =
     users?.category?.map((cat) => ({ label: cat.name, value: cat.name })) || [];

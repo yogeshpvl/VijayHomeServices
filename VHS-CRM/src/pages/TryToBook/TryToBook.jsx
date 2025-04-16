@@ -5,9 +5,9 @@ import { config } from "../../services/config";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
-const TryToBook = ({ itemsPerPage = 10 }) => {
+const TryToBook = ({ itemsPerPage = 25 }) => {
   const navigate = useNavigate();
-
+  const users = JSON.parse(localStorage.getItem("user"));
   const [data, setData] = useState([]);
   const [searchFilters, setSearchFilters] = useState("");
   const [page, setPage] = useState(1);
@@ -49,7 +49,7 @@ const TryToBook = ({ itemsPerPage = 10 }) => {
       });
 
       setData(response.data.bookings || []);
-      setTotalCount(response.data.totalCount || 0);
+      setTotalCount(response.data.total || 0);
     } catch (err) {
       console.error("Error fetching try-to-book data:", err);
     }
@@ -86,6 +86,7 @@ const TryToBook = ({ itemsPerPage = 10 }) => {
     try {
       await axios.put(`${config.API_BASE_URL}/trytobooking/${selectedRow.id}`, {
         remarks: newRemark,
+        executive: users?.displayname,
       });
       setShowModal(false);
       fetchData(); // refresh

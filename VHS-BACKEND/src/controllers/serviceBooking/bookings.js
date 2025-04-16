@@ -165,7 +165,7 @@ exports.createBooking = async (req, res) => {
       { customerName, email },
       {
         where: { id: user_id },
-        returning: true, // Only works in PostgreSQL
+        returning: true,
       }
     );
 
@@ -346,7 +346,7 @@ exports.updateBooking = async (req, res) => {
     }
 
     // Find the booking first
-    const booking = await Booking.findOne({ where: { id: req.body.id } });
+    const booking = await Booking.findOne({ where: { id: req.params.id } });
 
     console.log("booking", booking);
     if (!booking) {
@@ -361,6 +361,7 @@ exports.updateBooking = async (req, res) => {
 
     res.status(200).json({ message: "Booking updated successfully" });
   } catch (error) {
+    console.log("error", error);
     res.status(500).json({ error: error.message });
   }
 };

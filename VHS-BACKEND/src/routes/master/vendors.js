@@ -24,6 +24,7 @@ router.put(
 );
 
 router.get("/", vendorController.getAll);
+router.get("/outvendors", vendorController.getoutAll);
 
 router.get("/:id", vendorController.getById);
 router.get("/type/:type", vendorController.getByType);
@@ -31,6 +32,8 @@ router.get("/city/:city", vendorController.getByCity);
 router.put("/edit/:id", vendorController.edit);
 router.delete("/:id", vendorController.delete);
 router.put("/block/:id", vendorController.block);
+router.put("/unblock/:id", vendorController.unblock);
+
 router.post("/logout", vendorController.logout);
 
 module.exports = router;

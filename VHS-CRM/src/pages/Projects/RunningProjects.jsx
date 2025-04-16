@@ -277,7 +277,22 @@ const RunningProjects = () => {
             {data.map((row, rowIndex) => (
               <tr
                 key={row.id}
-                className="border-b transition cursor-pointer bg-white hover:bg-gray-100"
+                className={`border-b transition cursor-pointer bg-white hover:bg-gray-100 
+                ${
+                  row.BookingService?.pm_status === "START" ? "bg-blue-400" : ""
+                }
+                ${
+                  row.BookingService?.pa_status === "CLOSED"
+                    ? "bg-orange-300"
+                    : ""
+                }
+                ${
+                  row.BookingService?.pm_status === "DEEP CLEANING ASSIGNED"
+                    ? "bg-green-300"
+                    : ""
+                }
+                ${row.pm_status === "PENDING" ? "bg-white" : ""}
+              `}
               >
                 <td className="border border-gray-200 px-3 py-2 text-xs">
                   {rowIndex + 1}

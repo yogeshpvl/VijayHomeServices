@@ -211,7 +211,7 @@ class CustomerPG {
     const orderId = new Date();
     const currency = "INR";
 
-    const redirectUrl = `https://newapi.vijayhomeservicebengaluru.in/api/customerPG/customer-payment-after-booking-status/${serviceId}/${service_date}/${customer_id}`;
+    const redirectUrl = `http://localhost:5000/api/customerPG/customer-payment-after-booking-status/${serviceId}/${service_date}/${customer_id}`;
 
     const cancelUrl = "http://localhost:3000/payment-cancel";
     const language = "EN";

@@ -93,6 +93,7 @@ const getTodaysEnquiries = async (req, res) => {
 
     let { page, limit, search, sortBy, sortOrder } = req.query;
 
+    console.log("today---", today);
     page = parseInt(page) || 1;
     limit = parseInt(limit) || 10;
     sortBy = sortBy || "createdAt";
@@ -116,6 +117,10 @@ const getTodaysEnquiries = async (req, res) => {
     if (searchFilters.name) {
       filterClause += ` AND LOWER(e.name) LIKE LOWER(:name)`;
       replacements.name = `%${searchFilters.name}%`;
+    }
+    if (searchFilters.executive) {
+      filterClause += ` AND LOWER(e.executive) LIKE LOWER(:executive)`;
+      replacements.executive = `%${searchFilters.executive}%`;
     }
     if (searchFilters.mobile) {
       filterClause += ` AND e.mobile LIKE :mobile`;
@@ -935,6 +940,7 @@ const gettotalCounts = async (req, res) => {
     const startOfWeek = moment().startOf("week").toDate(); // Start of the week
     const endOfWeek = moment().endOf("week").toDate(); // End of the week
 
+    console.log("todayStart", todayStart);
     // Get count for today
     const todayCount = await Enquiry.count({
       where: {

@@ -257,10 +257,7 @@ exports.getServicesByVendorInhouseData = async (req, res) => {
 exports.getServicesByVendorInhouseAcceptOrREjectJOb = async (req, res) => {
   try {
     const vendorId = parseInt(req.params.vendor_id);
-    const { serviceId, vendor_status } = req.body;
-
-    console.log("vendorId", vendorId);
-    console.log("serviceId", serviceId, vendor_status);
+    const { serviceId, vendor_status, vendorCharge } = req.body;
 
     if (!vendorId || !serviceId) {
       return res
@@ -270,7 +267,10 @@ exports.getServicesByVendorInhouseAcceptOrREjectJOb = async (req, res) => {
 
     // Update the vendor status
     await BookingService.update(
-      { vendor_status: vendor_status || "ACCEPTED" },
+      {
+        vendor_status: vendor_status || "ACCEPTED",
+        wallet_txn_id: vendorCharge,
+      },
       { where: { id: serviceId } }
     );
 
@@ -427,6 +427,9 @@ exports.getServicesByVendorCompletedData = async (req, res) => {
   try {
     const vendorId = parseInt(req.params.vendor_id);
     const { range } = req.query;
+    if (isNaN(vendorId)) {
+      return res.status(400).json({ error: "Invalid vendor_id" });
+    }
 
     const today = moment().startOf("day");
     let startDate, endDate;
@@ -494,6 +497,8 @@ exports.getServicesByVendorCompletedData = async (req, res) => {
         "job_complete",
         "start_date_time",
         "end_date_time",
+        "after_service_img",
+        "before_service_img",
       ],
       include: [
         {
@@ -505,6 +510,16 @@ exports.getServicesByVendorCompletedData = async (req, res) => {
             "service",
             "delivery_address",
             "description",
+            "createdAt",
+            "payment_mode",
+            "city",
+          ],
+          include: [
+            {
+              model: User,
+              as: "customer",
+              attributes: ["id", "customerName", "email", "mainContact"],
+            },
           ],
         },
       ],
@@ -1265,8 +1280,8 @@ exports.getDailyServiceData = async (req, res) => {
       jobAmount,
       description,
       reference,
-      page = 1,
-      limit = 10,
+      page,
+      limit,
     } = req.query;
 
     if (!date || !category) {
@@ -1276,10 +1291,16 @@ exports.getDailyServiceData = async (req, res) => {
     }
 
     const cityList = city.split(",").map((c) => c.trim());
+
     const pageNumber = parseInt(page, 10);
     const pageLimit = parseInt(limit, 10);
-    const offset = (pageNumber - 1) * pageLimit;
+    const offset = (pageNumber - 1) * pageLimit; // Calculate offset correctly
+    console.log("Received page:", page);
+    console.log("Received limit:", limit);
 
+    console.log("page", page);
+    console.log("pageLimit", pageLimit);
+    console.log("offset", offset);
     // Filters for Booking
     const bookingFilters = {
       [Op.and]: [
@@ -1389,6 +1410,7 @@ exports.getDailyServiceData = async (req, res) => {
       where: serviceFilters,
     });
 
+    console.log("totalServicesCount", totalServicesCount, pageLimit);
     const totalPages = Math.ceil(totalServicesCount / pageLimit);
 
     res.status(200).json({

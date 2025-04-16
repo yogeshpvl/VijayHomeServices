@@ -13,8 +13,10 @@ const Today = () => {
 
   console.log("data", data);
 
+  console.log("searchFilters", searchFilters);
   useEffect(() => {
     const fetchData = async () => {
+      console.log("hittomg ");
       try {
         const response = await EnquiryService.getAllEnquiries({
           page,

@@ -8,4 +8,5 @@ router.get(
   vendorPaymentController.getPaymentsByVendor
 );
 
+router.post("/vendor-payments", vendorPaymentController.AddPaymentsByVendor);
 module.exports = router;

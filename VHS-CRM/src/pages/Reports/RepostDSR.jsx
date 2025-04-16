@@ -190,7 +190,7 @@ function RepostDSR() {
 
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
-    handleShow(); // Make the API call with the updated page number
+    handleShow();
   };
   return (
     <div className="p-4 bg-gray-50 min-h-screen">

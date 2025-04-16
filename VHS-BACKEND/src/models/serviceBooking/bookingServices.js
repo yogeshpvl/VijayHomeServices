@@ -65,7 +65,7 @@ const BookingService = sequelize.define(
     },
     vendor_status: {
       type: DataTypes.STRING,
-      defaultValue: "PENDING", // ACCEPTED / REJECTED / PENDING
+      defaultValue: "PENDING",
     },
     wallet_deducted: {
       type: DataTypes.BOOLEAN,

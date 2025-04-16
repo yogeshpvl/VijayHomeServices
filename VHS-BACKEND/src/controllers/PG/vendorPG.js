@@ -52,7 +52,7 @@ class vendorPG {
 
     if (responseObject.order_status === "Success") {
       await Vendors.increment(
-        { vendor_amt: 1000 },
+        { vendor_amt: amount },
         { where: { id: vendorId } }
       );
 

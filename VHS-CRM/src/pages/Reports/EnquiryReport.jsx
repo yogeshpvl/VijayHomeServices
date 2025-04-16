@@ -26,7 +26,7 @@ function EnquiryReport() {
   const [userdata, setUserdata] = useState([]);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 25;
   const [totalPages, setTotalPages] = useState(0);
 
   const startIndex = (currentPage - 1) * itemsPerPage;

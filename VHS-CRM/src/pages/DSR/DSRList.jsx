@@ -22,7 +22,7 @@ const DSRList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [vendorData, setvendorData] = useState([]);
 
-  const itemsPerPage = 25;
+  const itemsPerPage = 10;
   const [totalPages, setTotalPages] = useState(0);
 
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -253,7 +253,7 @@ const DSRList = () => {
           </thead>
 
           <tbody>
-            {paginatedData?.map((row, index) => (
+            {data?.map((row, index) => (
               <tr
                 key={row.id}
                 onClick={() => handleRowClick(row.id)}

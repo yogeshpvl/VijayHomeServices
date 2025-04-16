@@ -38,8 +38,6 @@ const UserDetails = () => {
   const [categories, setCategories] = useState([]);
   const [cities, setCities] = useState([]);
 
-  console.log("roles", roles);
-
   // ✅ Fetch categories from API
   const fetchCategories = async () => {
     try {
@@ -91,6 +89,7 @@ const UserDetails = () => {
         category,
         city,
       });
+      window.location.assign("/master/user");
       toast.success("✅ User rights updated successfully");
     } catch (error) {
       console.error("Update failed:", error);
