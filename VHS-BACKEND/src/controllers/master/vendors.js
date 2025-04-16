@@ -55,17 +55,18 @@ exports.getAll = async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 exports.getoutAll = async (req, res) => {
   try {
     const { count, rows } = await Vendor.findAndCountAll({
       where: {
         type: "outVendor", // Filter by the correct type
       },
+      order: [["createdAt", "DESC"]], // Order by a column, e.g., 'createdAt', descending
     });
 
     return res.json({
       results: rows,
+      totalCount: count, // Optionally, send back the total count
     });
   } catch (err) {
     console.error("Error fetching vendors:", err);

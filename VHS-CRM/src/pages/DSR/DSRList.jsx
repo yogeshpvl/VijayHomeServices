@@ -21,8 +21,9 @@ const DSRList = () => {
   const [selectedReference, setSelectedReference] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [vendorData, setvendorData] = useState([]);
+  const [selectedStatus, setSelectedStatus] = useState("");
 
-  const itemsPerPage = 10;
+  const itemsPerPage = 25;
   const [totalPages, setTotalPages] = useState(0);
 
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -47,12 +48,13 @@ const DSRList = () => {
             category: selectedCategory,
             technician: selectedTechnician,
             paymentMode: selectedPaymentMode,
+            status: selectedStatus,
             page: currentPage,
             limit: itemsPerPage,
           },
         }
       );
-
+      console.log("dsr fi8le", response.data);
       setData(response.data.data);
       setTotalPages(response.data.totalPages);
       setvendorData(response.data.vendorNames);
@@ -77,7 +79,13 @@ const DSRList = () => {
     selectedDescription,
     selectedReference,
     currentPage,
+    selectedStatus,
   ]);
+
+  const handleStatusClick = (status) => {
+    setSelectedStatus(status);
+    setCurrentPage(1); // Reset to page 1
+  };
 
   // Handle row click to navigate to details page
 
@@ -176,34 +184,43 @@ const DSRList = () => {
         </h2>
       </div>
       <div className="mt-4 mb-6 text-sm flex flex-wrap gap-4">
-        <p>
-          <span className="inline-block w-4 h-4 border bg-white mr-2"></span>
-          NOT ASSIGNED
-        </p>
-        <p>
-          <span className="inline-block w-4 h-4 bg-gray-300 mr-2"></span>
-          ASSIGNED FOR TECHNICIAN
-        </p>
-        <p>
-          <span className="inline-block w-4 h-4 bg-yellow-300 mr-2"></span>
-          SERVICE STARTED
-        </p>
-        <p>
-          <span className="inline-block w-4 h-4 bg-green-300 mr-2"></span>
-          SERVICE COMPLETED
-        </p>
-        <p>
-          <span className="inline-block w-4 h-4 bg-red-300  mr-2"></span>
-          SERVICE CANCELLED
-        </p>
-        <p>
-          <span className="inline-block w-4 h-4 bg-blue-300  mr-2"></span>
-          SERVICE DELAYED
-        </p>
-        <p>
-          <span className="inline-block w-4 h-4 bg-purple-300 mr-2"></span>
-          CLOSED OPERATION MANAGER
-        </p>
+        {[
+          "NOT ASSIGNED",
+          "ASSIGNED FOR TECHNICIAN",
+          "SERVICE STARTED",
+          "SERVICE COMPLETED",
+          "SERVICE CANCELLED",
+          "SERVICE DELAYED",
+          "CLOSED BY OPERATION MANAGER",
+        ].map((status, index) => {
+          const colorClassMap = {
+            "NOT ASSIGNED": "border bg-white",
+            "ASSIGNED FOR TECHNICIAN": "bg-gray-300",
+            "SERVICE STARTED": "bg-yellow-300",
+            "SERVICE COMPLETED": "bg-green-300",
+            "SERVICE CANCELLED": "bg-red-300",
+            "SERVICE DELAYED": "bg-blue-300",
+            "CLOSED BY OPERATION MANAGER": "bg-purple-300",
+          };
+          const isSelected = selectedStatus === status;
+
+          return (
+            <p
+              key={index}
+              onClick={() => handleStatusClick(status)}
+              className={`cursor-pointer ${
+                isSelected ? "underline font-semibold" : ""
+              }`}
+            >
+              <span
+                className={`inline-block w-4 h-4 mr-2 ${
+                  colorClassMap[status]
+                } ${isSelected ? "ring-2 ring-black" : ""}`}
+              ></span>
+              {status}
+            </p>
+          );
+        })}
       </div>
 
       {/* Table for displaying data */}
@@ -270,7 +287,7 @@ const DSRList = () => {
                     ? "bg-red-200"
                     : row.status === "SERVICE DELAYED"
                     ? "bg-blue-200"
-                    : row.status === "CLOSED OPERATION MANAGER"
+                    : row.status === "CLOSED BY OPERATION MANAGER"
                     ? "bg-purple-200"
                     : "bg-white"
                 }`}

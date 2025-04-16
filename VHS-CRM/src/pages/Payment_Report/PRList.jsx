@@ -23,20 +23,17 @@ const PRList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [vendorData, setvendorData] = useState([]);
 
-  const itemsPerPage = 10;
+  const itemsPerPage = 25;
   const [totalPages, setTotalPages] = useState(0);
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedData = data.slice(startIndex, endIndex);
-
-  console.log(
-    "data.slice(startIndex, endIndex)",
-    data.slice(startIndex, endIndex)
-  );
-  console.log("startIndex", startIndex);
-  console.log("endIndex", endIndex);
-  console.log("paginatedData", paginatedData);
+  const [summary, setSummary] = useState({
+    totalServiceCharge: 0,
+    paymentModeTotals: {},
+    paymentModeCounts: {},
+  });
 
   // Fetch data from the backend
 
@@ -54,7 +51,7 @@ const PRList = () => {
             jobAmount: selectedJobAmount,
             description: selectedDescription,
             reference: selectedReference,
-            city: selectedCity || users.city.map((user) => user.name).join(","), // ✅ use selectedCity
+            city: selectedCity || users.city.map((user) => user.name).join(","),
 
             technician: selectedTechnician,
             paymentMode: selectedPaymentMode,
@@ -71,6 +68,38 @@ const PRList = () => {
       console.error("Error fetching data", error);
     }
   };
+
+  const fetchData1 = async () => {
+    try {
+      const response = await axios.get(
+        `${config.API_BASE_URL}/bookingService/PaymentsReportDailySummary`,
+        {
+          params: {
+            date,
+            name: selectedName,
+            address: selectedAddress,
+            contactNo: selectedContactNo,
+            jobType: selectedJobType,
+            jobAmount: selectedJobAmount,
+            description: selectedDescription,
+            reference: selectedReference,
+            city: selectedCity || users.city.map((user) => user.name).join(","),
+            technician: selectedTechnician,
+            paymentMode: selectedPaymentMode,
+          },
+        }
+      );
+
+      console.log("response.data----", response.data);
+      setSummary(response.data);
+    } catch (error) {
+      console.error("Error fetching data", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchData1();
+  }, [date]);
 
   useEffect(() => {
     fetchData();
@@ -253,7 +282,7 @@ const PRList = () => {
           </thead>
 
           <tbody>
-            {paginatedData.map((row, index) => (
+            {data?.map((row, index) => (
               <tr
                 key={row.id}
                 onClick={() => handleRowClick(row.id)}
@@ -270,7 +299,7 @@ const PRList = () => {
                     ? "bg-red-200"
                     : row.status === "SERVICE DELAYED"
                     ? "bg-blue-200"
-                    : row.status === "CLOSED OPERATION MANAGER"
+                    : row.status === "CLOSED BY OPERATION MANAGER"
                     ? "bg-purple-200"
                     : "bg-white"
                 }`}
@@ -387,57 +416,30 @@ const PRList = () => {
           </tbody>
           <tfoot>
             <tr className="bg-gray-100 font-semibold text-sm text-black">
-              <td colSpan={10} className="px-4 py-3 text-right">
-                Totals:
+              <td colSpan={10} className="px-4 py-3 text-right text-green-700">
+                Total Amount on {date} (excluding Cancelled Orders)
               </td>
-              <td className="px-3 py-2">
-                ₹
-                {paginatedData
-                  .reduce(
-                    (sum, row) => sum + parseFloat(row?.service_charge || 0),
-                    0
-                  )
-                  .toFixed(2)}
+              <td className="px-3 py-2 text-green-700">
+                ₹{Number(summary.totalServiceCharge || 0).toFixed(2)}
               </td>
               <td colSpan={3}></td>
               <td className="px-3 py-2 text-xs text-black">
-                {(() => {
-                  const allCustomerPayments = paginatedData.flatMap(
-                    (row) =>
-                      row?.Booking?.payments?.filter(
-                        (p) => p.paymen_type === "Customer"
-                      ) || []
-                  );
-
-                  const modeTotals = allCustomerPayments.reduce(
-                    (acc, curr) => {
-                      const mode = curr.payment_mode || "Unknown";
-                      const amount = parseFloat(curr.amount || 0);
-                      acc[mode] = (acc[mode] || 0) + amount;
-                      acc.counts[mode] = (acc.counts[mode] || 0) + 1;
-                      return acc;
-                    },
-                    { counts: {} }
-                  );
-
-                  const total = Object.values(modeTotals)
-                    .filter((v) => typeof v === "number")
-                    .reduce((sum, amt) => sum + amt, 0);
-
-                  return (
-                    <div className="space-y-1 font-bold">
-                      {Object.entries(modeTotals)
-                        .filter(([key]) => key !== "counts")
-                        .map(([mode, amt]) => (
-                          <div key={mode}>
-                            {mode} ({modeTotals.counts[mode] || 0}):{" "}
-                            {amt.toFixed(2)}
-                          </div>
-                        ))}
-                      <div>Total: {total.toFixed(2)}</div>
-                    </div>
-                  );
-                })()}
+                <div className="space-y-1 font-bold text-green-700">
+                  {Object.entries(summary.paymentModeTotals || {}).map(
+                    ([mode, amount]) => (
+                      <div key={mode}>
+                        {mode} ({summary.paymentModeCounts[mode] || 0}): ₹
+                        {Number(amount).toFixed(2)}
+                      </div>
+                    )
+                  )}
+                  <div>
+                    Total Received: ₹
+                    {Object.values(summary.paymentModeTotals || {})
+                      .reduce((sum, val) => sum + Number(val), 0)
+                      .toFixed(2)}
+                  </div>
+                </div>
               </td>
             </tr>
           </tfoot>

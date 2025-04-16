@@ -9,7 +9,7 @@ const EnquiryNew = () => {
   const [limit, setLimit] = useState(25);
   const [searchFilters, setSearchFilters] = useState({});
   const users = JSON.parse(localStorage.getItem("user"));
-
+  const [Totalpages, setTotalpages] = useState(1);
   useEffect(() => {
     const fetchData = async () => {
       // setLoading(true);
@@ -20,6 +20,9 @@ const EnquiryNew = () => {
           search: JSON.stringify(searchFilters),
         });
         setData(response.enquiries || []);
+
+        setPage(response.pagination.page);
+        setTotalpages(response.pagination.totalPages);
       } catch (err) {
         //   setError("Failed to load enquiries");
         // } finally {
@@ -86,6 +89,7 @@ const EnquiryNew = () => {
           itemsPerPage={limit}
           onFilterChange={setSearchFilters}
           onPageChange={setPage}
+          Totalpages={Totalpages}
         />
       </div>
       {/* )} */}

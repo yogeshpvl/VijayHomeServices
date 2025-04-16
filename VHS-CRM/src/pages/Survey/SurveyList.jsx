@@ -11,7 +11,7 @@ const SurveyList = () => {
   const [searchFilters, setSearchFilters] = useState({});
   const [loading, setLoading] = useState(true);
   const users = JSON.parse(localStorage.getItem("user"));
-
+  const [Totalpages, setTotalpages] = useState(1);
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true); // Show loader while fetching
@@ -27,6 +27,8 @@ const SurveyList = () => {
         console.log("response", response);
 
         setData(response.data || []);
+        setPage(response.pagination.page);
+        setTotalpages(response.pagination.totalPages);
       } catch (err) {
         console.error("Error fetching data:", err);
       } finally {
@@ -102,6 +104,7 @@ const SurveyList = () => {
             itemsPerPage={limit}
             onFilterChange={setSearchFilters}
             onPageChange={setPage}
+            Totalpages={Totalpages}
           />
         )}
       </div>

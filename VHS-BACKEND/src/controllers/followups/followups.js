@@ -227,8 +227,6 @@ exports.getSurveyDateWiseFollowups = async (req, res) => {
   try {
     const { page = 1, limit = 25, search, date, category } = req.query;
 
-    console.log("req.query", req.query);
-
     const offset = (page - 1) * limit;
     const filters = JSON.parse(search);
 
@@ -307,6 +305,82 @@ exports.getSurveyDateWiseFollowups = async (req, res) => {
     res.status(200).json({ data: result });
   } catch (error) {
     console.error("❌ Error in getCallLaterDateWiseFollowups:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+exports.getcancelledSurveys = async (req, res) => {
+  try {
+    const { page = 1, limit = 25, search } = req.query;
+    const offset = (page - 1) * limit;
+    const filters = JSON.parse(search);
+    let filterConditions = ``;
+
+    // Adding status filter for "CANCEL"
+    const status = "CANCEL";
+    let searchQuery = "";
+    if (filters.name) {
+      searchQuery += ` AND LOWER(e."name") LIKE LOWER('%${filters.name}%')`;
+    }
+    if (filters.mobile) {
+      searchQuery += ` AND e."mobile" LIKE '%${filters.mobile}%'`;
+    }
+    if (filters.city) {
+      searchQuery += ` AND LOWER(e."city") LIKE LOWER('%${filters.city}%')`;
+    }
+
+    const result = await sequelize.query(
+      `
+      SELECT
+        e.*,
+        f.response AS followup_response,
+        f."followupId" AS followup_id,
+        f.description AS followup_description,
+        f.date AS followup_date,
+        f.next_followup_date,
+        f.staff AS followup_staff,
+        f.appo_date AS followup_appo_date,
+        f.next_followup_date AS followup_next_followup_date,
+        f.appo_time AS followup_appo_time,
+        f.executive_name AS followup_executive_name,
+        f.executive_id AS followup_executive_id,
+        f.status AS followup_status,
+        f.creason AS followup_creason,
+        f.appo_time AS followup_appo_time,
+        f."createdAt" AS followup_createdAt
+      FROM enquiries e
+      JOIN (
+        SELECT f1.*
+        FROM followups f1
+        INNER JOIN (
+          SELECT "enquiryId", MAX("createdAt") AS max_created
+          FROM followups
+          WHERE response = 'Survey'
+          GROUP BY "enquiryId"
+        ) f2 ON f1."enquiryId" = f2."enquiryId" AND f1."createdAt" = f2.max_created
+       
+      ) f ON f."enquiryId" = e."enquiryId"
+      WHERE 1=1
+        AND f.status = :status  -- Ensure only "CANCEL" status is considered
+        ${filterConditions}
+        ${searchQuery}
+      ORDER BY f."createdAt" DESC
+      LIMIT :limit OFFSET :offset
+      `,
+      {
+        replacements: {
+          limit,
+          offset,
+
+          status, // Passing the CANCEL status filter
+        },
+        type: QueryTypes.SELECT,
+      }
+    );
+
+    res.status(200).json({ data: result });
+  } catch (error) {
+    console.error("❌ Error in getCancelledSurveys:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };

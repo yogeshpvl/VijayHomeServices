@@ -93,7 +93,7 @@ const getTodaysEnquiries = async (req, res) => {
 
     let { page, limit, search, sortBy, sortOrder } = req.query;
 
-    console.log("today---", today);
+    // Ensure page and limit have default values if they are not passed in the query
     page = parseInt(page) || 1;
     limit = parseInt(limit) || 10;
     sortBy = sortBy || "createdAt";
@@ -110,7 +110,7 @@ const getTodaysEnquiries = async (req, res) => {
       }
     }
 
-    // 🔍 Start building filter conditions
+    // Start building filter conditions
     let filterClause = `WHERE e.date = :today`;
     const replacements = { limit, offset, today };
 
@@ -138,8 +138,16 @@ const getTodaysEnquiries = async (req, res) => {
       filterClause += ` AND f."next_followup_date" = :next_followup_date`;
       replacements.next_followup_date = searchFilters.next_followup_date;
     }
+    if (searchFilters.category) {
+      filterClause += ` AND LOWER(e.category) LIKE LOWER(:category)`;
+      replacements.category = `%${searchFilters.category}%`;
+    }
+    if (searchFilters.city) {
+      filterClause += ` AND LOWER(e.city) LIKE LOWER(:city)`;
+      replacements.city = `%${searchFilters.city}%`;
+    }
 
-    // 🧠 Step 1: Fetch paginated data
+    // Query to get the filtered paginated data
     const enquiries = await sequelize.query(
       `
       SELECT 
@@ -166,7 +174,7 @@ const getTodaysEnquiries = async (req, res) => {
       }
     );
 
-    // 🧠 Step 2: Count total
+    // Count the total records to determine total pages
     const countResult = await sequelize.query(
       `
       SELECT COUNT(*) as count
@@ -203,6 +211,123 @@ const getTodaysEnquiries = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// const getTodaysEnquiries = async (req, res) => {
+//   try {
+//     const today = moment().format("YYYY-MM-DD");
+
+//     let { page, limit, search, sortBy, sortOrder } = req.query;
+
+//     console.log("today---", today);
+//     page = parseInt(page) || 1;
+//     limit = parseInt(limit) || 10;
+//     sortBy = sortBy || "createdAt";
+//     sortOrder = sortOrder === "asc" ? "ASC" : "DESC";
+
+//     const offset = (page - 1) * limit;
+
+//     let searchFilters = {};
+//     if (search && typeof search === "string") {
+//       try {
+//         searchFilters = JSON.parse(search);
+//       } catch (err) {
+//         console.error("Invalid search query:", search);
+//       }
+//     }
+
+//     // 🔍 Start building filter conditions
+//     let filterClause = `WHERE e.date = :today`;
+//     const replacements = { limit, offset, today };
+
+//     if (searchFilters.name) {
+//       filterClause += ` AND LOWER(e.name) LIKE LOWER(:name)`;
+//       replacements.name = `%${searchFilters.name}%`;
+//     }
+//     if (searchFilters.executive) {
+//       filterClause += ` AND LOWER(e.executive) LIKE LOWER(:executive)`;
+//       replacements.executive = `%${searchFilters.executive}%`;
+//     }
+//     if (searchFilters.mobile) {
+//       filterClause += ` AND e.mobile LIKE :mobile`;
+//       replacements.mobile = `%${searchFilters.mobile}%`;
+//     }
+//     if (searchFilters.response) {
+//       filterClause += ` AND LOWER(f.response) = LOWER(:response)`;
+//       replacements.response = searchFilters.response;
+//     }
+//     if (searchFilters.description) {
+//       filterClause += ` AND LOWER(f."description") LIKE LOWER(:description)`;
+//       replacements.description = `%${searchFilters.description}%`;
+//     }
+//     if (searchFilters.next_followup_date) {
+//       filterClause += ` AND f."next_followup_date" = :next_followup_date`;
+//       replacements.next_followup_date = searchFilters.next_followup_date;
+//     }
+
+//     // 🧠 Step 1: Fetch paginated data
+//     const enquiries = await sequelize.query(
+//       `
+//       SELECT
+//         e.*,
+//         f.response AS followup_response,
+//         f."description" AS followup_description,
+//         f."next_followup_date" AS followup_next_date,
+//         f."createdAt" AS followup_createdAt
+//       FROM enquiries e
+//       LEFT JOIN LATERAL (
+//         SELECT *
+//         FROM followups f
+//         WHERE f."enquiryId" = e."enquiryId"
+//         ORDER BY f."createdAt" DESC
+//         LIMIT 1
+//       ) f ON true
+//       ${filterClause}
+//       ORDER BY e."${sortBy}" ${sortOrder}
+//       LIMIT :limit OFFSET :offset
+//       `,
+//       {
+//         replacements,
+//         type: QueryTypes.SELECT,
+//       }
+//     );
+
+//     // 🧠 Step 2: Count total
+//     const countResult = await sequelize.query(
+//       `
+//       SELECT COUNT(*) as count
+//       FROM enquiries e
+//       LEFT JOIN LATERAL (
+//         SELECT *
+//         FROM followups f
+//         WHERE f."enquiryId" = e."enquiryId"
+//         ORDER BY f."createdAt" DESC
+//         LIMIT 1
+//       ) f ON true
+//       ${filterClause}
+//       `,
+//       {
+//         replacements,
+//         type: QueryTypes.SELECT,
+//       }
+//     );
+
+//     const totalCount = parseInt(countResult[0].count);
+//     const totalPages = Math.ceil(totalCount / limit);
+
+//     res.status(200).json({
+//       enquiries,
+//       pagination: {
+//         totalCount,
+//         totalPages,
+//         page,
+//         limit,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error in getTodaysEnquiries:", error);
+//     res.status(500).json({ error: error.message });
+//   }
+// };
 
 //New
 const getNewEnquiries = async (req, res) => {

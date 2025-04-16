@@ -11,20 +11,39 @@ const Today = () => {
   const [searchFilters, setSearchFilters] = useState({});
   const users = JSON.parse(localStorage.getItem("user"));
 
-  console.log("data", data);
+  const [Totalpages, setTotalpages] = useState(1);
 
-  console.log("searchFilters", searchFilters);
   useEffect(() => {
     const fetchData = async () => {
-      console.log("hittomg ");
       try {
         const response = await EnquiryService.getAllEnquiries({
           page,
           limit,
           search: JSON.stringify(searchFilters),
         });
+
         setData(response.enquiries || []);
       } catch (err) {}
+    };
+
+    fetchData();
+  }, [page, limit, searchFilters]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await EnquiryService.getAllEnquiries({
+          page,
+          limit,
+          search: JSON.stringify(searchFilters),
+        });
+
+        setData(response.enquiries || []);
+        setPage(response.pagination.page);
+        setTotalpages(response.pagination.totalPages);
+      } catch (err) {
+        console.error("Error fetching enquiries:", err);
+      }
     };
 
     fetchData();
@@ -85,6 +104,7 @@ const Today = () => {
           itemsPerPage={limit}
           onFilterChange={setSearchFilters}
           onPageChange={setPage}
+          Totalpages={Totalpages}
         />
       </div>
     </div>

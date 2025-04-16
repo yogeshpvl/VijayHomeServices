@@ -1,7 +1,8 @@
 const moment = require("moment");
 const BookingService = require("../../models/serviceBooking/bookingServices");
 
-const { Op, fn, col, where, Sequelize } = require("sequelize");
+const { Op, fn, col, where, literal, Sequelize } = require("sequelize");
+
 const Booking = require("../../models/serviceBooking/bookings");
 const User = require("../../models/customer/customer");
 const Payment = require("../../models/payments/payments");
@@ -1280,8 +1281,9 @@ exports.getDailyServiceData = async (req, res) => {
       jobAmount,
       description,
       reference,
-      page,
-      limit,
+      status,
+      page = 1,
+      limit = 10,
     } = req.query;
 
     if (!date || !category) {
@@ -1291,23 +1293,17 @@ exports.getDailyServiceData = async (req, res) => {
     }
 
     const cityList = city.split(",").map((c) => c.trim());
-
     const pageNumber = parseInt(page, 10);
     const pageLimit = parseInt(limit, 10);
-    const offset = (pageNumber - 1) * pageLimit; // Calculate offset correctly
-    console.log("Received page:", page);
-    console.log("Received limit:", limit);
+    const offset = (pageNumber - 1) * pageLimit;
 
-    console.log("page", page);
-    console.log("pageLimit", pageLimit);
-    console.log("offset", offset);
     // Filters for Booking
     const bookingFilters = {
       [Op.and]: [
         { category },
         { city: { [Op.in]: cityList } },
 
-        paymentMode ? { payment_mode: paymentMode } : {},
+        paymentMode ? { payment_mode: { [Op.like]: `%${paymentMode}%` } } : {},
         description ? { description: { [Op.like]: `%${description}%` } } : {},
         reference ? { type: { [Op.like]: `%${reference}%` } } : {},
         jobAmount ? { service_charge: { [Op.like]: `%${jobAmount}%` } } : {},
@@ -1319,29 +1315,28 @@ exports.getDailyServiceData = async (req, res) => {
       ],
     };
 
-    // Filters for User (customer)
+    // Filters for Customer
     const customerFilter = {
       ...(name && { customerName: { [Op.iLike]: `%${name}%` } }),
-      ...(contactNo && { mainContact: contactNo }),
+      ...(contactNo && {
+        [Op.and]: where(literal(`CAST("mainContact" AS TEXT)`), {
+          [Op.like]: `%${contactNo}%`,
+        }),
+      }),
     };
 
+    // Filters for BookingService
     const serviceFilters = {
       [Op.and]: [
-        Sequelize.where(
-          Sequelize.fn("DATE", Sequelize.col("service_date")),
-          date
-        ),
-        jobType
-          ? { service_name: { [Op.iLike]: `%${jobType}%` } } // ✅ partial match
-          : {},
-        technician
-          ? { vendor_name: { [Op.iLike]: `%${technician}%` } } // ✅ partial match
-          : {},
+        Sequelize.where(fn("DATE", col("service_date")), date),
+        jobType ? { service_name: { [Op.iLike]: `%${jobType}%` } } : {},
+        technician ? { vendor_name: { [Op.iLike]: `%${technician}%` } } : {},
+        status ? { status: { [Op.iLike]: `%${status}%` } } : {},
       ],
     };
 
-    // Main query with includes
-    const services = await BookingService.findAll({
+    // Main query with filtering and count
+    const { count, rows } = await BookingService.findAndCountAll({
       where: serviceFilters,
       attributes: [
         "vendor_name",
@@ -1383,9 +1378,7 @@ exports.getDailyServiceData = async (req, res) => {
           attributes: [
             "reschedule_date",
             "reason",
-
             "vendor_name",
-
             "created_at",
           ],
         },
@@ -1394,35 +1387,32 @@ exports.getDailyServiceData = async (req, res) => {
       limit: pageLimit,
       order: [["created_at", "DESC"]],
     });
-    const vendorNames = await BookingService.findAll({
-      where: Sequelize.where(
-        Sequelize.fn("DATE", Sequelize.col("service_date")),
-        date
-      ),
 
+    const services = rows;
+    const totalServicesCount = count;
+
+    const totalPages = Math.ceil(totalServicesCount / pageLimit);
+
+    // Fetch vendor names for filter dropdown
+    const vendorNames = await BookingService.findAll({
+      where: Sequelize.where(fn("DATE", col("service_date")), date),
       attributes: ["vendor_name"],
       group: ["vendor_name"],
       raw: true,
     });
 
-    // Count query for pagination
-    const totalServicesCount = await BookingService.count({
-      where: serviceFilters,
-    });
-
-    console.log("totalServicesCount", totalServicesCount, pageLimit);
-    const totalPages = Math.ceil(totalServicesCount / pageLimit);
-
-    res.status(200).json({
+    return res.status(200).json({
       totalCount: totalServicesCount,
       totalPages,
       currentPage: pageNumber,
       data: services,
-      vendorNames: vendorNames,
+      vendorNames,
     });
   } catch (error) {
     console.error("Error fetching service data:", error);
-    res.status(500).json({ error: "Server error, please try again later." });
+    return res
+      .status(500)
+      .json({ error: "Server error, please try again later." });
   }
 };
 
@@ -1459,7 +1449,7 @@ exports.getPaymentsReportDailyServiceData = async (req, res) => {
       [Op.and]: [
         { city: { [Op.in]: cityList } },
 
-        paymentMode ? { payment_mode: paymentMode } : {},
+        paymentMode ? { payment_mode: { [Op.like]: `%${paymentMode}%` } } : {},
         description ? { description: { [Op.like]: `%${description}%` } } : {},
         reference ? { type: { [Op.like]: `%${reference}%` } } : {},
         jobAmount ? { service_charge: { [Op.like]: `%${jobAmount}%` } } : {},
@@ -1470,13 +1460,14 @@ exports.getPaymentsReportDailyServiceData = async (req, res) => {
           : {},
       ],
     };
-
-    // Filters for User (customer)
     const customerFilter = {
       ...(name && { customerName: { [Op.iLike]: `%${name}%` } }),
-      ...(contactNo && { mainContact: contactNo }),
+      ...(contactNo && {
+        [Op.and]: where(literal(`CAST("mainContact" AS TEXT)`), {
+          [Op.like]: `%${contactNo}%`,
+        }),
+      }),
     };
-
     const serviceFilters = {
       [Op.and]: [
         Sequelize.where(Sequelize.fn("DATE", Sequelize.col("amt_date")), date),
@@ -1486,7 +1477,7 @@ exports.getPaymentsReportDailyServiceData = async (req, res) => {
     };
 
     // Main query with includes
-    const services = await BookingService.findAll({
+    const { count, rows } = await BookingService.findAndCountAll({
       where: serviceFilters,
       attributes: [
         "vendor_name",
@@ -1538,22 +1529,131 @@ exports.getPaymentsReportDailyServiceData = async (req, res) => {
       raw: true,
     });
 
-    // Count query for pagination
-    const totalServicesCount = await BookingService.count({
-      where: serviceFilters,
-    });
-
-    const totalPages = Math.ceil(totalServicesCount / pageLimit);
+    const totalPages = Math.ceil(count / pageLimit);
 
     res.status(200).json({
-      totalCount: totalServicesCount,
+      totalCount: count,
       totalPages,
       currentPage: pageNumber,
-      data: services,
+      data: rows,
       vendorNames: vendorNames,
     });
   } catch (error) {
     console.error("Error fetching service data:", error);
+    res.status(500).json({ error: "Server error, please try again later." });
+  }
+};
+
+exports.getPaymentsReportDailySummary = async (req, res) => {
+  try {
+    const {
+      date,
+      city,
+      technician,
+      jobType,
+      paymentMode,
+      name,
+      address,
+      contactNo,
+      jobAmount,
+      description,
+      reference,
+    } = req.query;
+
+    if (!date) {
+      return res.status(400).json({ error: "date and city are required" });
+    }
+
+    const cityList = city.split(",").map((c) => c.trim());
+
+    // Filters for Booking
+    const bookingFilters = {
+      [Op.and]: [
+        { city: { [Op.in]: cityList } },
+        paymentMode ? { payment_mode: { [Op.like]: `%${paymentMode}%` } } : {},
+        description ? { description: { [Op.like]: `%${description}%` } } : {},
+        reference ? { type: { [Op.like]: `%${reference}%` } } : {},
+        jobAmount ? { service_charge: { [Op.like]: `%${jobAmount}%` } } : {},
+        address
+          ? Sequelize.where(Sequelize.json("delivery_address.address"), {
+              [Op.like]: `%${address}%`,
+            })
+          : {},
+      ],
+    };
+
+    // Customer filter
+    const customerFilter = {
+      ...(name && { customerName: { [Op.iLike]: `%${name}%` } }),
+      ...(contactNo && {
+        [Op.and]: where(literal(`CAST("mainContact" AS TEXT)`), {
+          [Op.like]: `%${contactNo}%`,
+        }),
+      }),
+    };
+
+    // Service filters
+    const serviceFilters = {
+      [Op.and]: [
+        Sequelize.where(Sequelize.fn("DATE", Sequelize.col("amt_date")), date),
+        jobType ? { service_name: { [Op.iLike]: `%${jobType}%` } } : {},
+        technician ? { vendor_name: { [Op.iLike]: `%${technician}%` } } : {},
+      ],
+    };
+
+    // Query all for summary
+    const allMatchingServices = await BookingService.findAll({
+      where: serviceFilters,
+      include: [
+        {
+          model: Booking,
+          required: true,
+          where: bookingFilters,
+          include: [
+            {
+              model: User,
+              as: "customer",
+              where: customerFilter,
+            },
+            {
+              model: Payment,
+              as: "payments",
+            },
+          ],
+        },
+      ],
+    });
+
+    // Calculate totals only for non-cancelled jobs
+    let totalServiceCharge = 0;
+    let paymentModeTotals = {};
+    let paymentModeCounts = {};
+
+    allMatchingServices.forEach((row) => {
+      const isCancelled = row?.Booking?.job_complete === "CANCEL ORDER";
+      if (!isCancelled) {
+        totalServiceCharge += parseFloat(row?.service_charge || 0);
+      }
+
+      const customerPayments =
+        row?.Booking?.payments?.filter((p) => p.paymen_type === "Customer") ||
+        [];
+
+      customerPayments.forEach((p) => {
+        const mode = p.payment_mode || "Unknown";
+        const amount = parseFloat(p.amount || 0);
+        paymentModeTotals[mode] = (paymentModeTotals[mode] || 0) + amount;
+        paymentModeCounts[mode] = (paymentModeCounts[mode] || 0) + 1;
+      });
+    });
+
+    res.status(200).json({
+      totalServiceCharge: totalServiceCharge.toFixed(2),
+      paymentModeTotals,
+      paymentModeCounts,
+    });
+  } catch (error) {
+    console.error("Error fetching summary data:", error);
     res.status(500).json({ error: "Server error, please try again later." });
   }
 };

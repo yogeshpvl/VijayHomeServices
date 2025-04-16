@@ -72,6 +72,13 @@ const EnquiryService = {
       })
     ),
 
+  getSurveyDateWiseFollowupsCancelled: ({ page, limit, search }) =>
+    handleRequest(() =>
+      api.get(`/followups/cancelledSurveys`, {
+        params: { page, limit, search },
+      })
+    ),
+
   getCallLaterFollowups: ({
     page = 1,
     limit = 25,

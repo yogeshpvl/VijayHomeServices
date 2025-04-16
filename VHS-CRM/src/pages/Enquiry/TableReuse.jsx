@@ -4,22 +4,20 @@ import { useNavigate } from "react-router-dom";
 const TableReuse = ({
   data,
   columns,
-  itemsPerPage = 25,
+
   onFilterChange,
   onPageChange,
+  Totalpages,
 }) => {
   const navigate = useNavigate();
   const [searchFilters, setSearchFilters] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
 
-  const totalPages = Math.ceil(data.length / itemsPerPage);
-
   // Handle search filter change
   const handleFilterChange = (e, accessor) => {
-    setSearchFilters((prevFilters) => ({
-      ...prevFilters,
-      [accessor]: e.target.value,
-    }));
+    const newFilters = { ...searchFilters, [accessor]: e.target.value };
+    setSearchFilters(newFilters); // Update the local state
+    onFilterChange(newFilters); // Pass updated filters to the parent
   };
 
   // Handle Enter key press to trigger API call
@@ -56,14 +54,7 @@ const TableReuse = ({
                   <select
                     className="mt-2 block w-full px-2 py-1 text-gray-700 bg-gray-100 rounded-md focus:outline-none focus:ring focus:ring-red-300"
                     value={searchFilters[col.accessor] || ""}
-                    onChange={(e) => {
-                      handleFilterChange(e, col.accessor);
-                      onFilterChange({
-                        ...searchFilters,
-                        [col.accessor]: e.target.value,
-                      });
-                      onFilterChange(updatedFilters);
-                    }}
+                    onChange={(e) => handleFilterChange(e, col.accessor)}
                   >
                     <option value="">All</option>
                     {col.options.map((option, idx) => (
@@ -76,7 +67,6 @@ const TableReuse = ({
                   <input
                     type="text"
                     className="mt-2 block w-full px-2 py-1 text-gray-700 bg-gray-100 rounded-md focus:outline-none focus:ring focus:ring-red-300"
-                    // placeholder={`Search ${col.label}`}
                     value={searchFilters[col.accessor] || ""}
                     onChange={(e) => handleFilterChange(e, col.accessor)}
                     onKeyPress={handleKeyPress}
@@ -127,10 +117,10 @@ const TableReuse = ({
           Previous
         </button>
         <span className="text-gray-700">
-          Page {currentPage} of {totalPages}
+          Page {currentPage} of {Totalpages}
         </span>
         <button
-          disabled={currentPage === totalPages}
+          disabled={currentPage === Totalpages}
           onClick={() => handlePageChange(currentPage + 1)}
           className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md disabled:opacity-50"
         >

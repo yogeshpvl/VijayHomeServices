@@ -7,12 +7,13 @@ const TableReuse = ({
   itemsPerPage = 25,
   onFilterChange,
   onPageChange,
+  Totalpages,
 }) => {
   const navigate = useNavigate();
   const [searchFilters, setSearchFilters] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
 
-  const totalPages = Math.ceil(data.length / itemsPerPage);
+  // const totalPages = Math.ceil(data.length / itemsPerPage);
 
   // Handle search filter change
   const handleFilterChange = (e, accessor) => {
@@ -144,10 +145,10 @@ const TableReuse = ({
           Previous
         </button>
         <span className="text-gray-700">
-          Page {currentPage} of {totalPages}
+          Page {currentPage} of {Totalpages}
         </span>
         <button
-          disabled={currentPage === totalPages}
+          disabled={currentPage === Totalpages}
           onClick={() => handlePageChange(currentPage + 1)}
           className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md disabled:opacity-50"
         >

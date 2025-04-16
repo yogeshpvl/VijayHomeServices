@@ -13,6 +13,8 @@ router.get(
 router.get("/totalCounts", followupController.gettotalCounts);
 router.get("/datewise", followupController.getCallLaterDateWiseFollowups);
 router.get("/datewiseSurveys", followupController.getSurveyDateWiseFollowups);
+router.get("/cancelledSurveys", followupController.getcancelledSurveys);
+
 router.get("/getSurveyReportpage", followupController.getSurveyReportpage);
 router.get(
   "/getSurveyReportpageDownload",

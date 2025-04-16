@@ -22,6 +22,11 @@ router.get(
   bookingServiceController.getPaymentsReportDailyServiceData
 );
 
+router.get(
+  "/PaymentsReportDailySummary",
+  bookingServiceController.getPaymentsReportDailySummary
+);
+
 //reporst page apis
 router.get(
   "/getPaymentReportFilter",
