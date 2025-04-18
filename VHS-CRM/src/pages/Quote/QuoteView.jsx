@@ -106,12 +106,11 @@ function QuoteView() {
   };
 
   const fetchMaterials = async () => {
-    const res = await axios.get(
-      `${config.API_BASE_URL}/material/category/${selectedCategory}`
-    );
+    const res = await axios.get(`${config.API_BASE_URL}/material`);
     setMaterialData(res.data);
   };
 
+  console.log("materialData", materialData);
   const calculateBenefit = (ml) => {
     const match = materialData.find((m) => m.material === ml);
     return match?.benefits || "";
@@ -189,6 +188,7 @@ function QuoteView() {
     return str.trim() + " Only";
   }
 
+  console.log("quoteData[0]?.quotationItems", quoteData[0]?.quotationItems);
   return (
     <div className="p-4">
       {headerImages.map((item, idx) => (
@@ -259,6 +259,10 @@ function QuoteView() {
                   {item.job.split("\n").map((line, i) => (
                     <p key={i}>{line}</p>
                   ))}
+                  <div>
+                    <b>Note:</b>
+                    {item.note}
+                  </div>
                   <p className="font-semibold">Benefits:</p>
                   {calculateBenefit(item.material)
                     .split("\n")
@@ -309,7 +313,7 @@ function QuoteView() {
         {/* Right Column: Totals */}
         <div className="w-1/2 text-right space-y-1">
           <div className="flex justify-end">
-            <span className="font-semibold w-40 text-left">Gst(5%) :</span>
+            <span className="font-semibold w-40 text-left">Gst(18%) :</span>
             <span className="w-24">{gstAmount}</span>
           </div>
           <div className="flex justify-end">
@@ -322,7 +326,7 @@ function QuoteView() {
           </div>
           <div className="pt-4 font-semibold">
             In Words :{" "}
-            <span className="font-normal">{totalAmountInWords} Only</span>
+            <span className="font-normal">{totalAmountInWords} </span>
           </div>
         </div>
       </div>

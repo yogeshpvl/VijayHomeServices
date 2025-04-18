@@ -85,7 +85,7 @@ function QuoteDetails() {
 
     const adjustments = Number(formData1.adjustments || 0);
     const gstAmount =
-      formData1.gst === "YES" ? (total - adjustments) * 0.05 : 0;
+      formData1.gst === "YES" ? (total - adjustments) * 0.18 : 0;
     const netTotal = total - adjustments + gstAmount;
 
     const newSum = parseFloat(total.toFixed(2));

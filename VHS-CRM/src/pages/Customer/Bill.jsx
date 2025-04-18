@@ -154,12 +154,13 @@ function Bill() {
     return str;
   };
 
-  console.log("treatmentData", treatmentData);
   const [words, setWords] = useState("");
   useEffect(() => {
     setWords(inWords(Number(treatmentData?.service_charge)));
   }, [treatmentData]);
 
+  const baseAmount = (treatmentData?.service_charge / 1.18).toFixed(2);
+  const gstAmount = (treatmentData?.service_charge - baseAmount).toFixed(2);
   return (
     <div>
       <div className="row justify-center mt-3">
@@ -295,13 +296,7 @@ function Bill() {
               </div>
               <div className="w-1/2 pr-6">
                 <div className="mt-4 text-right">
-                  <h6>
-                    GST(5%):{" "}
-                    {(
-                      treatmentData?.service_charge -
-                      (treatmentData?.service_charge / 105) * 100
-                    ).toFixed(2)}
-                  </h6>
+                  <h6>GST(18%): {gstAmount}</h6>
                   <h5>Total: {treatmentData?.service_charge}</h5>
                   <h5>
                     Amount In Words:{" "}

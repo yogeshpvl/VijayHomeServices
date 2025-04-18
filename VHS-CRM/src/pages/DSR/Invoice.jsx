@@ -26,7 +26,6 @@ function DSR_Invoice() {
       );
       const data = await res.json();
 
-      console.log("data", data);
       settcdata(
         Array.isArray(data) ? data.filter((i) => i.type === "INVOICE") : []
       );
@@ -153,12 +152,13 @@ function DSR_Invoice() {
     return str;
   };
 
-  console.log("treatmentData", treatmentData);
   const [words, setWords] = useState("");
   useEffect(() => {
     setWords(inWords(Number(treatmentData[0]?.service_charge)));
   }, [treatmentData]);
 
+  const baseAmount = (treatmentData[0]?.service_charge / 1.18).toFixed(2);
+  const gstAmount = (treatmentData[0]?.service_charge - baseAmount).toFixed(2);
   return (
     <div>
       <div className="row justify-center mt-3">
@@ -298,13 +298,7 @@ function DSR_Invoice() {
               </div>
               <div className="w-1/2 pr-6">
                 <div className="mt-4 text-right">
-                  <h6>
-                    GST(5%):{" "}
-                    {(
-                      treatmentData[0]?.service_charge -
-                      (treatmentData[0]?.service_charge / 105) * 100
-                    ).toFixed(2)}
-                  </h6>
+                  <h6>GST (18%): {gstAmount}</h6>
                   <h5>Total: {treatmentData[0]?.service_charge}</h5>
                   <h5>
                     Amount In Words:{" "}
