@@ -14,10 +14,10 @@ const TryToBooking = sequelize.define(
         isEmail: true,
       },
     },
-    phoneNumber: {
+    phonenumber: {
       type: DataTypes.STRING,
 
-      field: "phonenumber",
+      // field: "phonenumber",
     },
 
     service: {

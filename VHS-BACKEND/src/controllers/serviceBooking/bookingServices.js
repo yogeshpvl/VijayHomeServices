@@ -211,6 +211,9 @@ exports.getServicesByVendorAndDate = async (req, res) => {
 exports.getServicesByVendorInhouseData = async (req, res) => {
   try {
     const vendorId = parseInt(req.params.vendor_id);
+    if (vendorId) {
+      res.status(400).json({ error: "" });
+    }
 
     const services = await BookingService.findAll({
       where: {
@@ -334,6 +337,87 @@ exports.getServicesByVendorInhouseAcceptOrREjectJOb = async (req, res) => {
   }
 };
 
+exports.getServicesByVendorOuthouseAcceptnearServiceJOb = async (req, res) => {
+  try {
+    const vendorId = parseInt(req.params.vendor_id);
+    const { serviceId, vendor_status, vendorCharge, vendor_name } = req.body;
+
+    if (!vendorId || !serviceId) {
+      return res
+        .status(400)
+        .json({ error: "vendorId and serviceId are required" });
+    }
+
+    // Update the vendor status
+    await BookingService.update(
+      {
+        vendor_status: vendor_status || "ACCEPTED",
+        wallet_txn_id: vendorCharge,
+        vendor_name: vendor_name,
+        vendor_id: vendorId,
+        status: "ASSIGNED FOR TECHNICIAN",
+      },
+      { where: { id: serviceId } }
+    );
+
+    // Fetch the updated booking service to get service_charge
+    const service = await BookingService.findOne({
+      where: { id: serviceId },
+      attributes: [
+        "id",
+        "service_name",
+        "service_charge",
+        "service_date",
+        "amt_date",
+      ],
+      include: [
+        {
+          model: Booking,
+          required: true,
+          attributes: [
+            "id",
+            "payment_mode",
+            "description",
+            "selected_slot_text",
+          ],
+          include: [
+            {
+              model: User,
+              as: "customer",
+
+              attributes: ["id", "customerName", "email", "mainContact"],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (vendor_status === "ACCEPTED" && service) {
+      const serviceCharge = parseFloat(vendorCharge || 0);
+
+      // Decrement the vendor amount
+      await Vendor.decrement("vendor_amt", {
+        by: serviceCharge,
+        where: { id: vendorId },
+      });
+
+      // Log payment
+      await vendorPayment.create({
+        payment_date: moment().format("YYYY-MM-DD"),
+        payment_type: "debit",
+        payment_mode: "vendorapp",
+        amount: serviceCharge,
+        comment: service?.service_name ? service?.service_name : "NA",
+        vendor_id: vendorId,
+      });
+    }
+
+    res.json({ success: true, message: "Job status updated", service });
+  } catch (error) {
+    console.error("Error in getServicesByVendorInhouseAcceptJOb:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
 exports.getServicesByVendorOngoningData = async (req, res) => {
   try {
     const vendorId = parseInt(req.params.vendor_id);

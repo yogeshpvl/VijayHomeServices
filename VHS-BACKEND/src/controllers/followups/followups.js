@@ -650,11 +650,14 @@ exports.updateFollowupAppointment = async (req, res) => {
       return res.status(404).json({ message: "❌ Followup not found" });
     }
 
+    // Check if executive_id is an empty string and set it to null
+    const validExecutiveId = executive_id === "" ? null : executive_id;
+
     await followup.update({
       next_followup_date,
       appo_time,
       executive_name,
-      executive_id,
+      executive_id: validExecutiveId,
       status,
     });
 

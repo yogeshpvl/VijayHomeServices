@@ -1,7 +1,8 @@
 const db = require("../../models");
 const { Booking, BookingService, User } = db;
-const { Op } = require("sequelize");
+const { Op, Sequelize } = require("sequelize");
 
+const moment = require("moment");
 exports.getRunningProjectWithFilter = async (req, res) => {
   try {
     const {
@@ -468,5 +469,128 @@ exports.gettotalCounts = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+exports.filterLogLat = async (req, res) => {
+  try {
+    const { radius, latitude, longitude, category, city, datewise } = req.query;
+    console.log("category", category);
+
+    // Extract category names as strings
+    const categoryNames = category ? category.map((cat) => cat.name) : [];
+
+    // Validate and parse radius, latitude, and longitude
+    if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
+      return res.status(400).json({ error: "Invalid latitude or longitude" });
+    }
+
+    const contract_type = "One Time";
+    const radiusInMeters = parseFloat(radius) * 1000;
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+
+    // Get today's date and tomorrow's date in "YYYY-MM-DD" format
+    const today = moment().format("YYYY-MM-DD");
+    const tomorrow = moment().add(1, "days").format("YYYY-MM-DD");
+
+    let dateFilter = {};
+
+    // Add filter based on the datewise parameter
+    if (datewise === "Today") {
+      dateFilter = { service_date: { [Op.gte]: today, [Op.lt]: tomorrow } };
+    } else if (datewise === "Tomorrow") {
+      dateFilter = {
+        service_date: {
+          [Op.gte]: tomorrow,
+          [Op.lt]: moment().add(2, "days").format("YYYY-MM-DD"),
+        },
+      };
+    } else if (datewise === "Both") {
+      dateFilter = {
+        service_date: {
+          [Op.or]: [
+            { [Op.gte]: today, [Op.lt]: tomorrow }, // Today
+            {
+              [Op.gte]: tomorrow,
+              [Op.lt]: moment().add(2, "days").format("YYYY-MM-DD"),
+            }, // Tomorrow
+          ],
+        },
+      };
+    } else if (datewise === "All") {
+      dateFilter = {}; // No date filtering for 'All'
+    }
+
+    const services = await Booking.findAll({
+      where: {
+        [Op.and]: [
+          // Distance filter using Haversine formula
+          Sequelize.literal(`
+            marker_coordinate IS NOT NULL AND
+            jsonb_array_length(marker_coordinate) = 2 AND
+            (
+              6371000 * acos(
+                cos(radians(${lat})) * cos(radians(CAST(marker_coordinate->>0 AS float))) *
+                cos(radians(CAST(marker_coordinate->>1 AS float)) - radians(${lng})) +
+                sin(radians(${lat})) * sin(radians(CAST(marker_coordinate->>0 AS float)))
+              )
+            ) <= ${radiusInMeters}
+          `),
+
+          // Optional filter for city
+          city ? { city: { [Op.iLike]: city } } : {},
+
+          // Optional filter for category (use $in to match array of category names)
+          categoryNames.length > 0
+            ? { category: { [Op.iLike]: { [Op.any]: categoryNames } } }
+            : {},
+
+          // Optional contract_type filter
+          contract_type ? { contract_type: contract_type } : {},
+        ],
+      },
+      attributes: [
+        "id",
+        "category",
+        "delivery_address",
+        "city",
+        "createdAt",
+        "selected_slot_text",
+        "service",
+        "description",
+      ],
+      include: [
+        {
+          model: User,
+          as: "customer",
+          attributes: ["id", "customerName", "email", "mainContact"],
+        },
+        {
+          model: BookingService,
+          required: true, // Ensures that only matching services are included
+          attributes: [
+            "id",
+            "service_charge",
+            "service_date",
+            "job_complete",
+            "tech_comment",
+            "worker_amount",
+            "vendor_name",
+            "status",
+            "pm_status",
+          ],
+          where: {
+            status: "NOT ASSIGNED", // Filter for NOT ASSIGNED status
+            ...dateFilter, // Apply date filtering here
+          },
+        },
+      ],
+    });
+
+    res.json(services);
+  } catch (error) {
+    console.error("Error in filterLogLat:", error);
+    res.status(500).json({ error: error.message });
   }
 };

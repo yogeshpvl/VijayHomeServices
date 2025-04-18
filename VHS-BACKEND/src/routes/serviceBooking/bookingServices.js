@@ -32,6 +32,7 @@ router.get(
   "/getPaymentReportFilter",
   bookingServiceController.getPaymentsReportPAge
 );
+
 // router.get("/exportDSRReport", bookingServiceController.exportDSRReport);
 router.get("/getDSRREportFilter", bookingServiceController.getDSRReportFilter);
 router.get("/exportDSRReport", bookingServiceController.exportDSRReport);
@@ -100,6 +101,11 @@ router.get(
 router.put(
   "/vendor-job-accept/:vendor_id",
   bookingServiceController.getServicesByVendorInhouseAcceptOrREjectJOb
+);
+
+router.put(
+  "/outvendor-job-accept/:vendor_id",
+  bookingServiceController.getServicesByVendorOuthouseAcceptnearServiceJOb
 );
 
 router.get(

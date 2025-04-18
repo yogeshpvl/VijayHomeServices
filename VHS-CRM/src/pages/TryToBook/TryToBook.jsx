@@ -48,6 +48,7 @@ const TryToBook = ({ itemsPerPage = 25 }) => {
         },
       });
 
+      console.log("trybooking ", response.data.bookings);
       setData(response.data.bookings || []);
       setTotalCount(response.data.total || 0);
     } catch (err) {

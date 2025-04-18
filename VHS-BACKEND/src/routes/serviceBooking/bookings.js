@@ -10,6 +10,7 @@ router.post("/create", BookingController.createBooking);
 router.get("/totalCounts", BookingController.gettotalCounts);
 // Get all bookings
 router.get("/all", BookingController.getAllBookings);
+router.get("/filterLogLat", BookingController.filterLogLat);
 router.get("/by-customer/:user_id", BookingController.getBookingsByUserId);
 
 // Get a single booking by ID

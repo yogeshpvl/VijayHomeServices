@@ -74,8 +74,14 @@ exports.create = async (req, res) => {
 // Register or Login (phone only required)
 exports.registerorlogin = async (req, res) => {
   try {
-    const { customerName, mainContact, reference, reference1, fcmtoken } =
-      req.body;
+    const {
+      customerName,
+      mainContact,
+      reference,
+      service,
+      reference1,
+      fcmtoken,
+    } = req.body;
 
     if (!mainContact) {
       return res.status(400).json({ message: "Phone number is required" });
@@ -93,13 +99,24 @@ exports.registerorlogin = async (req, res) => {
           customerName: customerName || customer.customerName,
         });
       }
+      // await TryToBooking.create({
+      //   name: customerName,
+      //   phonenumber: mainContact,
+      //   service,
+      //   reference,
+      // });
 
       return res.status(200).json({
         message: "Customer already exists",
         customer,
       });
     }
-
+    await TryToBooking.create({
+      name: customerName,
+      phonenumber: mainContact,
+      service,
+      reference,
+    });
     // Create new customer if not found
     customer = await Customer.create({
       customerName,
@@ -239,6 +256,7 @@ exports.getAll = async (req, res) => {
       where,
       limit: parseInt(limit, 10), // Ensure the limit is an integer
       offset: offset, // Pagination offset
+      order: [["createdAt", "DESC"]],
     });
 
     // Calculate the total number of pages

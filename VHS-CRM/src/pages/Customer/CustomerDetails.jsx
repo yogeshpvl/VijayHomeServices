@@ -151,6 +151,7 @@ function CustomerDetailsPage() {
           landmark: customer.rbhf,
           platno: customer.cnap,
         },
+        selected_slot_text: form.selected_slot_text,
         expiry_date:
           form.contract_type === "AMC" ? form.expiry_date : form.start_date,
       };
@@ -158,7 +159,7 @@ function CustomerDetailsPage() {
       if (editIndex !== null) {
         // 🔁 Edit Flow — call PUT API
         await axios.put(
-          `${config.API_BASE_URL}/bookings/update/${editIndex}`,
+          `${config.API_BASE_URL}/bookings/update/${form?.id}`,
           payload
         );
         toast.success("Booking updated successfully");
@@ -225,6 +226,7 @@ function CustomerDetailsPage() {
   // };
 
   const handleEdit = (index) => {
+    console.log("now ----", index);
     setForm(treatments[index]);
     setEditIndex(index);
   };
@@ -279,7 +281,7 @@ function CustomerDetailsPage() {
     }
   };
 
-  const bookingWhatsAppMsg = async (selectedResponse, contactNumber) => {
+  const bookingWhatsAppMsg = async () => {
     const contentTemplate = whatsappdata || "";
 
     if (!contentTemplate) {
@@ -291,11 +293,11 @@ function CustomerDetailsPage() {
       /\{Customer_name\}/g,
       customer?.customerName
     );
-    const serviceName = content.replace(
-      /\{Service_name\}/g,
-      form.contract_type
+    const serviceName = content.replace(/\{Service_name\}/g, form.service);
+    const slotTiming = serviceName.replace(
+      /\{Slot_timing\}/g,
+      form.selected_slot_text
     );
-    const slotTiming = serviceName.replace(/\{Slot_timing\}/g, "");
     const serivePrice = slotTiming.replace(
       /\{Service_amount\}/g,
       form?.service_charge

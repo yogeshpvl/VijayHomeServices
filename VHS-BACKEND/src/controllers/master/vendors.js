@@ -323,8 +323,22 @@ exports.vendorlogin = async (req, res) => {
 };
 
 exports.getById = async (req, res) => {
-  const vendor = await Vendor.findByPk(req.params.id);
-  vendor ? res.json(vendor) : res.status(404).json({ error: "Not found" });
+  try {
+    const { id } = req.params; // Assuming you're passing the ID in the route params
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ error: "Invalid ID" });
+    }
+
+    const vendor = await Vendor.findByPk(id);
+    if (!vendor) {
+      return res.status(404).json({ error: "Vendor not found" });
+    }
+
+    res.json(vendor);
+  } catch (error) {
+    console.error("Error in getById:", error);
+    res.status(500).json({ error: error.message });
+  }
 };
 
 exports.getByType = async (req, res) => {
@@ -380,7 +394,7 @@ exports.getByCityAndCategoryForDSRReport = async (req, res) => {
         },
       },
       attributes: ["vhsname", "smsname", "type", "id"],
-      order: [["vhsname", "ASC"]], // Alphabetical order by name
+      order: [["vhsname", "ASC"]],
     });
 
     res.json(list);
@@ -392,6 +406,7 @@ exports.getByCityAndCategoryForDSRReport = async (req, res) => {
 
 exports.edit = async (req, res) => {
   try {
+    console.log("req.body", req.body);
     const vendor = await Vendor.update(req.body, {
       where: { id: req.params.id },
     });
